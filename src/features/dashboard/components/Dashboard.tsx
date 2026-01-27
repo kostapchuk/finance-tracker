@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { MonthSelector } from '@/components/ui/MonthSelector'
@@ -12,6 +12,9 @@ import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { formatCurrency } from '@/utils/currency'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
+import { AccountForm } from '@/features/accounts/components/AccountForm'
+import { CategoryForm } from '@/features/categories/components/CategoryForm'
+import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import type { Category, IncomeSource, Account } from '@/database/types'
 
 type TransactionMode =
@@ -38,6 +41,9 @@ export function Dashboard() {
   const [expensesExpanded, setExpensesExpanded] = useState(true)
   const [transactionMode, setTransactionMode] = useState<TransactionMode>(null)
   const [draggedItem, setDraggedItem] = useState<DraggedItem>(null)
+  const [incomeFormOpen, setIncomeFormOpen] = useState(false)
+  const [accountFormOpen, setAccountFormOpen] = useState(false)
+  const [categoryFormOpen, setCategoryFormOpen] = useState(false)
 
   // Configure sensors for both mouse and touch
   const sensors = useSensors(
@@ -182,6 +188,13 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('income')}
               </h3>
+              <span
+                role="button"
+                className="p-1 text-muted-foreground hover:text-foreground"
+                onClick={(e) => { e.stopPropagation(); setIncomeFormOpen(true) }}
+              >
+                <Plus className="h-4 w-4" />
+              </span>
               {incomeExpanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
@@ -220,6 +233,13 @@ export function Dashboard() {
           <div className="px-4 pb-2">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {t('accounts')}
+              <span
+                role="button"
+                className="p-1 text-muted-foreground hover:text-foreground inline-flex align-middle ml-1"
+                onClick={() => setAccountFormOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+              </span>
               {isDraggingIncome && (
                 <span className="text-xs text-primary ml-2">{t('dropIncomeHere')}</span>
               )}
@@ -263,6 +283,13 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('expenses')}
               </h3>
+              <span
+                role="button"
+                className="p-1 text-muted-foreground hover:text-foreground"
+                onClick={(e) => { e.stopPropagation(); setCategoryFormOpen(true) }}
+              >
+                <Plus className="h-4 w-4" />
+              </span>
               {isDraggingAccount && (
                 <span className="text-xs text-primary">{t('dropHere')}</span>
               )}
@@ -337,6 +364,10 @@ export function Dashboard() {
           )}
         </DragOverlay>
       </div>
+
+      <IncomeSourceForm open={incomeFormOpen} onClose={() => setIncomeFormOpen(false)} />
+      <AccountForm open={accountFormOpen} onClose={() => setAccountFormOpen(false)} />
+      <CategoryForm open={categoryFormOpen} onClose={() => setCategoryFormOpen(false)} />
     </DndContext>
   )
 }
