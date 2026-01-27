@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { MonthSelector } from '@/components/ui/MonthSelector'
 import { useAppStore } from '@/store/useAppStore'
@@ -235,29 +234,24 @@ export function ReportPage() {
           </div>
         ) : (
           <>
-            <div className="h-[200px] pointer-events-none">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={spendingByCategory}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {spendingByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => formatCurrency(Number(value), mainCurrency)}
-                    contentStyle={{ background: '#1a1a1a', border: 'none', borderRadius: '8px' }}
-                    wrapperStyle={{ zIndex: 0 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="h-[200px] flex items-center justify-center">
+              <div
+                className="w-[160px] h-[160px] rounded-full"
+                style={{
+                  background: (() => {
+                    const total = spendingByCategory.reduce((s, c) => s + c.value, 0)
+                    let angle = 0
+                    const stops = spendingByCategory.map((c) => {
+                      const start = angle
+                      angle += (c.value / total) * 360
+                      return `${c.color} ${start}deg ${angle}deg`
+                    })
+                    return `conic-gradient(${stops.join(', ')})`
+                  })(),
+                  WebkitMask: 'radial-gradient(circle 40px at center, transparent 100%, black 100%)',
+                  mask: 'radial-gradient(circle 40px at center, transparent 100%, black 100%)',
+                }}
+              />
             </div>
             <div className="space-y-2 mt-4">
               {spendingByCategory.slice(0, 5).map((category) => (
@@ -289,28 +283,37 @@ export function ReportPage() {
             {t('noTransactionDataYet')}
           </div>
         ) : (
-          <div className="h-[200px] pointer-events-none">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyTrend}>
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: '#888', fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis hide />
-                <Tooltip
-                  formatter={(value) => formatCurrency(Number(value), mainCurrency)}
-                  contentStyle={{ background: '#1a1a1a', border: 'none', borderRadius: '8px' }}
-                  wrapperStyle={{ zIndex: 0 }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 12 }}
-                />
-                <Bar dataKey="income" name={t('income')} fill="#22c55e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="expenses" name={t('expenses')} fill="#ef4444" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div>
+            <div className="h-[170px] flex items-end gap-1 justify-between">
+              {(() => {
+                const maxVal = Math.max(...monthlyTrend.map((m) => Math.max(m.income, m.expenses)), 1)
+                return monthlyTrend.map((m) => (
+                  <div key={m.month} className="flex-1 flex flex-col items-center gap-0.5">
+                    <div className="flex items-end gap-0.5 w-full h-[145px]">
+                      <div
+                        className="flex-1 rounded-t bg-green-500 min-h-[2px]"
+                        style={{ height: `${(m.income / maxVal) * 100}%` }}
+                      />
+                      <div
+                        className="flex-1 rounded-t bg-red-500 min-h-[2px]"
+                        style={{ height: `${(m.expenses / maxVal) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{m.month}</span>
+                  </div>
+                ))
+              })()}
+            </div>
+            <div className="flex items-center justify-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-green-500" />
+                <span className="text-xs text-muted-foreground">{t('income')}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-red-500" />
+                <span className="text-xs text-muted-foreground">{t('expenses')}</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
