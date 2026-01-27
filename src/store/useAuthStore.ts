@@ -23,14 +23,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isSetupComplete: false,
   isLoading: true,
   lastActivity: Date.now(),
-  autoLockMinutes: 5,
+  autoLockMinutes: 0,
 
   initialize: async () => {
     try {
       const settings = await settingsRepo.get()
       set({
         isSetupComplete: !!settings?.passphraseHash,
-        autoLockMinutes: settings?.autoLockMinutes || 5,
+        autoLockMinutes: settings?.autoLockMinutes ?? 0,
         isLoading: false,
       })
     } catch (error) {

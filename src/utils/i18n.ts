@@ -549,8 +549,8 @@ export type TranslationKey = keyof typeof translations.en
 const LANGUAGE_KEY = 'finance-tracker-language'
 
 export function getStoredLanguage(): Language {
-  if (typeof window === 'undefined') return 'en'
-  return (localStorage.getItem(LANGUAGE_KEY) as Language) || 'en'
+  if (typeof window === 'undefined') return 'ru'
+  return (localStorage.getItem(LANGUAGE_KEY) as Language) || 'ru'
 }
 
 export function setStoredLanguage(lang: Language) {
@@ -558,7 +558,7 @@ export function setStoredLanguage(lang: Language) {
 }
 
 // Simple translation function
-let currentLanguage: Language = 'en'
+let currentLanguage: Language = 'ru'
 
 export function setLanguage(lang: Language) {
   currentLanguage = lang

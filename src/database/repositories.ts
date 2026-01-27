@@ -301,8 +301,8 @@ export const settingsRepo = {
       return db.settings.add({
         passphraseHash: hash,
         passphraseSalt: salt,
-        autoLockMinutes: 5,
-        defaultCurrency: 'USD',
+        autoLockMinutes: 0,
+        defaultCurrency: 'BYN',
         createdAt: now,
         updatedAt: now,
       })

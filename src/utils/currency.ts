@@ -19,9 +19,11 @@ export const COMMON_CURRENCIES: CurrencyInfo[] = [
   { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
   { code: 'MXN', name: 'Mexican Peso', symbol: 'MX$' },
   { code: 'PLN', name: 'Polish Zloty', symbol: 'zł' },
+  { code: 'BYN', name: 'Belarusian Ruble', symbol: 'Br' },
   { code: 'UAH', name: 'Ukrainian Hryvnia', symbol: '₴' },
   { code: 'BTC', name: 'Bitcoin', symbol: '₿' },
   { code: 'ETH', name: 'Ethereum', symbol: 'Ξ' },
+  { code: 'USDT', name: 'Tether', symbol: '₮' },
 ]
 
 // Store for custom currencies - will be populated from the store
@@ -43,7 +45,7 @@ export function formatCurrency(amount: number, currency: string): string {
   const currencyInfo = allCurrencies.find(c => c.code === currency)
   const symbol = currencyInfo?.symbol || currency
 
-  if (currency === 'BTC' || currency === 'ETH') {
+  if (currency === 'BTC' || currency === 'ETH' || currency === 'USDT') {
     return `${amount.toFixed(8)} ${symbol}`
   }
 

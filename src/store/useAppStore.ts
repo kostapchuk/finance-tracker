@@ -46,7 +46,7 @@ export const useAppStore = create<AppState>((set) => ({
   investments: [],
   loans: [],
   customCurrencies: [],
-  mainCurrency: 'USD',
+  mainCurrency: 'BYN',
   isLoading: true,
   activeView: 'dashboard',
   selectedMonth: new Date(),
@@ -80,7 +80,7 @@ export const useAppStore = create<AppState>((set) => ({
         investments,
         loans,
         customCurrencies,
-        mainCurrency: settings?.defaultCurrency || 'USD',
+        mainCurrency: settings?.defaultCurrency || 'BYN',
         isLoading: false,
       })
     } catch (error) {
