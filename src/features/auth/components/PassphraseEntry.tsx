@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { KeyRound, Eye, EyeOff, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,14 @@ export function PassphraseEntry() {
   const { t } = useLanguage()
 
   const authenticate = useAuthStore((state) => state.authenticate)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRef.current?.focus()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,6 +63,7 @@ export function PassphraseEntry() {
               <div className="relative">
                 <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
+                  ref={inputRef}
                   id="passphrase"
                   type={showPassphrase ? 'text' : 'password'}
                   value={passphrase}
@@ -62,7 +71,6 @@ export function PassphraseEntry() {
                   className="pl-9 pr-10"
                   placeholder={t('enterYourPassphrase')}
                   autoComplete="current-password"
-                  autoFocus
                 />
                 <button
                   type="button"
