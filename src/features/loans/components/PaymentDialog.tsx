@@ -30,6 +30,17 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
   const account = loan?.accountId ? accounts.find(a => a.id === loan.accountId) : null
   const isMultiCurrency = loan && account && loan.currency !== account.currency
 
+  const sanitizeAmount = (value: string) => {
+    let v = value.replace(/,/g, '.').replace(/[^0-9.]/g, '')
+    const parts = v.split('.')
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+    v = v.replace(/^0+(?=\d)/, '')
+    const dotIndex = v.indexOf('.')
+    if (dotIndex !== -1) v = v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
+    else v = v.slice(0, 10)
+    return v
+  }
+
   useEffect(() => {
     if (open) {
       setAmount('')
@@ -137,12 +148,10 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
                       {getCurrencySymbol(loan.currency)}
                     </span>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max={remaining}
+                      type="text"
+                      inputMode="decimal"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                      onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                       className="pl-8"
                       placeholder="0.00"
                       autoFocus
@@ -160,11 +169,10 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
                       {getCurrencySymbol(account?.currency || 'USD')}
                     </span>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={accountAmount}
-                      onChange={(e) => setAccountAmount(e.target.value)}
+                      onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
                       className="pl-8"
                       placeholder="0.00"
                       required
@@ -190,12 +198,10 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
                 </span>
                 <Input
                   id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={remaining}
+                  type="text"
+                  inputMode="decimal"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                   className="pl-8"
                   placeholder="0.00"
                   autoFocus

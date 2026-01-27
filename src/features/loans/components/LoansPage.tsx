@@ -94,10 +94,22 @@ export function LoansPage() {
   const isMultiCurrencyPayment = paymentLoan && selectedPaymentAccount &&
     paymentLoan.currency !== selectedPaymentAccount.currency
 
+  const sanitizeAmount = (value: string) => {
+    let v = value.replace(/,/g, '.').replace(/[^0-9.]/g, '')
+    const parts = v.split('.')
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+    v = v.replace(/^0+(?=\d)/, '')
+    const dotIndex = v.indexOf('.')
+    if (dotIndex !== -1) v = v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
+    else v = v.slice(0, 10)
+    return v
+  }
+
   const handleSubmitPayment = async () => {
     if (!paymentLoan || !paymentAmount) return
     const loanPaymentAmount = parseFloat(paymentAmount)
-    if (isNaN(loanPaymentAmount) || loanPaymentAmount <= 0) return
+    const remaining = paymentLoan.amount - paymentLoan.paidAmount
+    if (isNaN(loanPaymentAmount) || loanPaymentAmount <= 0 || loanPaymentAmount > remaining) return
 
     // For multi-currency, also need account amount
     if (isMultiCurrencyPayment && !accountPaymentAmount) return
@@ -483,10 +495,10 @@ export function LoansPage() {
                       {paymentLoan?.currency} ({t('amountOnLoan')})
                     </label>
                     <Input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(e.target.value)}
+                      onChange={(e) => setPaymentAmount(sanitizeAmount(e.target.value))}
                       placeholder={`${getCurrencySymbol(paymentLoan?.currency || 'USD')}0.00`}
                     />
                   </div>
@@ -496,10 +508,10 @@ export function LoansPage() {
                       {selectedPaymentAccount?.currency} ({t('amountOnAccount')})
                     </label>
                     <Input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={accountPaymentAmount}
-                      onChange={(e) => setAccountPaymentAmount(e.target.value)}
+                      onChange={(e) => setAccountPaymentAmount(sanitizeAmount(e.target.value))}
                       placeholder={`${getCurrencySymbol(selectedPaymentAccount?.currency || 'USD')}0.00`}
                     />
                   </div>
@@ -518,10 +530,10 @@ export function LoansPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">{t('paymentAmount')}</label>
                 <Input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  onChange={(e) => setPaymentAmount(sanitizeAmount(e.target.value))}
                   placeholder={t('amount')}
                 />
                 <Button
@@ -542,7 +554,7 @@ export function LoansPage() {
             </Button>
             <Button
               onClick={handleSubmitPayment}
-              disabled={isProcessing || !paymentAmount || (!!isMultiCurrencyPayment && !accountPaymentAmount)}
+              disabled={isProcessing || !paymentAmount || (!!isMultiCurrencyPayment && !accountPaymentAmount) || parseFloat(paymentAmount) > remainingAmount || parseFloat(paymentAmount) <= 0}
             >
               {isProcessing ? t('processing') : t('confirm')}
             </Button>
