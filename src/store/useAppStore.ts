@@ -24,8 +24,12 @@ interface AppState {
   // Selected month for filtering (defaults to current month)
   selectedMonth: Date
 
+  // Navigation filters (set before navigating to a view)
+  historyCategoryFilter: number | null
+
   // Actions
   setActiveView: (view: AppState['activeView']) => void
+  navigateToHistoryWithCategory: (categoryId: number) => void
   setSelectedMonth: (date: Date) => void
   setMainCurrency: (currency: string) => Promise<void>
   loadAllData: () => Promise<void>
@@ -50,8 +54,10 @@ export const useAppStore = create<AppState>((set) => ({
   isLoading: true,
   activeView: 'dashboard',
   selectedMonth: new Date(),
+  historyCategoryFilter: null,
 
   setActiveView: (view) => set({ activeView: view }),
+  navigateToHistoryWithCategory: (categoryId) => set({ historyCategoryFilter: categoryId, activeView: 'history' }),
   setSelectedMonth: (date) => set({ selectedMonth: date }),
 
   setMainCurrency: async (currency: string) => {

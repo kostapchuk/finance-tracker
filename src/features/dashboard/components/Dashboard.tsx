@@ -101,8 +101,10 @@ export function Dashboard() {
     return { incomeBySource, expensesByCategory, totalIncome, totalExpenses }
   }, [transactions, selectedMonth])
 
+  const navigateToHistoryWithCategory = useAppStore((state) => state.navigateToHistoryWithCategory)
+
   const handleCategoryClick = (category: Category) => {
-    setTransactionMode({ type: 'expense', category })
+    navigateToHistoryWithCategory(category.id!)
   }
 
   const handleCloseModal = () => {

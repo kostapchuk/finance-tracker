@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Trash2, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -26,6 +26,8 @@ export function HistoryPage() {
   const refreshLoans = useAppStore((state) => state.refreshLoans)
   const { t, language } = useLanguage()
 
+  const historyCategoryFilter = useAppStore((state) => state.historyCategoryFilter)
+
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType | 'transfers' | 'loans'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -34,6 +36,15 @@ export function HistoryPage() {
   const [customDateTo, setCustomDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+
+  useEffect(() => {
+    if (historyCategoryFilter !== null) {
+      setCategoryFilter(String(historyCategoryFilter))
+      setTypeFilter('expense')
+      setShowFilters(true)
+      useAppStore.setState({ historyCategoryFilter: null })
+    }
+  }, [historyCategoryFilter])
 
   const typeConfig: Record<TransactionType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
     income: { label: t('income'), icon: ArrowUpCircle, color: 'text-success' },
