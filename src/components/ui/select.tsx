@@ -118,7 +118,10 @@ const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
       }
     }, [open, setOpen])
 
-    if (!open) return null
+    if (!open) {
+      // Render children hidden so SelectItems register their labels
+      return <div className="hidden">{children}</div>
+    }
 
     return (
       <div

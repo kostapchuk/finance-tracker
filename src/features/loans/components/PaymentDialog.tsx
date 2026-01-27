@@ -41,8 +41,9 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
     e.preventDefault()
     if (!loan?.id || !amount) return
 
+    const remaining = loan.amount - loan.paidAmount
     const paymentAmount = parseFloat(amount)
-    if (isNaN(paymentAmount) || paymentAmount <= 0) return
+    if (isNaN(paymentAmount) || paymentAmount <= 0 || paymentAmount > remaining) return
 
     // For multi-currency, also need account amount
     if (isMultiCurrency && !accountAmount) return
@@ -218,7 +219,7 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !amount || (!!isMultiCurrency && !accountAmount)}
+              disabled={isLoading || !amount || (!!isMultiCurrency && !accountAmount) || parseFloat(amount) > remaining}
             >
               {isLoading ? t('recording') : t('recordPayment')}
             </Button>

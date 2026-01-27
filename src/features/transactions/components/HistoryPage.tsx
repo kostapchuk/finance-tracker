@@ -27,7 +27,7 @@ export function HistoryPage() {
   const { t, language } = useLanguage()
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | TransactionType | 'transfers' | 'investments' | 'loans'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | TransactionType | 'transfers' | 'loans'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year' | 'custom'>('all')
   const [customDateFrom, setCustomDateFrom] = useState('')
@@ -86,8 +86,6 @@ export function HistoryPage() {
         if (typeFilter !== 'all') {
           if (typeFilter === 'transfers') {
             if (tx.type !== 'transfer') return false
-          } else if (typeFilter === 'investments') {
-            if (tx.type !== 'investment_buy' && tx.type !== 'investment_sell') return false
           } else if (typeFilter === 'loans') {
             if (tx.type !== 'loan_given' && tx.type !== 'loan_received' && tx.type !== 'loan_payment') return false
           } else if (tx.type !== typeFilter) {
@@ -253,7 +251,7 @@ export function HistoryPage() {
 
       {/* Filter Pills */}
       <div className="px-4 pb-3 flex gap-2 overflow-x-auto">
-        {(['all', 'income', 'expense', 'transfers', 'investments', 'loans'] as const).map((filter) => (
+        {(['all', 'income', 'expense', 'transfers', 'loans'] as const).map((filter) => (
           <button
             key={filter}
             onClick={() => { setTypeFilter(filter); setCategoryFilter('all') }}
@@ -266,7 +264,6 @@ export function HistoryPage() {
           >
             {filter === 'all' ? t('all') :
              filter === 'transfers' ? t('transfers') :
-             filter === 'investments' ? t('investments') :
              filter === 'loans' ? t('loansFilter') :
              t(filter)}
           </button>
