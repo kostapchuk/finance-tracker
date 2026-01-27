@@ -62,7 +62,7 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
         loanId: loan.id,
         accountId: loan.accountId,
         mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
-        comment: `Payment ${loan.type === 'given' ? 'received from' : 'made to'} ${loan.personName}`,
+        comment: `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
       })
 
       // Update account balance if linked
@@ -101,25 +101,25 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Record Payment</DialogTitle>
+          <DialogTitle>{t('recordPayment')}</DialogTitle>
           <DialogDescription>
             {loan.type === 'given'
-              ? `Recording payment received from ${loan.personName}`
-              : `Recording payment made to ${loan.personName}`}
+              ? `${t('recordingPaymentFrom')} ${loan.personName}`
+              : `${t('recordingPaymentTo')} ${loan.personName}`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="p-4 bg-muted rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Total Amount</span>
+              <span>{t('totalAmount')}</span>
               <span className="font-medium">{formatCurrency(loan.amount, loan.currency)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span>Already Paid</span>
+              <span>{t('alreadyPaid')}</span>
               <span className="font-medium">{formatCurrency(loan.paidAmount, loan.currency)}</span>
             </div>
             <div className="flex justify-between text-sm font-medium">
-              <span>Remaining</span>
+              <span>{t('remaining')}</span>
               <span className="text-primary">{formatCurrency(remaining, loan.currency)}</span>
             </div>
           </div>
@@ -177,12 +177,12 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
                 size="sm"
                 onClick={() => setAmount(remaining.toString())}
               >
-                Pay Full Remaining ({formatCurrency(remaining, loan.currency)})
+                {t('payFullRemaining')} ({formatCurrency(remaining, loan.currency)})
               </Button>
             </div>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="amount">Payment Amount</Label>
+              <Label htmlFor="amount">{t('paymentAmount')}</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   {getCurrencySymbol(loan.currency)}
@@ -207,20 +207,20 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
                 size="sm"
                 onClick={() => setAmount(remaining.toString())}
               >
-                Pay Full Remaining
+                {t('payFullRemaining')}
               </Button>
             </div>
           )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isLoading || !amount || (!!isMultiCurrency && !accountAmount)}
             >
-              {isLoading ? 'Recording...' : 'Record Payment'}
+              {isLoading ? t('recording') : t('recordPayment')}
             </Button>
           </DialogFooter>
         </form>

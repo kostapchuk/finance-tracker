@@ -126,7 +126,7 @@ export function LoansPage() {
           loanId: paymentLoan.id,
           accountId: selectedPaymentAccountId,
           mainCurrencyAmount: paymentLoan.currency === mainCurrency ? loanPaymentAmount : undefined,
-          comment: `Payment ${paymentLoan.type === 'given' ? 'received from' : 'made to'} ${paymentLoan.personName}`,
+          comment: `${paymentLoan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${paymentLoan.personName}`,
         })
 
         await refreshAccounts()
@@ -188,7 +188,7 @@ export function LoansPage() {
         loanId: newLoanId as number,
         accountId: data.accountId,
         mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
-        comment: `${data.type === 'given' ? 'Loan to' : 'Loan from'} ${data.personName}`,
+        comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })
 
       await refreshAccounts()

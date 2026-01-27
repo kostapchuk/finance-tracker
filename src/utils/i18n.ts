@@ -120,6 +120,19 @@ export const translations = {
     comment: 'Comment',
     save: 'Save',
 
+    // Loan comments
+    paymentReceivedFrom: 'Payment received from',
+    paymentMadeTo: 'Payment made to',
+    loanTo: 'Loan to',
+    loanFrom: 'Loan from',
+    recordPayment: 'Record Payment',
+    recordingPaymentFrom: 'Recording payment received from',
+    recordingPaymentTo: 'Recording payment made to',
+    totalAmount: 'Total Amount',
+    alreadyPaid: 'Already Paid',
+    payFullRemaining: 'Pay Full Remaining',
+    recording: 'Recording...',
+
     // Loan form
     moneyILent: 'Money I Lent (Given)',
     moneyIBorrowed: 'Money I Borrowed (Received)',
@@ -389,6 +402,19 @@ export const translations = {
     addComment: 'Добавить комментарий...',
     comment: 'Комментарий',
     save: 'Сохранить',
+
+    // Loan comments
+    paymentReceivedFrom: 'Платёж получен от',
+    paymentMadeTo: 'Платёж отправлен',
+    loanTo: 'Займ для',
+    loanFrom: 'Займ от',
+    recordPayment: 'Записать платёж',
+    recordingPaymentFrom: 'Запись платежа, полученного от',
+    recordingPaymentTo: 'Запись платежа для',
+    totalAmount: 'Общая сумма',
+    alreadyPaid: 'Уже оплачено',
+    payFullRemaining: 'Оплатить остаток',
+    recording: 'Запись...',
 
     // Loan form
     moneyILent: 'Деньги, которые я одолжил',
