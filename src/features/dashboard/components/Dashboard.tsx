@@ -37,7 +37,7 @@ export function Dashboard() {
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
 
-  const [incomeExpanded, setIncomeExpanded] = useState(true)
+  const [incomeExpanded, setIncomeExpanded] = useState(false)
   const [expensesExpanded, setExpensesExpanded] = useState(true)
   const [transactionMode, setTransactionMode] = useState<TransactionMode>(null)
   const [draggedItem, setDraggedItem] = useState<DraggedItem>(null)
@@ -180,6 +180,7 @@ export function Dashboard() {
 
         {/* Income Section - Draggable */}
         <section className="px-4 py-1">
+          <div className="bg-secondary/50 rounded-xl p-3">
           <button
             onClick={() => setIncomeExpanded(!incomeExpanded)}
             className="flex items-center justify-between w-full py-1 touch-target"
@@ -207,7 +208,7 @@ export function Dashboard() {
           </button>
 
           {incomeExpanded && (
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <div className="grid grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto">
               {incomeSources.map((source) => (
                 <DraggableItem
                   key={source.id}
@@ -226,11 +227,12 @@ export function Dashboard() {
               ))}
             </div>
           )}
+          </div>
         </section>
 
         {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
-        <section className="py-1">
-          <div className="px-4 pb-1">
+        <section className="px-4 py-1">
+          <div className="bg-secondary/50 rounded-xl p-3">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {t('accounts')}
               <span
@@ -247,8 +249,7 @@ export function Dashboard() {
                 <span className="text-xs text-primary ml-2">{t('dropHere')}</span>
               )}
             </h3>
-          </div>
-          <div className="grid grid-cols-3 gap-2 px-4 pb-1">
+          <div className="grid grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto">
             {accounts.map((account) => (
               <DroppableZone
                 key={account.id}
@@ -271,10 +272,12 @@ export function Dashboard() {
               </DroppableZone>
             ))}
           </div>
+          </div>
         </section>
 
         {/* Expenses Section - Droppable (for accounts) */}
         <section className="px-4 py-1">
+          <div className="bg-secondary/50 rounded-xl p-3">
           <button
             onClick={() => setExpensesExpanded(!expensesExpanded)}
             className="flex items-center justify-between w-full py-1 touch-target"
@@ -325,6 +328,7 @@ export function Dashboard() {
               ))}
             </div>
           )}
+          </div>
         </section>
 
         {/* Quick Transaction Modal */}
