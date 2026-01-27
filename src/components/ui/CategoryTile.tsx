@@ -35,18 +35,18 @@ export function CategoryTile({
     <button
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center gap-2 p-4 rounded-xl',
+        'flex flex-col items-center gap-1 p-2 rounded-xl',
         'active:scale-95',
         'transition-all duration-150 touch-target w-full'
       )}
     >
       <div
-        className="w-14 h-14 rounded-full flex items-center justify-center"
+        className="w-10 h-10 rounded-full flex items-center justify-center"
         style={{ backgroundColor: color + '20' }}
       >
         {IconComponent && (
           <IconComponent
-            className="h-7 w-7"
+            className="h-5 w-5"
             style={{ color }}
           />
         )}

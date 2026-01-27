@@ -179,10 +179,10 @@ export function Dashboard() {
         <MonthSelector />
 
         {/* Income Section - Draggable */}
-        <section className="px-4 py-2">
+        <section className="px-4 py-1">
           <button
             onClick={() => setIncomeExpanded(!incomeExpanded)}
-            className="flex items-center justify-between w-full py-2 touch-target"
+            className="flex items-center justify-between w-full py-1 touch-target"
           >
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -207,7 +207,7 @@ export function Dashboard() {
           </button>
 
           {incomeExpanded && (
-            <div className="grid grid-cols-4 gap-2 mt-2">
+            <div className="grid grid-cols-3 gap-2 mt-2">
               {incomeSources.map((source) => (
                 <DraggableItem
                   key={source.id}
@@ -229,8 +229,8 @@ export function Dashboard() {
         </section>
 
         {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
-        <section className="py-4">
-          <div className="px-4 pb-2">
+        <section className="py-1">
+          <div className="px-4 pb-1">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {t('accounts')}
               <span
@@ -248,7 +248,7 @@ export function Dashboard() {
               )}
             </h3>
           </div>
-          <div className="grid grid-cols-4 gap-2 px-4 pb-2">
+          <div className="grid grid-cols-3 gap-2 px-4 pb-1">
             {accounts.map((account) => (
               <DroppableZone
                 key={account.id}
@@ -274,10 +274,10 @@ export function Dashboard() {
         </section>
 
         {/* Expenses Section - Droppable (for accounts) */}
-        <section className="px-4 py-2">
+        <section className="px-4 py-1">
           <button
             onClick={() => setExpensesExpanded(!expensesExpanded)}
-            className="flex items-center justify-between w-full py-2 touch-target"
+            className="flex items-center justify-between w-full py-1 touch-target"
           >
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -305,7 +305,7 @@ export function Dashboard() {
           </button>
 
           {expensesExpanded && (
-            <div className="grid grid-cols-4 gap-2 mt-2">
+            <div className="grid grid-cols-3 gap-2 mt-2">
               {expenseCategories.map((category) => (
                 <DroppableZone
                   key={category.id}

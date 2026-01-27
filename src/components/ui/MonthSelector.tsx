@@ -35,7 +35,7 @@ export function MonthSelector() {
   }
 
   return (
-    <div className="flex items-center justify-between px-4 py-3">
+    <div className="flex items-center justify-between px-4 py-1">
       <button
         onClick={goToPreviousMonth}
         className="p-2 rounded-full hover:bg-secondary active:bg-secondary/80 touch-target"

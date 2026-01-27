@@ -39,17 +39,17 @@ export function AccountCard({
     <button
       onClick={onClick}
       className={cn(
-        'flex-shrink-0 p-4 rounded-xl',
+        'flex-shrink-0 p-2 rounded-xl',
         'active:scale-95',
         'transition-all duration-150 touch-target',
-        'flex flex-col items-center gap-2 w-full'
+        'flex flex-col items-center gap-1 w-full'
       )}
     >
       <div
-        className="w-14 h-14 rounded-full flex items-center justify-center"
+        className="w-10 h-10 rounded-full flex items-center justify-center"
         style={{ backgroundColor: color + '20' }}
       >
-        <IconComponent className="h-7 w-7" style={{ color }} />
+        <IconComponent className="h-5 w-5" style={{ color }} />
       </div>
       <div className="text-center w-full">
         <p className="text-sm text-muted-foreground truncate w-full">{name}</p>
