@@ -32,9 +32,16 @@ export function AppShell({ children }: AppShellProps) {
       updateActivity()
     }
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAutoLock()
+      }
+    }
+
     window.addEventListener('touchstart', handleActivity)
     window.addEventListener('click', handleActivity)
     window.addEventListener('scroll', handleActivity)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     const lockInterval = setInterval(checkAutoLock, 60000)
 
@@ -42,6 +49,7 @@ export function AppShell({ children }: AppShellProps) {
       window.removeEventListener('touchstart', handleActivity)
       window.removeEventListener('click', handleActivity)
       window.removeEventListener('scroll', handleActivity)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       clearInterval(lockInterval)
     }
   }, [updateActivity, checkAutoLock])
