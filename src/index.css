@@ -69,7 +69,8 @@
   }
 
   #root {
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   /* Smooth scrolling on iOS */

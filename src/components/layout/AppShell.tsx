@@ -47,7 +47,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [updateActivity, checkAutoLock])
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
       <main className="flex-1 overflow-auto pb-20 pt-safe">
         {children}
       </main>
