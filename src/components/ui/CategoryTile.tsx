@@ -53,7 +53,7 @@ export function CategoryTile({
       </div>
       <div className="text-center w-full">
         <p className="text-sm text-muted-foreground truncate w-full">{name}</p>
-        <p className={cn('text-base font-semibold', getAmountColor())}>
+        <p className={cn('text-xs font-semibold truncate w-full', getAmountColor())}>
           {formatCurrency(amount, currency)}
         </p>
       </div>
