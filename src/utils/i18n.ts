@@ -1,0 +1,575 @@
+export type Language = 'en' | 'ru'
+
+export const translations = {
+  en: {
+    // Navigation
+    dashboard: 'Dashboard',
+    history: 'History',
+    loans: 'Loans',
+    report: 'Report',
+    settings: 'Settings',
+
+    // Dashboard
+    income: 'Income',
+    goodExpenses: 'Good Expenses',
+    badExpenses: 'Bad Expenses',
+    accounts: 'Accounts',
+    dropIncomeHere: '(Drop income here)',
+    dropHere: '(Drop here)',
+
+    // Loans
+    loansAndDebts: 'Loans & Debts',
+    add: 'Add',
+    owedToYou: 'Owed to you',
+    youOwe: 'You owe',
+    moneyGiven: 'Money Given',
+    moneyReceived: 'Money Received',
+    noActiveLoansGiven: 'No active loans given',
+    noActiveDebts: 'No active debts',
+    completed: 'Completed',
+    repaid: 'Repaid',
+    paidOff: 'Paid off',
+    paid: 'Paid',
+    left: 'left',
+    recordRepayment: 'Record Repayment',
+    makePayment: 'Make Payment',
+    owes: 'owes you',
+    youOweTo: 'You owe',
+    paymentAmount: 'Payment Amount',
+    payFullAmount: 'Pay Full Amount',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    processing: 'Processing...',
+    edit: 'Edit',
+
+    // Report
+    totalBalance: 'Total Balance',
+    expenses: 'Expenses',
+    netFlow: 'Net Flow',
+    currentLoansStatus: 'Current Loans Status',
+    netLoans: 'Net Loans',
+    spendingByCategory: 'Spending by Category',
+    noExpenseDataThisMonth: 'No expense data this month',
+    sixMonthTrend: '6-Month Trend',
+    noTransactionDataYet: 'No transaction data yet',
+
+    // Settings
+    manage: 'Manage',
+    categories: 'Categories',
+    incomeSources: 'Income Sources',
+    currencies: 'Currencies',
+    security: 'Security',
+    autoLock: 'Auto-lock',
+    disabled: 'Disabled',
+    lockAppNow: 'Lock App Now',
+    data: 'Data',
+    exportBackup: 'Export Backup',
+    importBackup: 'Import Backup',
+    dangerZone: 'Danger Zone',
+    deleteAllData: 'Delete All Data',
+    language: 'Language',
+    english: 'English',
+    russian: 'Russian',
+    mainCurrency: 'Main Currency',
+    mainCurrencyDescription: 'Used for displaying summaries',
+
+    // Category management
+    manageAccounts: 'Manage Accounts',
+    manageCategories: 'Manage Categories',
+    manageIncomeSources: 'Manage Income Sources',
+    manageCurrencies: 'Manage Currencies',
+    goodExpensesSavings: 'Good Expenses (Savings/Investments)',
+    badExpensesRegular: 'Bad Expenses (Regular)',
+    noGoodExpenseCategories: 'No good expense categories. Add savings/investment categories!',
+    noExpenseCategories: 'No expense categories',
+    noAccountsYet: 'No accounts yet',
+    noIncomeSources: 'No income sources yet',
+    noCustomCurrencies: 'No custom currencies. Add your own currencies here!',
+
+    // Forms
+    name: 'Name',
+    type: 'Type',
+    color: 'Color',
+    budget: 'Budget',
+    budgetOptional: 'Budget (optional)',
+    initialBalance: 'Initial Balance',
+    currency: 'Currency',
+    currencyCode: 'Currency Code',
+    currencyName: 'Currency Name',
+    symbol: 'Symbol',
+    saving: 'Saving...',
+    create: 'Create',
+    update: 'Update',
+    addAccount: 'Add Account',
+    editAccount: 'Edit Account',
+    addCategory: 'Add Category',
+    editCategory: 'Edit Category',
+    addIncomeSource: 'Add Income Source',
+    editIncomeSource: 'Edit Income Source',
+    addCurrency: 'Add Currency',
+    editCurrency: 'Edit Currency',
+    addLoan: 'Add Loan',
+    editLoan: 'Edit Loan',
+    expense: 'Expense',
+    savingsInvestment: 'Savings / Investment',
+
+    // Transaction modal
+    addIncome: 'Add income',
+    addExpense: 'Add expense',
+    addComment: 'Add a comment...',
+    comment: 'Comment',
+    save: 'Save',
+
+    // Loan form
+    moneyILent: 'Money I Lent (Given)',
+    moneyIBorrowed: 'Money I Borrowed (Received)',
+    whoDidYouLendTo: 'Who did you lend to?',
+    whoDidYouBorrowFrom: 'Who did you borrow from?',
+    personOrCompanyName: 'Person or company name',
+    amount: 'Amount',
+    amountOnLoan: 'loan amount',
+    amountOnAccount: 'account amount',
+    relatedAccount: 'Account',
+    none: 'None',
+    dueDate: 'Due Date (optional)',
+    description: 'Description (optional)',
+    addNotesAboutLoan: 'Add notes about this loan...',
+
+    // Account types
+    cash: 'Cash',
+    bankAccount: 'Bank Account',
+    cryptoWallet: 'Crypto Wallet',
+    investmentAccount: 'Investment Account',
+    creditCard: 'Credit Card',
+
+    // Months
+    jan: 'Jan',
+    feb: 'Feb',
+    mar: 'Mar',
+    apr: 'Apr',
+    may: 'May',
+    jun: 'Jun',
+    jul: 'Jul',
+    aug: 'Aug',
+    sep: 'Sep',
+    oct: 'Oct',
+    nov: 'Nov',
+    dec: 'Dec',
+
+    // Misc
+    back: 'Back',
+    delete: 'Delete',
+    remaining: 'remaining',
+    of: 'of',
+    dataStoredLocally: 'Data stored locally in your browser',
+    dataImportedSuccessfully: 'Data imported successfully!',
+    min: 'min',
+    hour: 'hour',
+    transfer: 'Transfer',
+
+    // Placeholders
+    selectAccount: 'Select account',
+    selectType: 'Select type',
+    selectCurrency: 'Select currency',
+    selectPeriod: 'Select period',
+    egAAPL: 'e.g., AAPL',
+    egAppleInc: 'e.g., Apple Inc.',
+    egSalaryFreelance: 'e.g., Salary, Freelance',
+    egGroceries: 'e.g., Groceries',
+    egMainChecking: 'e.g., Main Checking',
+    egBYN: 'e.g., BYN',
+    egBelarusianRuble: 'e.g., Belarusian Ruble',
+    egSymbolBr: 'e.g., Br (defaults to code)',
+    enterYourPassphrase: 'Enter your passphrase',
+    confirmYourPassphrase: 'Confirm your passphrase',
+    searchTransactions: 'Search transactions...',
+    search: 'Search...',
+    newPrice: 'New price',
+    leaveEmptyForNoBudget: 'Leave empty for no budget',
+    budgetPeriod: 'Budget Period',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    yearly: 'Yearly',
+    symbolOptional: 'Symbol (optional)',
+    currencyCodeHint: '3-5 letter code (e.g., USD, EUR, BYN)',
+    symbolHint: 'Symbol shown before amounts. If empty, code will be used.',
+
+    // History page
+    today: 'Today',
+    yesterday: 'Yesterday',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    thisYear: 'This Year',
+    allTime: 'All Time',
+    all: 'All',
+    noTransactionsFound: 'No transactions found',
+    buy: 'Buy',
+    sell: 'Sell',
+    deleteTransaction: 'Delete this transaction?',
+
+    // Delete confirmation
+    deleteConfirmationMessage: 'This will permanently delete ALL your data including accounts, transactions, categories, and loans. This action cannot be undone.',
+    enterPasswordFirst: 'Enter your password',
+    confirmPassword: 'Confirm password',
+    password: 'Password',
+    passwordsDontMatch: 'Passwords do not match',
+    enterPassword: 'Please enter your password',
+    incorrectPassword: 'Incorrect password',
+
+    // Authentication
+    welcomeToFinanceTracker: 'Welcome to Finance Tracker',
+    setupPassphraseDescription: 'Set up a passphrase to protect your financial data. This is stored locally and never leaves your device.',
+    passphrase: 'Passphrase',
+    confirmPassphrase: 'Confirm Passphrase',
+    passphraseTooShort: 'Passphrase must be at least 4 characters',
+    passphrasesDoNotMatch: 'Passphrases do not match',
+    failedToSetupPassphrase: 'Failed to set up passphrase. Please try again.',
+    settingUp: 'Setting up...',
+    continue: 'Continue',
+    passphraseSecurityNote: 'Your passphrase is hashed locally using PBKDF2. We never store or transmit your passphrase.',
+    welcomeBack: 'Welcome Back',
+    unlockDescription: 'Enter your passphrase to unlock your finance tracker',
+    pleaseEnterPassphrase: 'Please enter your passphrase',
+    unlocking: 'Unlocking...',
+    unlock: 'Unlock',
+
+    // Investments
+    addInvestment: 'Add Investment',
+    editInvestment: 'Edit Investment',
+    quantity: 'Quantity',
+    averageCost: 'Avg. Cost',
+    currentPrice: 'Current Price',
+    investmentPortfolio: 'Investment Portfolio',
+    trackInvestments: 'Track your stocks, ETFs, and crypto holdings',
+    noInvestments: 'No investments yet',
+    addInvestmentsToTrack: 'Add investments to track your portfolio performance',
+    totalValue: 'Total Value',
+    totalCost: 'Total Cost',
+    gainLoss: 'Gain/Loss',
+    totalGainLoss: 'Total Gain/Loss',
+    totalReturn: 'Total Return',
+    noInvestmentAccounts: 'Create an investment account first',
+    value: 'Value',
+    account: 'Account',
+
+    // Transaction types
+    loanGiven: 'Loan Given',
+    loanReceived: 'Loan Received',
+    payment: 'Payment',
+    allTypes: 'All Types',
+    allAccounts: 'All Accounts',
+    transactionHistory: 'Transaction History',
+    transactions: 'transactions',
+
+    // History page filters
+    transfers: 'Transfers',
+    investments: 'Investments',
+    loansFilter: 'Loans',
+    customRange: 'Custom Range',
+    from: 'From',
+    to: 'To',
+  },
+  ru: {
+    // Navigation
+    dashboard: 'Главная',
+    history: 'История',
+    loans: 'Займы',
+    report: 'Отчёт',
+    settings: 'Настройки',
+
+    // Dashboard
+    income: 'Доходы',
+    goodExpenses: 'Хорошие расходы',
+    badExpenses: 'Плохие расходы',
+    accounts: 'Счета',
+    dropIncomeHere: '(Перетащите доход сюда)',
+    dropHere: '(Перетащите сюда)',
+
+    // Loans
+    loansAndDebts: 'Займы и долги',
+    add: 'Добавить',
+    owedToYou: 'Должны вам',
+    youOwe: 'Вы должны',
+    moneyGiven: 'Деньги выданы',
+    moneyReceived: 'Деньги получены',
+    noActiveLoansGiven: 'Нет активных займов',
+    noActiveDebts: 'Нет активных долгов',
+    completed: 'Завершено',
+    repaid: 'Возвращено',
+    paidOff: 'Погашено',
+    paid: 'Оплачено',
+    left: 'осталось',
+    recordRepayment: 'Записать возврат',
+    makePayment: 'Внести платёж',
+    owes: 'должен вам',
+    youOweTo: 'Вы должны',
+    paymentAmount: 'Сумма платежа',
+    payFullAmount: 'Оплатить полностью',
+    cancel: 'Отмена',
+    confirm: 'Подтвердить',
+    processing: 'Обработка...',
+    edit: 'Изменить',
+
+    // Report
+    totalBalance: 'Общий баланс',
+    expenses: 'Расходы',
+    netFlow: 'Чистый поток',
+    currentLoansStatus: 'Текущий статус займов',
+    netLoans: 'Чистые займы',
+    spendingByCategory: 'Расходы по категориям',
+    noExpenseDataThisMonth: 'Нет данных о расходах за этот месяц',
+    sixMonthTrend: 'Тренд за 6 месяцев',
+    noTransactionDataYet: 'Пока нет данных о транзакциях',
+
+    // Settings
+    manage: 'Управление',
+    categories: 'Категории',
+    incomeSources: 'Источники дохода',
+    currencies: 'Валюты',
+    security: 'Безопасность',
+    autoLock: 'Автоблокировка',
+    disabled: 'Отключено',
+    lockAppNow: 'Заблокировать',
+    data: 'Данные',
+    exportBackup: 'Экспорт резервной копии',
+    importBackup: 'Импорт резервной копии',
+    dangerZone: 'Опасная зона',
+    deleteAllData: 'Удалить все данные',
+    language: 'Язык',
+    english: 'Английский',
+    russian: 'Русский',
+    mainCurrency: 'Основная валюта',
+    mainCurrencyDescription: 'Используется для отображения итогов',
+
+    // Category management
+    manageAccounts: 'Управление счетами',
+    manageCategories: 'Управление категориями',
+    manageIncomeSources: 'Управление источниками дохода',
+    manageCurrencies: 'Управление валютами',
+    goodExpensesSavings: 'Хорошие расходы (Сбережения/Инвестиции)',
+    badExpensesRegular: 'Плохие расходы (Обычные)',
+    noGoodExpenseCategories: 'Нет категорий хороших расходов. Добавьте категории сбережений!',
+    noExpenseCategories: 'Нет категорий расходов',
+    noAccountsYet: 'Пока нет счетов',
+    noIncomeSources: 'Пока нет источников дохода',
+    noCustomCurrencies: 'Нет пользовательских валют. Добавьте свои валюты здесь!',
+
+    // Forms
+    name: 'Название',
+    type: 'Тип',
+    color: 'Цвет',
+    budget: 'Бюджет',
+    budgetOptional: 'Бюджет (необязательно)',
+    initialBalance: 'Начальный баланс',
+    currency: 'Валюта',
+    currencyCode: 'Код валюты',
+    currencyName: 'Название валюты',
+    symbol: 'Символ',
+    saving: 'Сохранение...',
+    create: 'Создать',
+    update: 'Обновить',
+    addAccount: 'Добавить счёт',
+    editAccount: 'Редактировать счёт',
+    addCategory: 'Добавить категорию',
+    editCategory: 'Редактировать категорию',
+    addIncomeSource: 'Добавить источник дохода',
+    editIncomeSource: 'Редактировать источник дохода',
+    addCurrency: 'Добавить валюту',
+    editCurrency: 'Редактировать валюту',
+    addLoan: 'Добавить займ',
+    editLoan: 'Редактировать займ',
+    expense: 'Расход',
+    savingsInvestment: 'Сбережения / Инвестиции',
+
+    // Transaction modal
+    addIncome: 'Добавить доход',
+    addExpense: 'Добавить расход',
+    addComment: 'Добавить комментарий...',
+    comment: 'Комментарий',
+    save: 'Сохранить',
+
+    // Loan form
+    moneyILent: 'Деньги, которые я одолжил',
+    moneyIBorrowed: 'Деньги, которые я занял',
+    whoDidYouLendTo: 'Кому вы одолжили?',
+    whoDidYouBorrowFrom: 'У кого вы заняли?',
+    personOrCompanyName: 'Имя человека или компании',
+    amount: 'Сумма',
+    amountOnLoan: 'сумма займа',
+    amountOnAccount: 'сумма на счёте',
+    relatedAccount: 'Счёт',
+    none: 'Нет',
+    dueDate: 'Дата погашения (необязательно)',
+    description: 'Описание (необязательно)',
+    addNotesAboutLoan: 'Добавьте заметки о займе...',
+
+    // Account types
+    cash: 'Наличные',
+    bankAccount: 'Банковский счёт',
+    cryptoWallet: 'Криптокошелёк',
+    investmentAccount: 'Инвестиционный счёт',
+    creditCard: 'Кредитная карта',
+
+    // Months
+    jan: 'Янв',
+    feb: 'Фев',
+    mar: 'Мар',
+    apr: 'Апр',
+    may: 'Май',
+    jun: 'Июн',
+    jul: 'Июл',
+    aug: 'Авг',
+    sep: 'Сен',
+    oct: 'Окт',
+    nov: 'Ноя',
+    dec: 'Дек',
+
+    // Misc
+    back: 'Назад',
+    delete: 'Удалить',
+    remaining: 'осталось',
+    of: 'из',
+    dataStoredLocally: 'Данные хранятся локально в вашем браузере',
+    dataImportedSuccessfully: 'Данные успешно импортированы!',
+    min: 'мин',
+    hour: 'час',
+    transfer: 'Перевод',
+
+    // Placeholders
+    selectAccount: 'Выберите счёт',
+    selectType: 'Выберите тип',
+    selectCurrency: 'Выберите валюту',
+    selectPeriod: 'Выберите период',
+    egAAPL: 'напр., AAPL',
+    egAppleInc: 'напр., Apple Inc.',
+    egSalaryFreelance: 'напр., Зарплата, Фриланс',
+    egGroceries: 'напр., Продукты',
+    egMainChecking: 'напр., Основной счёт',
+    egBYN: 'напр., BYN',
+    egBelarusianRuble: 'напр., Белорусский рубль',
+    egSymbolBr: 'напр., Br (по умолчанию код)',
+    enterYourPassphrase: 'Введите пароль',
+    confirmYourPassphrase: 'Подтвердите пароль',
+    searchTransactions: 'Поиск транзакций...',
+    search: 'Поиск...',
+    newPrice: 'Новая цена',
+    leaveEmptyForNoBudget: 'Оставьте пустым без бюджета',
+    budgetPeriod: 'Период бюджета',
+    weekly: 'Еженедельно',
+    monthly: 'Ежемесячно',
+    yearly: 'Ежегодно',
+    symbolOptional: 'Символ (необязательно)',
+    currencyCodeHint: 'Код из 3-5 букв (напр., USD, EUR, BYN)',
+    symbolHint: 'Символ перед суммами. Если пусто, будет использован код.',
+
+    // History page
+    today: 'Сегодня',
+    yesterday: 'Вчера',
+    thisWeek: 'Эта неделя',
+    thisMonth: 'Этот месяц',
+    thisYear: 'Этот год',
+    allTime: 'Все время',
+    all: 'Все',
+    noTransactionsFound: 'Транзакции не найдены',
+    buy: 'Покупка',
+    sell: 'Продажа',
+    deleteTransaction: 'Удалить эту транзакцию?',
+
+    // Delete confirmation
+    deleteConfirmationMessage: 'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и займы. Это действие нельзя отменить.',
+    enterPasswordFirst: 'Введите пароль',
+    confirmPassword: 'Подтвердите пароль',
+    password: 'Пароль',
+    passwordsDontMatch: 'Пароли не совпадают',
+    enterPassword: 'Пожалуйста, введите пароль',
+    incorrectPassword: 'Неверный пароль',
+
+    // Authentication
+    welcomeToFinanceTracker: 'Добро пожаловать в Finance Tracker',
+    setupPassphraseDescription: 'Установите пароль для защиты ваших финансовых данных. Он хранится локально и никогда не покидает ваше устройство.',
+    passphrase: 'Пароль',
+    confirmPassphrase: 'Подтвердите пароль',
+    passphraseTooShort: 'Пароль должен содержать не менее 4 символов',
+    passphrasesDoNotMatch: 'Пароли не совпадают',
+    failedToSetupPassphrase: 'Не удалось установить пароль. Попробуйте ещё раз.',
+    settingUp: 'Настройка...',
+    continue: 'Продолжить',
+    passphraseSecurityNote: 'Ваш пароль хешируется локально с помощью PBKDF2. Мы никогда не храним и не передаём ваш пароль.',
+    welcomeBack: 'С возвращением',
+    unlockDescription: 'Введите пароль, чтобы разблокировать ваш трекер финансов',
+    pleaseEnterPassphrase: 'Пожалуйста, введите пароль',
+    unlocking: 'Разблокировка...',
+    unlock: 'Разблокировать',
+
+    // Investments
+    addInvestment: 'Добавить инвестицию',
+    editInvestment: 'Редактировать инвестицию',
+    quantity: 'Количество',
+    averageCost: 'Сред. цена',
+    currentPrice: 'Текущая цена',
+    investmentPortfolio: 'Инвестиционный портфель',
+    trackInvestments: 'Отслеживайте акции, ETF и криптовалюту',
+    noInvestments: 'Инвестиций пока нет',
+    addInvestmentsToTrack: 'Добавьте инвестиции для отслеживания доходности',
+    totalValue: 'Общая стоимость',
+    totalCost: 'Общие затраты',
+    gainLoss: 'Прибыль/Убыток',
+    totalGainLoss: 'Общая прибыль/убыток',
+    totalReturn: 'Общая доходность',
+    noInvestmentAccounts: 'Сначала создайте инвестиционный счёт',
+    value: 'Стоимость',
+    account: 'Счёт',
+
+    // Transaction types
+    loanGiven: 'Займ выдан',
+    loanReceived: 'Займ получен',
+    payment: 'Платёж',
+    allTypes: 'Все типы',
+    allAccounts: 'Все счета',
+    transactionHistory: 'История транзакций',
+    transactions: 'транзакций',
+
+    // History page filters
+    transfers: 'Переводы',
+    investments: 'Инвестиции',
+    loansFilter: 'Займы',
+    customRange: 'Свой период',
+    from: 'С',
+    to: 'По',
+  },
+} as const
+
+export type TranslationKey = keyof typeof translations.en
+
+// Language store using localStorage
+const LANGUAGE_KEY = 'finance-tracker-language'
+
+export function getStoredLanguage(): Language {
+  if (typeof window === 'undefined') return 'en'
+  return (localStorage.getItem(LANGUAGE_KEY) as Language) || 'en'
+}
+
+export function setStoredLanguage(lang: Language) {
+  localStorage.setItem(LANGUAGE_KEY, lang)
+}
+
+// Simple translation function
+let currentLanguage: Language = 'en'
+
+export function setLanguage(lang: Language) {
+  currentLanguage = lang
+  setStoredLanguage(lang)
+}
+
+export function getLanguage(): Language {
+  return currentLanguage
+}
+
+export function t(key: TranslationKey): string {
+  return translations[currentLanguage][key] || translations.en[key] || key
+}
+
+// Initialize language from localStorage
+if (typeof window !== 'undefined') {
+  currentLanguage = getStoredLanguage()
+}
