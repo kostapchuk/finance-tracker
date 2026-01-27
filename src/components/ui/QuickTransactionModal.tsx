@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Calendar, MessageSquare, ArrowRight } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { transactionRepo, accountRepo } from '@/database/repositories'
@@ -40,6 +40,12 @@ export function QuickTransactionModal({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const amountInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    // Auto-focus amount input to open native keyboard
+    setTimeout(() => amountInputRef.current?.focus(), 300)
+  }, [])
 
   // Detect multi-currency transfer
   const isMultiCurrencyTransfer = mode.type === 'transfer' &&
@@ -79,30 +85,24 @@ export function QuickTransactionModal({
     return activeAmountField === 'source' ? mode.fromAccount.currency : mode.toAccount.currency
   }
 
-  const handleNumpadPress = (key: string) => {
-    let setter: React.Dispatch<React.SetStateAction<string>>
-    let currentValue: string
-
-    if (activeAmountField === 'target') {
-      setter = setTargetAmount
-      currentValue = targetAmount
-    } else if (activeAmountField === 'account') {
-      setter = setAccountAmount
-      currentValue = accountAmount
-    } else {
-      setter = setAmount
-      currentValue = amount
+  const sanitizeAmount = (value: string) => {
+    // Allow only digits and dot
+    let v = value.replace(/[^0-9.]/g, '')
+    // Only one dot allowed
+    const parts = v.split('.')
+    if (parts.length > 2) {
+      v = parts[0] + '.' + parts.slice(1).join('')
     }
-
-    if (key === 'backspace') {
-      setter((prev) => prev.slice(0, -1))
-    } else if (key === '.') {
-      if (!currentValue.includes('.')) {
-        setter((prev) => prev + '.')
-      }
+    // Strip leading zeros (except "0." or just "0")
+    v = v.replace(/^0+(?=\d)/, '')
+    // Limit to 10 digits before dot and 2 after
+    const dotIndex = v.indexOf('.')
+    if (dotIndex !== -1) {
+      v = v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
     } else {
-      setter((prev) => prev + key)
+      v = v.slice(0, 10)
     }
+    return v
   }
 
   const handleSubmit = async () => {
@@ -286,8 +286,7 @@ export function QuickTransactionModal({
           <div className="p-4">
             <div className="flex items-center justify-center gap-3">
               {/* Source Amount */}
-              <button
-                onClick={() => setActiveAmountField('source')}
+              <div
                 className={cn(
                   'flex-1 p-4 rounded-xl transition-all',
                   activeAmountField === 'source'
@@ -296,19 +295,25 @@ export function QuickTransactionModal({
                 )}
               >
                 <p className="text-xs text-muted-foreground mb-1">{mode.fromAccount.currency}</p>
-                <p className={cn(
-                  'text-2xl font-bold tabular-nums',
-                  activeAmountField === 'source' ? 'text-foreground' : 'text-muted-foreground'
-                )}>
-                  {amount || '0'} {getCurrencySymbol(mode.fromAccount.currency)}
-                </p>
-              </button>
+                <div className="flex items-baseline gap-1">
+                  <input
+                    ref={amountInputRef}
+                    type="text"
+                    inputMode="decimal"
+                    value={amount}
+                    onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                    onFocus={() => setActiveAmountField('source')}
+                    placeholder="0"
+                    className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                  />
+                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.fromAccount.currency)}</span>
+                </div>
+              </div>
 
               <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
 
               {/* Target Amount */}
-              <button
-                onClick={() => setActiveAmountField('target')}
+              <div
                 className={cn(
                   'flex-1 p-4 rounded-xl transition-all',
                   activeAmountField === 'target'
@@ -317,25 +322,27 @@ export function QuickTransactionModal({
                 )}
               >
                 <p className="text-xs text-muted-foreground mb-1">{mode.toAccount.currency}</p>
-                <p className={cn(
-                  'text-2xl font-bold tabular-nums',
-                  activeAmountField === 'target' ? 'text-foreground' : 'text-muted-foreground'
-                )}>
-                  {targetAmount || '0'} {getCurrencySymbol(mode.toAccount.currency)}
-                </p>
-              </button>
+                <div className="flex items-baseline gap-1">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={targetAmount}
+                    onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
+                    onFocus={() => setActiveAmountField('target')}
+                    placeholder="0"
+                    className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                  />
+                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.toAccount.currency)}</span>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              {t('tapToEdit')}
-            </p>
           </div>
         ) : (isMultiCurrencyIncomeExpense || needsAccountConversion) && selectedAccount ? (
           // Multi-currency income/expense
           <div className="p-4">
             <div className="flex items-center justify-center gap-2">
               {/* Source Amount - for income: source currency, for expense: account currency */}
-              <button
-                onClick={() => setActiveAmountField('source')}
+              <div
                 className={cn(
                   'flex-1 p-3 rounded-xl transition-all',
                   activeAmountField === 'source'
@@ -346,20 +353,26 @@ export function QuickTransactionModal({
                 <p className="text-xs text-muted-foreground mb-1">
                   {mode.type === 'income' ? mode.source.currency : selectedAccount.currency}
                 </p>
-                <p className={cn(
-                  'text-xl font-bold tabular-nums',
-                  activeAmountField === 'source' ? 'text-foreground' : 'text-muted-foreground'
-                )}>
-                  {amount || '0'} {getCurrencySymbol(mode.type === 'income' ? mode.source.currency : selectedAccount.currency)}
-                </p>
-              </button>
+                <div className="flex items-baseline gap-1">
+                  <input
+                    ref={amountInputRef}
+                    type="text"
+                    inputMode="decimal"
+                    value={amount}
+                    onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                    onFocus={() => setActiveAmountField('source')}
+                    placeholder="0"
+                    className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                  />
+                  <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.type === 'income' ? mode.source.currency : selectedAccount.currency)}</span>
+                </div>
+              </div>
 
               {/* MainCurrency Amount (for totals) - shown when source != mainCurrency */}
               {isMultiCurrencyIncomeExpense && (
                 <>
                   <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <button
-                    onClick={() => setActiveAmountField('target')}
+                  <div
                     className={cn(
                       'flex-1 p-3 rounded-xl transition-all',
                       activeAmountField === 'target'
@@ -368,13 +381,20 @@ export function QuickTransactionModal({
                     )}
                   >
                     <p className="text-xs text-muted-foreground mb-1">{mainCurrency}</p>
-                    <p className={cn(
-                      'text-xl font-bold tabular-nums',
-                      activeAmountField === 'target' ? 'text-foreground' : 'text-muted-foreground'
-                    )}>
-                      {targetAmount || '0'} {getCurrencySymbol(mainCurrency)}
-                    </p>
-                  </button>
+                    <div className="flex items-baseline gap-1">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                    step="0.01"
+                        value={targetAmount}
+                        onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
+                        onFocus={() => setActiveAmountField('target')}
+                        placeholder="0"
+                        className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                      />
+                      <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mainCurrency)}</span>
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -382,8 +402,7 @@ export function QuickTransactionModal({
               {needsAccountConversion && (
                 <>
                   <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <button
-                    onClick={() => setActiveAmountField('account')}
+                  <div
                     className={cn(
                       'flex-1 p-3 rounded-xl transition-all',
                       activeAmountField === 'account'
@@ -392,26 +411,37 @@ export function QuickTransactionModal({
                     )}
                   >
                     <p className="text-xs text-muted-foreground mb-1">{selectedAccount.currency}</p>
-                    <p className={cn(
-                      'text-xl font-bold tabular-nums',
-                      activeAmountField === 'account' ? 'text-foreground' : 'text-muted-foreground'
-                    )}>
-                      {accountAmount || '0'} {getCurrencySymbol(selectedAccount.currency)}
-                    </p>
-                  </button>
+                    <div className="flex items-baseline gap-1">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                    step="0.01"
+                        value={accountAmount}
+                        onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
+                        onFocus={() => setActiveAmountField('account')}
+                        placeholder="0"
+                        className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                      />
+                      <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(selectedAccount.currency)}</span>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              {t('tapToEdit')}
-            </p>
           </div>
         ) : (
           // Single currency: show one amount
-          <div className="p-6 text-center">
-            <div className="text-5xl font-bold tabular-nums text-foreground">
-              {amount || '0'} {getCurrencySymbol(getCurrentCurrency())}
-            </div>
+          <div className="p-6 flex items-baseline justify-center gap-2">
+            <input
+              ref={amountInputRef}
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+              placeholder="0"
+              className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
+            />
+            <span className="text-5xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(getCurrentCurrency())}</span>
           </div>
         )}
 
@@ -441,12 +471,12 @@ export function QuickTransactionModal({
         <div className="px-4 pb-3">
           <div className="flex items-start gap-3 px-4 py-3 bg-secondary rounded-xl">
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-            <input
-              type="text"
+            <textarea
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
+              rows={3}
+              className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
             />
           </div>
         </div>
@@ -462,24 +492,6 @@ export function QuickTransactionModal({
               className="bg-transparent text-base sm:text-sm outline-none"
             />
           </div>
-        </div>
-
-        {/* Numpad */}
-        <div className="grid grid-cols-3 gap-1 px-4 pb-4">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'].map(
-            (key) => (
-              <button
-                key={key}
-                onClick={() => handleNumpadPress(key)}
-                className={cn(
-                  'h-14 rounded-xl text-xl font-semibold transition-colors touch-target',
-                  'bg-secondary hover:bg-secondary/80 active:bg-secondary/60'
-                )}
-              >
-                {key === 'backspace' ? '⌫' : key}
-              </button>
-            )
-          )}
         </div>
 
         {/* Submit Button */}
