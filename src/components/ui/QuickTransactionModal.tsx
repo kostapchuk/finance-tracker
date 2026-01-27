@@ -424,7 +424,7 @@ export function QuickTransactionModal({
                   key={account.id}
                   onClick={() => setSelectedAccountId(account.id)}
                   className={cn(
-                    'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors',
+                    'flex-shrink-0 px-4 py-2.5 sm:py-2 rounded-full text-base sm:text-sm font-medium transition-colors',
                     selectedAccountId === account.id
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-secondary text-secondary-foreground'
@@ -453,13 +453,13 @@ export function QuickTransactionModal({
 
         {/* Date */}
         <div className="px-4 pb-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50 rounded-lg w-fit">
+          <div className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg w-fit">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="bg-transparent text-sm outline-none"
+              className="bg-transparent text-base sm:text-sm outline-none"
             />
           </div>
         </div>

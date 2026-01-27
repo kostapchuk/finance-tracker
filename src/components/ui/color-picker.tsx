@@ -9,14 +9,14 @@ interface ColorPickerProps {
 
 export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
   return (
-    <div className={cn('grid grid-cols-9 gap-1', className)}>
+    <div className={cn('grid grid-cols-7 sm:grid-cols-9 gap-2 sm:gap-1', className)}>
       {PRESET_COLORS.map((color) => (
         <button
           key={color}
           type="button"
           onClick={() => onChange(color)}
           className={cn(
-            'w-6 h-6 rounded-full transition-transform hover:scale-110',
+            'w-10 h-10 sm:w-6 sm:h-6 rounded-full transition-transform hover:scale-110',
             value === color && 'ring-2 ring-offset-2 ring-primary'
           )}
           style={{ backgroundColor: color }}
