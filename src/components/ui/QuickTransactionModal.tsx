@@ -43,8 +43,11 @@ export function QuickTransactionModal({
   const amountInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    // Auto-focus amount input to open native keyboard
-    setTimeout(() => amountInputRef.current?.focus(), 300)
+    // Try focusing at multiple intervals to catch after animation
+    const timers = [50, 150, 300, 500].map(ms =>
+      setTimeout(() => amountInputRef.current?.focus(), ms)
+    )
+    return () => timers.forEach(clearTimeout)
   }, [])
 
   // Detect multi-currency transfer
@@ -86,8 +89,8 @@ export function QuickTransactionModal({
   }
 
   const sanitizeAmount = (value: string) => {
-    // Allow only digits and dot
-    let v = value.replace(/[^0-9.]/g, '')
+    // Allow only digits and dot, treat comma as dot
+    let v = value.replace(/,/g, '.').replace(/[^0-9.]/g, '')
     // Only one dot allowed
     const parts = v.split('.')
     if (parts.length > 2) {
@@ -298,6 +301,7 @@ export function QuickTransactionModal({
                 <div className="flex items-baseline gap-1">
                   <input
                     ref={amountInputRef}
+                    autoFocus
                     type="text"
                     inputMode="decimal"
                     value={amount}
@@ -356,6 +360,7 @@ export function QuickTransactionModal({
                 <div className="flex items-baseline gap-1">
                   <input
                     ref={amountInputRef}
+                    autoFocus
                     type="text"
                     inputMode="decimal"
                     value={amount}
@@ -434,6 +439,7 @@ export function QuickTransactionModal({
           <div className="p-6 flex items-baseline justify-center gap-2">
             <input
               ref={amountInputRef}
+              autoFocus
               type="text"
               inputMode="decimal"
               value={amount}
