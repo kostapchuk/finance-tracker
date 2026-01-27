@@ -181,11 +181,11 @@ export function Dashboard() {
         <MonthSelector />
 
         {/* Income Section - Draggable */}
-        <section className="px-2 py-1">
+        <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-3">
           <button
             onClick={() => setIncomeExpanded(!incomeExpanded)}
-            className="flex items-center justify-between w-full py-1 touch-target"
+            className="flex items-center justify-between w-full touch-target"
           >
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -236,7 +236,7 @@ export function Dashboard() {
         </section>
 
         {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
-        <section className="px-2 py-1">
+        <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-3">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {t('accounts')}
@@ -284,11 +284,11 @@ export function Dashboard() {
         </section>
 
         {/* Expenses Section - Droppable (for accounts) */}
-        <section className="px-2 py-1">
+        <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-3">
           <button
             onClick={() => setExpensesExpanded(!expensesExpanded)}
-            className="flex items-center justify-between w-full py-1 touch-target"
+            className="flex items-center justify-between w-full touch-target"
           >
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
