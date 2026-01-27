@@ -254,6 +254,7 @@ export function ReportPage() {
                   <Tooltip
                     formatter={(value) => formatCurrency(Number(value), mainCurrency)}
                     contentStyle={{ background: '#1a1a1a', border: 'none', borderRadius: '8px' }}
+                    wrapperStyle={{ zIndex: 0 }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -301,6 +302,7 @@ export function ReportPage() {
                 <Tooltip
                   formatter={(value) => formatCurrency(Number(value), mainCurrency)}
                   contentStyle={{ background: '#1a1a1a', border: 'none', borderRadius: '8px' }}
+                  wrapperStyle={{ zIndex: 0 }}
                 />
                 <Legend
                   wrapperStyle={{ fontSize: 12 }}

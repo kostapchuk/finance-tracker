@@ -1,0 +1,1 @@
+Increase the patch version in package.json, then stage all modified files, commit with a short one-line commit message describing the changes, and push to the remote. Do not include a Co-Authored-By line in the commit.
