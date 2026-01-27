@@ -5,10 +5,10 @@ import { useLanguage } from '@/hooks/useLanguage'
 import type { TranslationKey } from '@/utils/i18n'
 
 const navItems: { id: 'dashboard' | 'history' | 'loans' | 'report' | 'settings', labelKey: TranslationKey, icon: typeof LayoutDashboard }[] = [
+  { id: 'report', labelKey: 'report', icon: PieChart },
+  { id: 'loans', labelKey: 'loans', icon: HandCoins },
   { id: 'dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
   { id: 'history', labelKey: 'history', icon: Clock },
-  { id: 'loans', labelKey: 'loans', icon: HandCoins },
-  { id: 'report', labelKey: 'report', icon: PieChart },
   { id: 'settings', labelKey: 'settings', icon: Settings },
 ]
 
