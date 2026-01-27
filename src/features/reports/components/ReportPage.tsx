@@ -235,7 +235,7 @@ export function ReportPage() {
           </div>
         ) : (
           <>
-            <div className="h-[200px]">
+            <div className="h-[200px] pointer-events-none">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -289,7 +289,7 @@ export function ReportPage() {
             {t('noTransactionDataYet')}
           </div>
         ) : (
-          <div className="h-[200px]">
+          <div className="h-[200px] pointer-events-none">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyTrend}>
                 <XAxis
