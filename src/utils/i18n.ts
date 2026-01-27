@@ -219,6 +219,7 @@ export const translations = {
     buy: 'Buy',
     sell: 'Sell',
     deleteTransaction: 'Delete this transaction?',
+    deleteLoan: 'Delete this loan? All related transactions will be removed and account balances will be reverted.',
 
     // Delete confirmation
     deleteConfirmationMessage: 'This will permanently delete ALL your data including accounts, transactions, categories, and loans. This action cannot be undone.',
@@ -502,6 +503,7 @@ export const translations = {
     buy: 'Покупка',
     sell: 'Продажа',
     deleteTransaction: 'Удалить эту транзакцию?',
+    deleteLoan: 'Удалить этот займ? Все связанные транзакции будут удалены, а балансы счетов возвращены.',
 
     // Delete confirmation
     deleteConfirmationMessage: 'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и займы. Это действие нельзя отменить.',

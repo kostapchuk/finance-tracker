@@ -36,7 +36,7 @@ export function CategoryTile({
       onClick={onClick}
       className={cn(
         'flex flex-col items-center gap-2 p-4 rounded-xl',
-        'bg-secondary/50 hover:bg-secondary active:scale-95',
+        'active:scale-95',
         'transition-all duration-150 touch-target w-full'
       )}
     >

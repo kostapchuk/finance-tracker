@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react'
+import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp, ArrowRight, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -198,6 +198,47 @@ export function LoansPage() {
     await refreshLoans()
   }
 
+  const handleDeleteLoan = async (loan: Loan) => {
+    if (!loan.id) return
+    if (!confirm(t('deleteLoan'))) return
+
+    try {
+      // Find all transactions related to this loan
+      const allTransactions = useAppStore.getState().transactions
+      const loanTransactions = allTransactions.filter((tx) => tx.loanId === loan.id)
+
+      // Reverse each transaction's account balance effect
+      for (const tx of loanTransactions) {
+        if (tx.accountId) {
+          if (tx.type === 'loan_given') {
+            // Original: balance decreased → reverse: add back
+            await accountRepo.updateBalance(tx.accountId, tx.amount)
+          } else if (tx.type === 'loan_received') {
+            // Original: balance increased → reverse: subtract
+            await accountRepo.updateBalance(tx.accountId, -tx.amount)
+          } else if (tx.type === 'loan_payment') {
+            if (loan.type === 'given') {
+              // Payment on given loan: money came back → reverse: subtract
+              await accountRepo.updateBalance(tx.accountId, -tx.amount)
+            } else {
+              // Payment on received loan: money went out → reverse: add back
+              await accountRepo.updateBalance(tx.accountId, tx.amount)
+            }
+          }
+        }
+        // Delete the transaction
+        await transactionRepo.delete(tx.id!)
+      }
+
+      // Delete the loan itself
+      await loanRepo.delete(loan.id)
+
+      await Promise.all([refreshLoans(), refreshAccounts(), refreshTransactions()])
+    } catch (error) {
+      console.error('Failed to delete loan:', error)
+    }
+  }
+
   const handleAddNew = () => {
     setEditingLoan(null)
     setLoanFormOpen(true)
@@ -296,6 +337,7 @@ export function LoansPage() {
                   loan={loan}
                   onEdit={() => handleEdit(loan)}
                   onPayment={() => handleOpenPayment(loan)}
+                  onDelete={() => handleDeleteLoan(loan)}
                 />
               ))
             )}
@@ -336,6 +378,7 @@ export function LoansPage() {
                   loan={loan}
                   onEdit={() => handleEdit(loan)}
                   onPayment={() => handleOpenPayment(loan)}
+                  onDelete={() => handleDeleteLoan(loan)}
                 />
               ))
             )}
@@ -361,9 +404,17 @@ export function LoansPage() {
                     {loan.type === 'given' ? t('repaid') : t('paidOff')}
                   </p>
                 </div>
-                <p className="font-medium text-muted-foreground">
-                  {formatCurrency(loan.amount, loan.currency)}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-muted-foreground">
+                    {formatCurrency(loan.amount, loan.currency)}
+                  </p>
+                  <button
+                    onClick={() => handleDeleteLoan(loan)}
+                    className="p-1 rounded-full hover:bg-destructive/20"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -507,10 +558,12 @@ function LoanCard({
   loan,
   onEdit,
   onPayment,
+  onDelete,
 }: {
   loan: Loan
   onEdit: () => void
   onPayment: () => void
+  onDelete: () => void
 }) {
   const { t } = useLanguage()
   const remaining = loan.amount - loan.paidAmount
@@ -525,12 +578,20 @@ function LoanCard({
             <p className="text-sm text-muted-foreground">{loan.description}</p>
           )}
         </div>
-        <button
-          onClick={onEdit}
-          className="text-xs text-primary hover:underline"
-        >
-          {t('edit')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onEdit}
+            className="text-xs text-primary hover:underline"
+          >
+            {t('edit')}
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1 rounded-full hover:bg-destructive/20"
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}

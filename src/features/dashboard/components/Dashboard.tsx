@@ -248,7 +248,7 @@ export function Dashboard() {
               )}
             </h3>
           </div>
-          <div className="flex gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide">
+          <div className="grid grid-cols-4 gap-2 px-4 pb-2">
             {accounts.map((account) => (
               <DroppableZone
                 key={account.id}
