@@ -108,7 +108,9 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
             <Label htmlFor="type">{t('type')}</Label>
             <Select value={type} onValueChange={(v) => setType(v as AccountType)}>
               <SelectTrigger>
-                <SelectValue placeholder={t('selectType')} />
+                <SelectValue placeholder={t('selectType')}>
+                  {accountTypes.find((at) => at.value === type)?.label}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {accountTypes.map((at) => (

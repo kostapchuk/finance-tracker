@@ -83,22 +83,14 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     const { open, onOpenChange } = useDialog()
 
     React.useEffect(() => {
-      const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          onOpenChange(false)
-        }
-      }
-
       if (open) {
-        document.addEventListener('keydown', handleEscape)
         document.body.style.overflow = 'hidden'
       }
 
       return () => {
-        document.removeEventListener('keydown', handleEscape)
         document.body.style.overflow = ''
       }
-    }, [open, onOpenChange])
+    }, [open])
 
     if (!open) return null
 
@@ -106,13 +98,12 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div className="fixed inset-0 z-50">
         <div
           className="fixed inset-0 bg-black/80"
-          onClick={() => onOpenChange(false)}
         />
-        <div className="fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]">
+        <div className="fixed inset-x-4 top-[50%] z-50 translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
           <div
             ref={ref}
             className={cn(
-              'grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg',
+              'grid w-full gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg',
               className
             )}
             {...props}
