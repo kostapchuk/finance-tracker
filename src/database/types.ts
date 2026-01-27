@@ -16,6 +16,7 @@ export interface Account {
   balance: number
   color: string
   icon?: string
+  sortOrder?: number
   createdAt: Date
   updatedAt: Date
 }
@@ -26,6 +27,7 @@ export interface IncomeSource {
   currency: string
   color: string
   icon?: string
+  sortOrder?: number
   createdAt: Date
   updatedAt: Date
 }
@@ -38,6 +40,7 @@ export interface Category {
   categoryType?: CategoryType // 'expense' (default), 'investment', or 'loan'
   budget?: number
   budgetPeriod?: 'monthly' | 'weekly' | 'yearly'
+  sortOrder?: number
   createdAt: Date
   updatedAt: Date
 }

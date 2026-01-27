@@ -4,7 +4,8 @@ import type { LoanStatus } from './types'
 // Account Repository
 export const accountRepo = {
   async getAll() {
-    return db.accounts.orderBy('name').toArray()
+    const items = await db.accounts.toArray()
+    return items.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name))
   },
 
   async getById(id: number) {
@@ -44,7 +45,8 @@ export const accountRepo = {
 // Income Source Repository
 export const incomeSourceRepo = {
   async getAll() {
-    return db.incomeSources.orderBy('name').toArray()
+    const items = await db.incomeSources.toArray()
+    return items.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name))
   },
 
   async getById(id: number) {
@@ -75,7 +77,8 @@ export const incomeSourceRepo = {
 // Category Repository
 export const categoryRepo = {
   async getAll() {
-    return db.categories.orderBy('name').toArray()
+    const items = await db.categories.toArray()
+    return items.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name))
   },
 
   async getById(id: number) {
