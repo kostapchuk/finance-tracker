@@ -257,6 +257,26 @@ export const loanRepo = {
     })
   },
 
+  async reversePayment(id: number, amount: number) {
+    const loan = await db.loans.get(id)
+    if (!loan) return
+
+    const newPaidAmount = Math.max(0, loan.paidAmount - amount)
+    let status: LoanStatus = 'active'
+
+    if (newPaidAmount > 0 && newPaidAmount < loan.amount) {
+      status = 'partially_paid'
+    } else if (newPaidAmount >= loan.amount) {
+      status = 'fully_paid'
+    }
+
+    return db.loans.update(id, {
+      paidAmount: newPaidAmount,
+      status,
+      updatedAt: new Date(),
+    })
+  },
+
   async delete(id: number) {
     return db.loans.delete(id)
   },

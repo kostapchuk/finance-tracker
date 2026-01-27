@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
-import { transactionRepo, accountRepo } from '@/database/repositories'
+import { transactionRepo, accountRepo, loanRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 import type { Transaction, TransactionType } from '@/database/types'
@@ -29,8 +29,10 @@ export function TransactionList() {
   const accounts = useAppStore((state) => state.accounts)
   const categories = useAppStore((state) => state.categories)
   const incomeSources = useAppStore((state) => state.incomeSources)
+  const loans = useAppStore((state) => state.loans)
   const refreshTransactions = useAppStore((state) => state.refreshTransactions)
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
+  const refreshLoans = useAppStore((state) => state.refreshLoans)
 
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [accountFilter, setAccountFilter] = useState<string>('all')
@@ -77,11 +79,21 @@ export function TransactionList() {
         const targetAmount = transaction.toAmount ?? transaction.amount
         await accountRepo.updateBalance(transaction.toAccountId, -targetAmount)
       }
+    } else if (transaction.type === 'loan_payment' && transaction.loanId) {
+      const paymentAmount = transaction.mainCurrencyAmount ?? transaction.amount
+      await loanRepo.reversePayment(transaction.loanId, paymentAmount)
+      if (transaction.accountId) {
+        const loan = loans.find((l) => l.id === transaction.loanId)
+        if (loan?.type === 'given') {
+          await accountRepo.updateBalance(transaction.accountId, -transaction.amount)
+        } else if (loan?.type === 'received') {
+          await accountRepo.updateBalance(transaction.accountId, transaction.amount)
+        }
+      }
     }
 
     await transactionRepo.delete(transaction.id)
-    await refreshTransactions()
-    await refreshAccounts()
+    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
   }
 
   const getTransactionDescription = (t: Transaction): string => {
