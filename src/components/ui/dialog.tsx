@@ -95,11 +95,11 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
     if (!open) return null
 
     return (
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-[60]">
         <div
           className="fixed inset-0 bg-black/80"
         />
-        <div className="fixed inset-x-4 top-[50%] z-50 translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
+        <div className="fixed inset-x-4 top-[50%] z-[60] translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
           <div
             ref={ref}
             className={cn(
