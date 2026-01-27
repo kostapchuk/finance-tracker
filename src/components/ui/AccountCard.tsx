@@ -39,10 +39,10 @@ export function AccountCard({
     <button
       onClick={onClick}
       className={cn(
-        'flex-shrink-0 p-2 rounded-xl',
+        'flex-shrink-0 p-2 rounded-xl min-w-20',
         'active:scale-95',
         'transition-all duration-150 touch-target',
-        'flex flex-col items-center gap-1 w-full'
+        'flex flex-col items-center gap-1'
       )}
     >
       <div

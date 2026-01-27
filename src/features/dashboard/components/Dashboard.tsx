@@ -208,7 +208,7 @@ export function Dashboard() {
           </button>
 
           {incomeExpanded && (
-            <div className="grid grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto">
+            <div className="grid grid-cols-4 gap-2 mt-2 max-h-48 overflow-y-auto">
               {incomeSources.map((source) => (
                 <DraggableItem
                   key={source.id}
@@ -249,7 +249,7 @@ export function Dashboard() {
                 <span className="text-xs text-primary ml-2">{t('dropHere')}</span>
               )}
             </h3>
-          <div className="grid grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto">
+          <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide">
             {accounts.map((account) => (
               <DroppableZone
                 key={account.id}
@@ -308,7 +308,7 @@ export function Dashboard() {
           </button>
 
           {expensesExpanded && (
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <div className="grid grid-cols-4 gap-2 mt-2">
               {expenseCategories.map((category) => (
                 <DroppableZone
                   key={category.id}
