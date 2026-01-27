@@ -7,6 +7,7 @@ interface SelectContextValue {
   onValueChange: (value: string) => void
   open: boolean
   setOpen: (open: boolean) => void
+  labels: React.MutableRefObject<Map<string, React.ReactNode>>
 }
 
 const SelectContext = React.createContext<SelectContextValue | undefined>(undefined)
@@ -28,6 +29,7 @@ interface SelectProps {
 function Select({ value = '', onValueChange, children }: SelectProps) {
   const [internalValue, setInternalValue] = React.useState(value)
   const [open, setOpen] = React.useState(false)
+  const labels = React.useRef(new Map<string, React.ReactNode>())
   const isControlled = onValueChange !== undefined
 
   const handleValueChange = React.useCallback(
@@ -48,6 +50,7 @@ function Select({ value = '', onValueChange, children }: SelectProps) {
       onValueChange: handleValueChange,
       open,
       setOpen,
+      labels,
     }),
     [isControlled, value, internalValue, handleValueChange, open]
   )
@@ -87,8 +90,9 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
 SelectTrigger.displayName = 'SelectTrigger'
 
 function SelectValue({ placeholder, children }: { placeholder?: string; children?: React.ReactNode }) {
-  const { value } = useSelect()
-  return <span className="truncate">{children ?? value ?? placeholder}</span>
+  const { value, labels } = useSelect()
+  const displayLabel = labels.current.get(value)
+  return <span className="truncate">{children ?? displayLabel ?? value ?? placeholder}</span>
 }
 
 interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -140,8 +144,12 @@ interface SelectItemProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
   ({ className, children, value, ...props }, ref) => {
-    const { value: selectedValue, onValueChange } = useSelect()
+    const { value: selectedValue, onValueChange, labels } = useSelect()
     const isSelected = selectedValue === value
+
+    React.useEffect(() => {
+      labels.current.set(value, children)
+    }, [value, children, labels])
 
     return (
       <div
