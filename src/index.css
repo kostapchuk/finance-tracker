@@ -7,7 +7,7 @@
   --color-border: hsl(240 3.7% 15.9%);
   --color-input: hsl(240 3.7% 15.9%);
   --color-ring: hsl(221.2 83.2% 53.3%);
-  --color-background: hsl(0 0% 7%);
+  --color-background: hsl(0 0% 0%);
   --color-foreground: hsl(0 0% 95%);
 
   --color-primary: hsl(221.2 83.2% 53.3%);
@@ -54,6 +54,11 @@
 @layer base {
   * {
     @apply border-border;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
   }
 
   body {

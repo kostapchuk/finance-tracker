@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { version } from '../../../../package.json'
 import {
   Wallet, Tags, DollarSign, Download, Upload, Trash2, Shield, Lock, ChevronRight,
   Plus, Pencil, AlertTriangle, Coins, Globe
@@ -541,7 +542,7 @@ export function SettingsPage() {
 
       {/* Footer */}
       <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-        <p>Finance Tracker v1.0.0</p>
+        <p>Finance Tracker v{version}</p>
         <p>{t('dataStoredLocally')}</p>
       </div>
 
