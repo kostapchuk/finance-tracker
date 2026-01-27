@@ -268,6 +268,8 @@ export const translations = {
     customRange: 'Custom Range',
     from: 'From',
     to: 'To',
+    tapToEdit: 'Tap to edit',
+    noBudget: 'No budget',
   },
   ru: {
     // Navigation
@@ -536,6 +538,8 @@ export const translations = {
     customRange: 'Свой период',
     from: 'С',
     to: 'По',
+    tapToEdit: 'Нажмите для редактирования',
+    noBudget: 'Без бюджета',
   },
 } as const
 

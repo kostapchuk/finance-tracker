@@ -1,6 +1,6 @@
 import { icons, type LucideIcon } from 'lucide-react'
 import { cn } from '@/utils/cn'
-import { formatCurrency, getAmountColorClass } from '@/utils/currency'
+import { formatCurrency } from '@/utils/currency'
 
 interface CategoryTileProps {
   name: string
@@ -18,7 +18,7 @@ export function CategoryTile({
   currency = 'USD',
   color,
   icon,
-  type = 'expense',
+  type: _type = 'expense',
   onClick,
 }: CategoryTileProps) {
   // Get icon component from lucide-react

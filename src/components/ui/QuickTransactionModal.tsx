@@ -4,7 +4,7 @@ import { cn } from '@/utils/cn'
 import { transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
-import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
+import { getCurrencySymbol } from '@/utils/currency'
 import type { Category, IncomeSource, Account } from '@/database/types'
 
 type TransactionMode =

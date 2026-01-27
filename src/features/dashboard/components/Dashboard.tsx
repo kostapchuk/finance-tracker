@@ -305,7 +305,7 @@ export function Dashboard() {
           <QuickTransactionModal
             mode={transactionMode}
             accounts={accounts}
-            preselectedAccountId={transactionMode.preselectedAccountId}
+            preselectedAccountId={'preselectedAccountId' in transactionMode ? transactionMode.preselectedAccountId : undefined}
             onClose={handleCloseModal}
           />
         )}
