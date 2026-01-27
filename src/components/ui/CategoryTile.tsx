@@ -35,25 +35,25 @@ export function CategoryTile({
     <button
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center gap-2 p-3 rounded-xl',
+        'flex flex-col items-center gap-2 p-4 rounded-xl',
         'bg-secondary/50 hover:bg-secondary active:scale-95',
         'transition-all duration-150 touch-target w-full'
       )}
     >
       <div
-        className="w-12 h-12 rounded-full flex items-center justify-center"
+        className="w-14 h-14 rounded-full flex items-center justify-center"
         style={{ backgroundColor: color + '20' }}
       >
         {IconComponent && (
           <IconComponent
-            className="h-6 w-6"
+            className="h-7 w-7"
             style={{ color }}
           />
         )}
       </div>
       <div className="text-center w-full">
-        <p className="text-xs text-muted-foreground truncate w-full">{name}</p>
-        <p className={cn('text-base sm:text-sm font-semibold', getAmountColor())}>
+        <p className="text-sm text-muted-foreground truncate w-full">{name}</p>
+        <p className={cn('text-base font-semibold', getAmountColor())}>
           {formatCurrency(amount, currency)}
         </p>
       </div>
