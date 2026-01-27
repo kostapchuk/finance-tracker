@@ -218,7 +218,7 @@ export function HistoryPage() {
               placeholder={t('searchTransactions')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-sm"
+              className="flex-1 bg-transparent outline-none text-base"
               autoFocus
             />
             <button onClick={() => { setShowSearch(false); setSearchQuery('') }}>

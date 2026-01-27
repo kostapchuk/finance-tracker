@@ -215,14 +215,17 @@ export function Dashboard() {
                   id={`income-${source.id}`}
                   data={{ type: 'income', source }}
                 >
-                  <CategoryTile
-                    name={source.name}
-                    amount={monthlyData.incomeBySource[source.id!] || 0}
-                    currency={source.currency || mainCurrency}
-                    color={source.color}
-                    icon={source.icon}
-                    type="income"
-                  />
+                  {(handle) => (
+                    <CategoryTile
+                      name={source.name}
+                      amount={monthlyData.incomeBySource[source.id!] || 0}
+                      currency={source.currency || mainCurrency}
+                      color={source.color}
+                      icon={source.icon}
+                      type="income"
+                      dragHandleProps={{ ...handle.listeners, ...handle.attributes }}
+                    />
+                  )}
                 </DraggableItem>
               ))}
             </div>
@@ -260,14 +263,17 @@ export function Dashboard() {
                   id={`account-${account.id}`}
                   data={{ type: 'account', account }}
                 >
-                  <AccountCard
-                    name={account.name}
-                    type={account.type}
-                    balance={account.balance}
-                    currency={account.currency}
-                    color={account.color}
-                    icon={account.icon}
-                  />
+                  {(handle) => (
+                    <AccountCard
+                      name={account.name}
+                      type={account.type}
+                      balance={account.balance}
+                      currency={account.currency}
+                      color={account.color}
+                      icon={account.icon}
+                      dragHandleProps={{ ...handle.listeners, ...handle.attributes }}
+                    />
+                  )}
                 </DraggableItem>
               </DroppableZone>
             ))}

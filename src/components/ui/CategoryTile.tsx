@@ -10,6 +10,7 @@ interface CategoryTileProps {
   icon?: string
   type?: 'expense' | 'income' | 'investment' | 'loan'
   onClick?: () => void
+  dragHandleProps?: Record<string, unknown>
 }
 
 export function CategoryTile({
@@ -20,6 +21,7 @@ export function CategoryTile({
   icon,
   type: _type = 'expense',
   onClick,
+  dragHandleProps,
 }: CategoryTileProps) {
   // Get icon component from lucide-react
   const IconComponent: LucideIcon = icon && icon in icons
@@ -41,8 +43,9 @@ export function CategoryTile({
       )}
     >
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center"
+        className={cn("w-10 h-10 rounded-full flex items-center justify-center", dragHandleProps && "touch-none cursor-grab")}
         style={{ backgroundColor: color + '20' }}
+        {...dragHandleProps}
       >
         {IconComponent && (
           <IconComponent

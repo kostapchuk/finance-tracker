@@ -11,6 +11,7 @@ interface AccountCardProps {
   color: string
   icon?: string
   onClick?: () => void
+  dragHandleProps?: Record<string, unknown>
 }
 
 const defaultIcons: Record<AccountType, keyof typeof icons> = {
@@ -29,6 +30,7 @@ export function AccountCard({
   color,
   icon,
   onClick,
+  dragHandleProps,
 }: AccountCardProps) {
   const iconName = icon || defaultIcons[type] || 'Wallet'
   const IconComponent: LucideIcon = iconName in icons
@@ -46,8 +48,9 @@ export function AccountCard({
       )}
     >
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center"
+        className={cn("w-10 h-10 rounded-full flex items-center justify-center", dragHandleProps && "touch-none cursor-grab")}
         style={{ backgroundColor: color + '20' }}
+        {...dragHandleProps}
       >
         <IconComponent className="h-5 w-5" style={{ color }} />
       </div>
