@@ -26,14 +26,13 @@ export function DraggableItem({ id, data, children, className }: DraggableItemPr
     transform: CSS.Translate.toString(transform),
   }
 
-  // Render prop mode: only the icon gets drag listeners
+  // Render prop mode: only the icon gets drag listeners, tile stays in place
   if (typeof children === 'function') {
     return (
       <div
         ref={setNodeRef}
-        style={style}
         className={cn(
-          isDragging && 'opacity-50 z-50 scale-105',
+          isDragging && 'opacity-50',
           className
         )}
       >

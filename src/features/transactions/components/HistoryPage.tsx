@@ -41,6 +41,7 @@ export function HistoryPage() {
     if (historyCategoryFilter !== null) {
       setCategoryFilter(String(historyCategoryFilter))
       setTypeFilter('expense')
+      setDateFilter('month')
       setShowFilters(true)
       useAppStore.setState({ historyCategoryFilter: null })
     }
