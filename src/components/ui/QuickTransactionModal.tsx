@@ -477,8 +477,8 @@ export function QuickTransactionModal({
         </div>
 
         {/* Comment */}
-        <div className="px-4 pb-4">
-          <div className="flex items-start gap-3 px-4 py-3 bg-secondary rounded-xl">
+        <div className="px-2 pb-4">
+          <div className="flex items-start gap-3 px-3 py-3 bg-secondary/50 rounded-lg">
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
             <textarea
               placeholder={t('addComment')}
@@ -491,7 +491,7 @@ export function QuickTransactionModal({
         </div>
 
         {/* Submit Button */}
-        <div className="px-4 pb-4">
+        <div className="px-2 pb-4">
           <button
             onClick={handleSubmit}
             disabled={
