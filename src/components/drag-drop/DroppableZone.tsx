@@ -19,7 +19,7 @@ export function DroppableZone({ id, data, children, className }: DroppableZonePr
       ref={setNodeRef}
       className={cn(
         'transition-all duration-200',
-        isOver && 'scale-105 brightness-110',
+        isOver && 'brightness-125',
         className
       )}
     >
