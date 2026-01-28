@@ -9,6 +9,7 @@ let currentLang: Language = 'en'
 // Initialize from localStorage
 if (typeof window !== 'undefined') {
   currentLang = getStoredLanguage()
+  document.documentElement.lang = currentLang
 }
 
 export function useLanguage() {
@@ -25,6 +26,7 @@ export function useLanguage() {
   const setLanguage = useCallback((lang: Language) => {
     currentLang = lang
     setStoredLanguage(lang)
+    document.documentElement.lang = lang
     // Notify all subscribers
     subscribers.forEach(fn => fn())
   }, [])
