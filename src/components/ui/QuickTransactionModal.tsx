@@ -28,7 +28,7 @@ export function QuickTransactionModal({
   const refreshTransactions = useAppStore((state) => state.refreshTransactions)
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const [amount, setAmount] = useState('')
   const [targetAmount, setTargetAmount] = useState('')  // mainCurrency amount for totals
@@ -452,20 +452,25 @@ export function QuickTransactionModal({
         )}
 
         {/* Date & Account info row */}
-        <div className="px-4 pb-3 flex items-center gap-2">
-          <div className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+        <div className="px-2 pb-3 flex items-center gap-1.5">
+          <label className="w-2/5 flex items-center gap-2 px-3 py-2.5 bg-secondary/50 rounded-lg cursor-pointer relative">
+            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-sm">{
+              date === new Date().toISOString().split('T')[0]
+                ? t('today')
+                : new Date(date + 'T00:00:00').toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'short' })
+            }</span>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="bg-transparent text-base sm:text-sm outline-none"
+              className="absolute inset-0 opacity-0 cursor-pointer"
             />
-          </div>
+          </label>
           {mode.type !== 'transfer' && selectedAccount && (
-            <div className="px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg flex items-center gap-2 min-w-0">
+            <div className="w-3/5 px-3 py-2.5 bg-secondary/50 rounded-lg flex items-center gap-1.5 min-w-0">
               <span className="font-medium truncate">{selectedAccount.name}</span>
-              <span className="text-muted-foreground whitespace-nowrap">{formatCurrency(selectedAccount.balance, selectedAccount.currency)}</span>
+              <span className="text-muted-foreground whitespace-nowrap text-sm">{formatCurrency(selectedAccount.balance, selectedAccount.currency)}</span>
             </div>
           )}
         </div>
