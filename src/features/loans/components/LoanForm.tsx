@@ -35,7 +35,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   const accounts = useAppStore((state) => state.accounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const refreshLoans = useAppStore((state) => state.refreshLoans)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [isLoading, setIsLoading] = useState(false)
 
   const [type, setType] = useState<LoanType>('given')
@@ -275,6 +275,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             <Input
               id="dueDate"
               type="date"
+              lang={language}
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
             />

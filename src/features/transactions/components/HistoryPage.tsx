@@ -327,6 +327,7 @@ export function HistoryPage() {
                 <label className="text-xs text-muted-foreground">{t('from')}</label>
                 <Input
                   type="date"
+                  lang={language}
                   value={customDateFrom}
                   onChange={(e) => setCustomDateFrom(e.target.value)}
                   className="h-9"
@@ -336,6 +337,7 @@ export function HistoryPage() {
                 <label className="text-xs text-muted-foreground">{t('to')}</label>
                 <Input
                   type="date"
+                  lang={language}
                   value={customDateTo}
                   onChange={(e) => setCustomDateTo(e.target.value)}
                   className="h-9"

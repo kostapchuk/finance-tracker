@@ -462,6 +462,7 @@ export function QuickTransactionModal({
             }</span>
             <input
               type="date"
+              lang={language}
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="absolute inset-0 opacity-0 cursor-pointer"
