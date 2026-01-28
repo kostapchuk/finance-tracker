@@ -200,22 +200,24 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('income')}
               </h3>
-              <span
-                role="button"
-                className="p-1 text-muted-foreground hover:text-foreground"
-                onClick={(e) => { e.stopPropagation(); setIncomeFormOpen(true) }}
-              >
-                <Plus className="h-4 w-4" />
-              </span>
               {incomeExpanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <span className="font-semibold text-foreground">
-              {formatCurrency(monthlyData.totalIncome, mainCurrency)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground">
+                {formatCurrency(monthlyData.totalIncome, mainCurrency)}
+              </span>
+              <span
+                role="button"
+                className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setIncomeFormOpen(true) }}
+              >
+                <Plus className="h-5 w-5" />
+              </span>
+            </div>
           </button>
 
           {incomeExpanded && (
@@ -247,23 +249,27 @@ export function Dashboard() {
         {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-3">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              {t('accounts')}
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t('accounts')}
+                </h3>
+                {isDraggingIncome && (
+                  <span className="text-xs text-primary">{t('dropIncomeHere')}</span>
+                )}
+                {isDraggingAccount && (
+                  <span className="text-xs text-primary">{t('dropHere')}</span>
+                )}
+              </div>
               <span
                 role="button"
-                className="p-1 text-muted-foreground hover:text-foreground inline-flex align-middle ml-1"
+                className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
                 onClick={() => setAccountFormOpen(true)}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
               </span>
-              {isDraggingIncome && (
-                <span className="text-xs text-primary ml-2">{t('dropIncomeHere')}</span>
-              )}
-              {isDraggingAccount && (
-                <span className="text-xs text-primary ml-2">{t('dropHere')}</span>
-              )}
-            </h3>
-          <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide">
+            </div>
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {accounts.map((account) => (
               <DroppableZone
                 key={account.id}
@@ -303,13 +309,6 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('expenses')}
               </h3>
-              <span
-                role="button"
-                className="p-1 text-muted-foreground hover:text-foreground"
-                onClick={(e) => { e.stopPropagation(); setCategoryFormOpen(true) }}
-              >
-                <Plus className="h-4 w-4" />
-              </span>
               {isDraggingAccount && (
                 <span className="text-xs text-primary">{t('dropHere')}</span>
               )}
@@ -319,9 +318,18 @@ export function Dashboard() {
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <span className="font-semibold text-foreground">
-              {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-foreground">
+                {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
+              </span>
+              <span
+                role="button"
+                className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setCategoryFormOpen(true) }}
+              >
+                <Plus className="h-5 w-5" />
+              </span>
+            </div>
           </button>
 
           {expensesExpanded && (

@@ -56,14 +56,16 @@ export function QuickTransactionModal({
 
   // Detect multi-currency for income/expense
   const selectedAccount = accounts.find(a => a.id === selectedAccountId)
-  // For income: need mainCurrency conversion when source currency differs from mainCurrency (for totals)
-  // For expense: need mainCurrency conversion when account currency differs from mainCurrency (for budgets)
+  // For income: need SEPARATE mainCurrency field only if source != mainCurrency AND account != mainCurrency
+  // If account IS mainCurrency, the accountAmount serves as mainCurrencyAmount (no separate field needed)
   const isMultiCurrencyIncome = mode.type === 'income' &&
-    mode.source.currency !== mainCurrency
+    mode.source.currency !== mainCurrency &&
+    selectedAccount?.currency !== mainCurrency
+  // For expense: need mainCurrency conversion when account currency differs from mainCurrency (for budgets)
   const isMultiCurrencyExpense = mode.type === 'expense' &&
     selectedAccount?.currency !== mainCurrency
   const isMultiCurrencyIncomeExpense = isMultiCurrencyIncome || isMultiCurrencyExpense
-  // For income: also need account currency conversion if account differs from source
+  // For income: need account currency conversion if account differs from source
   const needsAccountConversion = mode.type === 'income' &&
     selectedAccount?.currency !== mode.source.currency
 
@@ -168,10 +170,24 @@ export function QuickTransactionModal({
           // - mainCurrencyAmount = main currency (for totals)
           // - account balance = accountAmount if account != source, else use amount
           const sourceAmount = numAmount  // source currency
-          const mainAmount = isMultiCurrencyIncome ? parseFloat(targetAmount) : numAmount  // mainCurrency
           const balanceAmount = needsAccountConversion
             ? parseFloat(accountAmount)  // account currency if different from source
             : numAmount  // same as source if currencies match
+
+          // Determine mainCurrencyAmount:
+          // - If source == mainCurrency: no conversion needed (undefined)
+          // - If account == mainCurrency: balanceAmount IS the mainCurrency amount
+          // - Otherwise: use the separate targetAmount field
+          const sourceIsMain = mode.source.currency === mainCurrency
+          const accountIsMain = account.currency === mainCurrency
+          let storedMainCurrencyAmount: number | undefined
+          if (sourceIsMain) {
+            storedMainCurrencyAmount = undefined  // source is already main currency
+          } else if (accountIsMain) {
+            storedMainCurrencyAmount = balanceAmount  // account amount = main currency amount
+          } else if (isMultiCurrencyIncome) {
+            storedMainCurrencyAmount = parseFloat(targetAmount)  // separate field
+          }
 
           await transactionRepo.create({
             type: 'income',
@@ -181,7 +197,7 @@ export function QuickTransactionModal({
             comment: comment || undefined,
             accountId: selectedAccountId,
             incomeSourceId: mode.source.id,
-            mainCurrencyAmount: isMultiCurrencyIncome ? mainAmount : undefined,
+            mainCurrencyAmount: storedMainCurrencyAmount,
           })
 
           // Update account balance
