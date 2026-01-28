@@ -190,8 +190,8 @@ export function Dashboard() {
         <MonthSelector />
 
         {/* Income Section - Draggable */}
-        <section className="px-1 py-1">
-          <div className="bg-secondary/50 rounded-xl p-3">
+        <section className="px-1 py-0.5">
+          <div className="bg-secondary/50 rounded-xl p-2">
           <button
             onClick={() => setIncomeExpanded(!incomeExpanded)}
             className="flex items-center justify-between w-full touch-target"
@@ -200,28 +200,26 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('income')}
               </h3>
+              <span className="font-semibold text-foreground">
+                {formatCurrency(monthlyData.totalIncome, mainCurrency)}
+              </span>
               {incomeExpanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-foreground">
-                {formatCurrency(monthlyData.totalIncome, mainCurrency)}
-              </span>
-              <span
-                role="button"
-                className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
-                onClick={(e) => { e.stopPropagation(); setIncomeFormOpen(true) }}
-              >
-                <Plus className="h-5 w-5" />
-              </span>
-            </div>
+            <span
+              role="button"
+              className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setIncomeFormOpen(true) }}
+            >
+              <Plus className="h-5 w-5" />
+            </span>
           </button>
 
           {incomeExpanded && (
-            <div className="grid grid-cols-4 gap-2 mt-2 max-h-48 overflow-y-auto">
+            <div className="grid grid-cols-4 gap-2 mt-1 max-h-48 overflow-y-auto">
               {incomeSources.map((source) => (
                 <DraggableItem
                   key={source.id}
@@ -247,9 +245,9 @@ export function Dashboard() {
         </section>
 
         {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
-        <section className="px-1 py-1">
-          <div className="bg-secondary/50 rounded-xl p-3">
-            <div className="flex items-center justify-between mb-2">
+        <section className="px-1 py-0.5">
+          <div className="bg-secondary/50 rounded-xl p-2">
+            <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t('accounts')}
@@ -299,8 +297,8 @@ export function Dashboard() {
         </section>
 
         {/* Expenses Section - Droppable (for accounts) */}
-        <section className="px-1 py-1">
-          <div className="bg-secondary/50 rounded-xl p-3">
+        <section className="px-1 py-0.5">
+          <div className="bg-secondary/50 rounded-xl p-2">
           <button
             onClick={() => setExpensesExpanded(!expensesExpanded)}
             className="flex items-center justify-between w-full touch-target"
@@ -309,6 +307,9 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('expenses')}
               </h3>
+              <span className="font-semibold text-foreground">
+                {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
+              </span>
               {isDraggingAccount && (
                 <span className="text-xs text-primary">{t('dropHere')}</span>
               )}
@@ -318,22 +319,17 @@ export function Dashboard() {
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-foreground">
-                {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
-              </span>
-              <span
-                role="button"
-                className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
-                onClick={(e) => { e.stopPropagation(); setCategoryFormOpen(true) }}
-              >
-                <Plus className="h-5 w-5" />
-              </span>
-            </div>
+            <span
+              role="button"
+              className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setCategoryFormOpen(true) }}
+            >
+              <Plus className="h-5 w-5" />
+            </span>
           </button>
 
           {expensesExpanded && (
-            <div className="grid grid-cols-4 gap-2 mt-2">
+            <div className="grid grid-cols-4 gap-2 mt-1">
               {expenseCategories.map((category) => (
                 <DroppableZone
                   key={category.id}
