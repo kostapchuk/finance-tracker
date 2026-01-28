@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import { icons, type LucideIcon } from 'lucide-react'
 import { MonthSelector } from '@/components/ui/MonthSelector'
 import { CategoryTile } from '@/components/ui/CategoryTile'
 import { AccountCard } from '@/components/ui/AccountCard'
@@ -15,7 +16,15 @@ import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
-import type { Category, IncomeSource, Account } from '@/database/types'
+import type { Category, IncomeSource, Account, AccountType } from '@/database/types'
+
+const defaultAccountIcons: Record<AccountType, keyof typeof icons> = {
+  cash: 'Banknote',
+  bank: 'Building2',
+  crypto: 'Bitcoin',
+  investment: 'TrendingUp',
+  credit_card: 'CreditCard',
+}
 
 type TransactionMode =
   | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
@@ -349,31 +358,27 @@ export function Dashboard() {
           />
         )}
 
-        {/* Drag Overlay */}
+        {/* Drag Overlay - only the icon circle follows the cursor */}
         <DragOverlay>
-          {draggedItem && (
-            <div className="opacity-90 scale-105 shadow-xl">
-              {draggedItem.type === 'income' ? (
-                <CategoryTile
-                  name={draggedItem.source.name}
-                  amount={0}
-                  currency={draggedItem.source.currency || mainCurrency}
-                  color={draggedItem.source.color}
-                  icon={draggedItem.source.icon}
-                  type="income"
-                />
-              ) : (
-                <AccountCard
-                  name={draggedItem.account.name}
-                  type={draggedItem.account.type}
-                  balance={draggedItem.account.balance}
-                  currency={draggedItem.account.currency}
-                  color={draggedItem.account.color}
-                  icon={draggedItem.account.icon}
-                />
-              )}
-            </div>
-          )}
+          {draggedItem && (() => {
+            const color = draggedItem.type === 'income'
+              ? draggedItem.source.color
+              : draggedItem.account.color
+            const iconName = draggedItem.type === 'income'
+              ? (draggedItem.source.icon || 'Circle')
+              : (draggedItem.account.icon || defaultAccountIcons[draggedItem.account.type] || 'Wallet')
+            const Icon: LucideIcon = iconName in icons
+              ? icons[iconName as keyof typeof icons]
+              : icons.Circle
+            return (
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center shadow-xl scale-110"
+                style={{ backgroundColor: color + '20' }}
+              >
+                <Icon className="h-5 w-5" style={{ color }} />
+              </div>
+            )
+          })()}
         </DragOverlay>
       </div>
 
