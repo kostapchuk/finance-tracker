@@ -46,7 +46,7 @@ export function Dashboard() {
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
 
-  const [incomeExpanded, setIncomeExpanded] = useState(false)
+  const [incomeExpanded, setIncomeExpanded] = useState(true)
   const [expensesExpanded, setExpensesExpanded] = useState(true)
   const [transactionMode, setTransactionMode] = useState<TransactionMode>(null)
   const [draggedItem, setDraggedItem] = useState<DraggedItem>(null)
