@@ -190,7 +190,7 @@ export function Dashboard() {
         <MonthSelector />
 
         {/* Income Section - Draggable */}
-        <section className="px-1 py-0.5">
+        <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
           <button
             onClick={() => setIncomeExpanded(!incomeExpanded)}
@@ -245,7 +245,7 @@ export function Dashboard() {
         </section>
 
         {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
-        <section className="px-1 py-0.5">
+        <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export function Dashboard() {
         </section>
 
         {/* Expenses Section - Droppable (for accounts) */}
-        <section className="px-1 py-0.5">
+        <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
           <button
             onClick={() => setExpensesExpanded(!expensesExpanded)}
