@@ -451,20 +451,9 @@ export function QuickTransactionModal({
           </div>
         )}
 
-        {/* Account info (only for income/expense, not transfers) */}
-        {mode.type !== 'transfer' && selectedAccount && (
-          <div className="px-4 pb-4">
-            <div className="px-4 py-2.5 bg-secondary/50 rounded-xl inline-flex items-center gap-2">
-              <span className="font-medium">{selectedAccount.name}</span>
-              <span className="text-muted-foreground">•</span>
-              <span className="text-muted-foreground">{formatCurrency(selectedAccount.balance, selectedAccount.currency)}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Date */}
-        <div className="px-4 pb-3">
-          <div className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg w-fit">
+        {/* Date & Account info row */}
+        <div className="px-4 pb-3 flex items-center gap-2">
+          <div className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <input
               type="date"
@@ -473,6 +462,12 @@ export function QuickTransactionModal({
               className="bg-transparent text-base sm:text-sm outline-none"
             />
           </div>
+          {mode.type !== 'transfer' && selectedAccount && (
+            <div className="px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg flex items-center gap-2 min-w-0">
+              <span className="font-medium truncate">{selectedAccount.name}</span>
+              <span className="text-muted-foreground whitespace-nowrap">{formatCurrency(selectedAccount.balance, selectedAccount.currency)}</span>
+            </div>
+          )}
         </div>
 
         {/* Comment */}
