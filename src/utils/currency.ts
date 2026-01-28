@@ -45,7 +45,7 @@ export function formatCurrency(amount: number, currency: string): string {
   const currencyInfo = allCurrencies.find(c => c.code === currency)
   const symbol = currencyInfo?.symbol || currency
 
-  if (currency === 'BTC' || currency === 'ETH' || currency === 'USDT') {
+  if (currency === 'BTC' || currency === 'ETH') {
     return `${amount.toFixed(8)} ${symbol}`
   }
 

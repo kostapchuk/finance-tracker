@@ -462,8 +462,21 @@ export function QuickTransactionModal({
           </div>
         )}
 
-        {/* Comment - prominent secondary action */}
+        {/* Date */}
         <div className="px-4 pb-3">
+          <div className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg w-fit">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="bg-transparent text-base sm:text-sm outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Comment */}
+        <div className="px-4 pb-4">
           <div className="flex items-start gap-3 px-4 py-3 bg-secondary rounded-xl">
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
             <textarea
@@ -472,19 +485,6 @@ export function QuickTransactionModal({
               onChange={(e) => setComment(e.target.value)}
               rows={3}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
-            />
-          </div>
-        </div>
-
-        {/* Date */}
-        <div className="px-4 pb-4">
-          <div className="flex items-center gap-2 px-4 py-2.5 sm:py-2 bg-secondary/50 rounded-lg w-fit">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="bg-transparent text-base sm:text-sm outline-none"
             />
           </div>
         </div>
