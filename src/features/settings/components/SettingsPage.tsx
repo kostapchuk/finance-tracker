@@ -435,9 +435,9 @@ export function SettingsPage() {
           {t('manage')}
         </h3>
         <div className="space-y-2">
+          <SettingsRow icon={DollarSign} label={t('incomeSources')} count={incomeSources.length} onClick={() => setActiveSection('income')} />
           <SettingsRow icon={Wallet} label={t('accounts')} count={accounts.length} onClick={() => setActiveSection('accounts')} />
           <SettingsRow icon={Tags} label={t('categories')} count={categories.length} onClick={() => setActiveSection('categories')} />
-          <SettingsRow icon={DollarSign} label={t('incomeSources')} count={incomeSources.length} onClick={() => setActiveSection('income')} />
           <SettingsRow icon={Coins} label={t('currencies')} count={customCurrencies.length} onClick={() => setActiveSection('currencies')} />
         </div>
       </div>
