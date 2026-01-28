@@ -194,7 +194,7 @@ export function Dashboard() {
           <div className="bg-secondary/50 rounded-xl p-2">
           <button
             onClick={() => setIncomeExpanded(!incomeExpanded)}
-            className="flex items-center justify-between w-full touch-target"
+            className="flex items-center justify-between w-full touch-target px-1"
           >
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -247,7 +247,7 @@ export function Dashboard() {
         {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 px-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t('accounts')}
@@ -301,7 +301,7 @@ export function Dashboard() {
           <div className="bg-secondary/50 rounded-xl p-2">
           <button
             onClick={() => setExpensesExpanded(!expensesExpanded)}
-            className="flex items-center justify-between w-full touch-target"
+            className="flex items-center justify-between w-full touch-target px-1"
           >
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
