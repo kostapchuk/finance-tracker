@@ -4,7 +4,7 @@ import { cn } from '@/utils/cn'
 import { transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
-import { getCurrencySymbol } from '@/utils/currency'
+import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
 import type { Category, IncomeSource, Account } from '@/database/types'
 
 type TransactionMode =
@@ -34,7 +34,7 @@ export function QuickTransactionModal({
   const [targetAmount, setTargetAmount] = useState('')  // mainCurrency amount for totals
   const [accountAmount, setAccountAmount] = useState('')  // account currency amount (for income when account != source)
   const [activeAmountField, setActiveAmountField] = useState<'source' | 'target' | 'account'>('source')
-  const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(
+  const [selectedAccountId] = useState<number | undefined>(
     preselectedAccountId ?? accounts[0]?.id
   )
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -451,24 +451,13 @@ export function QuickTransactionModal({
           </div>
         )}
 
-        {/* Account Selector (only for income/expense, not transfers) */}
-        {mode.type !== 'transfer' && (
+        {/* Account info (only for income/expense, not transfers) */}
+        {mode.type !== 'transfer' && selectedAccount && (
           <div className="px-4 pb-4">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-              {accounts.map((account) => (
-                <button
-                  key={account.id}
-                  onClick={() => setSelectedAccountId(account.id)}
-                  className={cn(
-                    'flex-shrink-0 px-4 py-2.5 sm:py-2 rounded-full text-base sm:text-sm font-medium transition-colors',
-                    selectedAccountId === account.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground'
-                  )}
-                >
-                  {account.name}
-                </button>
-              ))}
+            <div className="px-4 py-2.5 bg-secondary/50 rounded-xl inline-flex items-center gap-2">
+              <span className="font-medium">{selectedAccount.name}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground">{formatCurrency(selectedAccount.balance, selectedAccount.currency)}</span>
             </div>
           </div>
         )}
