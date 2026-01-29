@@ -46,7 +46,10 @@ export function Dashboard() {
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
 
-  const [incomeExpanded, setIncomeExpanded] = useState(true)
+  const [incomeExpanded, setIncomeExpanded] = useState(() => {
+    const saved = localStorage.getItem('incomeExpanded')
+    return saved === null ? true : saved === 'true'
+  })
   const [expensesExpanded, setExpensesExpanded] = useState(true)
   const [transactionMode, setTransactionMode] = useState<TransactionMode>(null)
   const [draggedItem, setDraggedItem] = useState<DraggedItem>(null)
@@ -193,7 +196,11 @@ export function Dashboard() {
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
           <button
-            onClick={() => setIncomeExpanded(!incomeExpanded)}
+            onClick={() => {
+              const newValue = !incomeExpanded
+              setIncomeExpanded(newValue)
+              localStorage.setItem('incomeExpanded', String(newValue))
+            }}
             className="flex items-center justify-between w-full touch-target px-1"
           >
             <div className="flex items-center gap-2">
