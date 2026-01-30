@@ -1,13 +1,17 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Trash2, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar } from 'lucide-react'
+import { Trash2, Pencil, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
-import { transactionRepo, accountRepo, loanRepo } from '@/database/repositories'
+import { transactionRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
 import { cn } from '@/utils/cn'
-import type { Transaction, TransactionType } from '@/database/types'
+import { reverseTransactionBalance } from '@/utils/transactionBalance'
+import { QuickTransactionModal, type TransactionMode } from '@/components/ui/QuickTransactionModal'
+import { LoanForm } from '@/features/loans/components/LoanForm'
+import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
+import type { Transaction, TransactionType, Loan } from '@/database/types'
 
 function formatShortDate(date: Date, language: string): string {
   const d = new Date(date)
@@ -36,6 +40,12 @@ export function HistoryPage() {
   const [customDateTo, setCustomDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+
+  // Edit state
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment' | null>(null)
+  const [editTransactionMode, setEditTransactionMode] = useState<TransactionMode | null>(null)
+  const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
 
   useEffect(() => {
     if (historyCategoryFilter !== null) {
@@ -162,37 +172,61 @@ export function HistoryPage() {
     if (!transaction.id) return
     if (!confirm(t('deleteTransaction'))) return
 
-    // Reverse the balance change
-    if (transaction.type === 'income' && transaction.accountId) {
-      await accountRepo.updateBalance(transaction.accountId, -transaction.amount)
-    } else if (transaction.type === 'expense' && transaction.accountId) {
-      await accountRepo.updateBalance(transaction.accountId, transaction.amount)
-    } else if (transaction.type === 'transfer') {
-      // Reverse transfer: add back to source, subtract from target
-      if (transaction.accountId) {
-        await accountRepo.updateBalance(transaction.accountId, transaction.amount)
-      }
-      if (transaction.toAccountId) {
-        // Use toAmount for multi-currency transfers, otherwise use amount
-        const targetAmount = transaction.toAmount ?? transaction.amount
-        await accountRepo.updateBalance(transaction.toAccountId, -targetAmount)
-      }
-    } else if (transaction.type === 'loan_payment' && transaction.loanId) {
-      const paymentAmount = transaction.mainCurrencyAmount ?? transaction.amount
-      await loanRepo.reversePayment(transaction.loanId, paymentAmount)
-      // Reverse account balance change
-      if (transaction.accountId) {
-        const loan = loans.find((l) => l.id === transaction.loanId)
-        if (loan?.type === 'given') {
-          await accountRepo.updateBalance(transaction.accountId, -transaction.amount)
-        } else if (loan?.type === 'received') {
-          await accountRepo.updateBalance(transaction.accountId, transaction.amount)
-        }
-      }
-    }
+    // Reverse the balance effects
+    await reverseTransactionBalance(transaction, loans)
 
     await transactionRepo.delete(transaction.id)
     await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
+  }
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTransaction(transaction)
+
+    // Determine the modal type based on transaction type
+    if (transaction.type === 'income' || transaction.type === 'expense' || transaction.type === 'transfer') {
+      // Build the TransactionMode for QuickTransactionModal
+      if (transaction.type === 'income') {
+        const source = incomeSources.find(s => s.id === transaction.incomeSourceId)
+        if (source) {
+          setEditTransactionMode({ type: 'income', source })
+          setEditModalType('quick')
+        }
+      } else if (transaction.type === 'expense') {
+        const category = categories.find(c => c.id === transaction.categoryId)
+        if (category) {
+          setEditTransactionMode({ type: 'expense', category })
+          setEditModalType('quick')
+        }
+      } else if (transaction.type === 'transfer') {
+        const fromAccount = accounts.find(a => a.id === transaction.accountId)
+        const toAccount = accounts.find(a => a.id === transaction.toAccountId)
+        if (fromAccount && toAccount) {
+          setEditTransactionMode({ type: 'transfer', fromAccount, toAccount })
+          setEditModalType('quick')
+        }
+      }
+    } else if (transaction.type === 'loan_given' || transaction.type === 'loan_received') {
+      // Find the associated loan
+      const loan = loans.find(l => l.id === transaction.loanId)
+      if (loan) {
+        setEditingLoan(loan)
+        setEditModalType('loan')
+      }
+    } else if (transaction.type === 'loan_payment') {
+      // Find the associated loan for payment editing
+      const loan = loans.find(l => l.id === transaction.loanId)
+      if (loan) {
+        setEditingLoan(loan)
+        setEditModalType('payment')
+      }
+    }
+  }
+
+  const handleCloseEditModal = () => {
+    setEditingTransaction(null)
+    setEditModalType(null)
+    setEditTransactionMode(null)
+    setEditingLoan(null)
   }
 
   const getTransactionTitle = (t: Transaction): string => {
@@ -415,6 +449,12 @@ export function HistoryPage() {
                           )}
                         </div>
                         <button
+                          onClick={() => handleEdit(transaction)}
+                          className="p-2 rounded-full hover:bg-primary/20 touch-target"
+                        >
+                          <Pencil className="h-4 w-4 text-primary" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(transaction)}
                           className="p-2 rounded-full hover:bg-destructive/20 touch-target"
                         >
@@ -429,6 +469,34 @@ export function HistoryPage() {
           ))
         )}
       </div>
+
+      {/* Edit Modals */}
+      {editModalType === 'quick' && editTransactionMode && editingTransaction && (
+        <QuickTransactionModal
+          mode={editTransactionMode}
+          accounts={accounts}
+          preselectedAccountId={editingTransaction.accountId}
+          editTransaction={editingTransaction}
+          onClose={handleCloseEditModal}
+        />
+      )}
+
+      {editModalType === 'loan' && editingLoan && (
+        <LoanForm
+          loan={editingLoan}
+          open={true}
+          onClose={handleCloseEditModal}
+        />
+      )}
+
+      {editModalType === 'payment' && editingLoan && editingTransaction && (
+        <PaymentDialog
+          loan={editingLoan}
+          open={true}
+          onClose={handleCloseEditModal}
+          editTransaction={editingTransaction}
+        />
+      )}
     </div>
   )
 }

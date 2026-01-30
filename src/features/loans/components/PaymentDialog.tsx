@@ -7,16 +7,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { loanRepo, transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
-import type { Loan } from '@/database/types'
+import type { Loan, Transaction } from '@/database/types'
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
 
 interface PaymentDialogProps {
   loan: Loan | null
   open: boolean
   onClose: () => void
+  editTransaction?: Transaction
 }
 
-export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
+export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentDialogProps) {
   const accounts = useAppStore((state) => state.accounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
@@ -25,8 +26,10 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const [amount, setAmount] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
+  const [comment, setComment] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  const isEditMode = !!editTransaction
   const account = loan?.accountId ? accounts.find(a => a.id === loan.accountId) : null
   const isMultiCurrency = loan && account && loan.currency !== account.currency
 
@@ -43,18 +46,39 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
 
   useEffect(() => {
     if (open) {
-      setAmount('')
-      setAccountAmount('')
+      if (editTransaction) {
+        // Pre-populate from existing transaction
+        setAmount(editTransaction.mainCurrencyAmount?.toString() || editTransaction.amount.toString())
+        setAccountAmount(editTransaction.amount.toString())
+        setComment(editTransaction.comment || '')
+      } else {
+        setAmount('')
+        setAccountAmount('')
+        setComment('')
+      }
     }
-  }, [open])
+  }, [open, editTransaction])
+
+  // Calculate the "effective remaining" that includes the old payment when editing
+  const getEffectiveRemaining = () => {
+    if (!loan) return 0
+    const baseRemaining = loan.amount - loan.paidAmount
+    if (isEditMode && editTransaction) {
+      // Add back the old payment amount to get the "available" amount
+      const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
+      return baseRemaining + oldPaymentAmount
+    }
+    return baseRemaining
+  }
+
+  const effectiveRemaining = getEffectiveRemaining()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!loan?.id || !amount) return
 
-    const remaining = loan.amount - loan.paidAmount
     const paymentAmount = parseFloat(amount)
-    if (isNaN(paymentAmount) || paymentAmount <= 0 || paymentAmount > remaining) return
+    if (isNaN(paymentAmount) || paymentAmount <= 0 || paymentAmount > effectiveRemaining) return
 
     // For multi-currency, also need account amount
     if (isMultiCurrency && !accountAmount) return
@@ -63,28 +87,67 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
 
     setIsLoading(true)
     try {
-      await loanRepo.recordPayment(loan.id, paymentAmount)
+      if (isEditMode && editTransaction?.id) {
+        // EDIT MODE: Reverse old payment, apply new payment
+        const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
+        const oldAccountAmount = editTransaction.amount
 
-      // Create a transaction record
-      await transactionRepo.create({
-        type: 'loan_payment',
-        amount: acctAmount,
-        currency: account?.currency || loan.currency,
-        date: new Date(),
-        loanId: loan.id,
-        accountId: loan.accountId,
-        mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
-        comment: `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
-      })
+        // Reverse the old payment from loan
+        await loanRepo.reversePayment(loan.id, oldPaymentAmount)
 
-      // Update account balance if linked
-      if (loan.accountId) {
-        if (loan.type === 'given') {
-          // Money coming back to us
-          await accountRepo.updateBalance(loan.accountId, acctAmount)
-        } else {
-          // Money going out from us
-          await accountRepo.updateBalance(loan.accountId, -acctAmount)
+        // Reverse old account balance change
+        if (loan.accountId) {
+          if (loan.type === 'given') {
+            await accountRepo.updateBalance(loan.accountId, -oldAccountAmount)
+          } else {
+            await accountRepo.updateBalance(loan.accountId, oldAccountAmount)
+          }
+        }
+
+        // Apply new payment to loan
+        await loanRepo.recordPayment(loan.id, paymentAmount)
+
+        // Update the transaction record
+        await transactionRepo.update(editTransaction.id, {
+          amount: acctAmount,
+          currency: account?.currency || loan.currency,
+          mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
+          comment: comment || `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
+        })
+
+        // Apply new account balance change
+        if (loan.accountId) {
+          if (loan.type === 'given') {
+            await accountRepo.updateBalance(loan.accountId, acctAmount)
+          } else {
+            await accountRepo.updateBalance(loan.accountId, -acctAmount)
+          }
+        }
+      } else {
+        // CREATE MODE: Normal payment creation
+        await loanRepo.recordPayment(loan.id, paymentAmount)
+
+        // Create a transaction record
+        await transactionRepo.create({
+          type: 'loan_payment',
+          amount: acctAmount,
+          currency: account?.currency || loan.currency,
+          date: new Date(),
+          loanId: loan.id,
+          accountId: loan.accountId,
+          mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
+          comment: comment || `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
+        })
+
+        // Update account balance if linked
+        if (loan.accountId) {
+          if (loan.type === 'given') {
+            // Money coming back to us
+            await accountRepo.updateBalance(loan.accountId, acctAmount)
+          } else {
+            // Money going out from us
+            await accountRepo.updateBalance(loan.accountId, -acctAmount)
+          }
         }
       }
 
@@ -102,22 +165,23 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
   const handleClose = () => {
     setAmount('')
     setAccountAmount('')
+    setComment('')
     onClose()
   }
 
   if (!loan) return null
 
-  const remaining = loan.amount - loan.paidAmount
+  const displayRemaining = loan.amount - loan.paidAmount
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('recordPayment')}</DialogTitle>
+          <DialogTitle>{isEditMode ? t('editPayment') : t('recordPayment')}</DialogTitle>
           <DialogDescription>
             {loan.type === 'given'
-              ? `${t('recordingPaymentFrom')} ${loan.personName}`
-              : `${t('recordingPaymentTo')} ${loan.personName}`}
+              ? `${isEditMode ? t('editingPaymentFrom') : t('recordingPaymentFrom')} ${loan.personName}`
+              : `${isEditMode ? t('editingPaymentTo') : t('recordingPaymentTo')} ${loan.personName}`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -132,7 +196,7 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
             </div>
             <div className="flex justify-between text-sm font-medium">
               <span>{t('remaining')}</span>
-              <span className="text-primary">{formatCurrency(remaining, loan.currency)}</span>
+              <span className="text-primary">{formatCurrency(displayRemaining, loan.currency)}</span>
             </div>
           </div>
 
@@ -180,14 +244,16 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
                   </div>
                 </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount(remaining.toString())}
-              >
-                {t('payFullRemaining')} ({formatCurrency(remaining, loan.currency)})
-              </Button>
+              {!isEditMode && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAmount(effectiveRemaining.toString())}
+                >
+                  {t('payFullRemaining')} ({formatCurrency(effectiveRemaining, loan.currency)})
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -208,14 +274,30 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
                   required
                 />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount(remaining.toString())}
-              >
-                {t('payFullRemaining')}
-              </Button>
+              {!isEditMode && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAmount(effectiveRemaining.toString())}
+                >
+                  {t('payFullRemaining')}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Comment field for edit mode */}
+          {isEditMode && (
+            <div className="space-y-2">
+              <Label htmlFor="comment">{t('comment')}</Label>
+              <Input
+                id="comment"
+                type="text"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={t('addComment')}
+              />
             </div>
           )}
 
@@ -225,9 +307,9 @@ export function PaymentDialog({ loan, open, onClose }: PaymentDialogProps) {
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !amount || (!!isMultiCurrency && !accountAmount) || parseFloat(amount) > remaining}
+              disabled={isLoading || !amount || (!!isMultiCurrency && !accountAmount) || parseFloat(amount) > effectiveRemaining}
             >
-              {isLoading ? t('recording') : t('recordPayment')}
+              {isLoading ? t('recording') : isEditMode ? t('update') : t('recordPayment')}
             </Button>
           </DialogFooter>
         </form>

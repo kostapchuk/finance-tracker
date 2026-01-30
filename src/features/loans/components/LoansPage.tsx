@@ -1,13 +1,10 @@
 import { useState, useMemo } from 'react'
-import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp, ArrowRight, Trash2 } from 'lucide-react'
+import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
-import { formatCurrency, getCurrencySymbol, getAmountColorClass } from '@/utils/currency'
+import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 import { LoanForm } from './LoanForm'
 import type { LoanFormData } from './LoanForm'
 import type { Loan } from '@/database/types'
@@ -22,13 +19,6 @@ export function LoansPage() {
   const { t } = useLanguage()
 
   const [loanFormOpen, setLoanFormOpen] = useState(false)
-  const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [paymentLoan, setPaymentLoan] = useState<Loan | null>(null)
-  const [paymentAmount, setPaymentAmount] = useState('')
-  const [accountPaymentAmount, setAccountPaymentAmount] = useState('')
-  const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState<number | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
   const [givenExpanded, setGivenExpanded] = useState(true)
   const [receivedExpanded, setReceivedExpanded] = useState(true)
 
@@ -72,88 +62,6 @@ export function LoansPage() {
 
     return { givenByCurrency, receivedByCurrency }
   }, [activeGiven, activeReceived])
-
-  const handleOpenPayment = (loan: Loan) => {
-    setPaymentLoan(loan)
-    setPaymentAmount('')
-    setAccountPaymentAmount('')
-    // Pre-select the loan's associated account
-    setSelectedPaymentAccountId(loan.accountId || null)
-    setPaymentModalOpen(true)
-  }
-
-  const handlePayFull = () => {
-    if (!paymentLoan) return
-    setPaymentAmount((paymentLoan.amount - paymentLoan.paidAmount).toString())
-  }
-
-  // Check if payment involves different currencies
-  const selectedPaymentAccount = selectedPaymentAccountId
-    ? accounts.find(a => a.id === selectedPaymentAccountId)
-    : null
-  const isMultiCurrencyPayment = paymentLoan && selectedPaymentAccount &&
-    paymentLoan.currency !== selectedPaymentAccount.currency
-
-  const sanitizeAmount = (value: string) => {
-    let v = value.replace(/,/g, '.').replace(/[^0-9.]/g, '')
-    const parts = v.split('.')
-    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-    v = v.replace(/^0+(?=\d)/, '')
-    const dotIndex = v.indexOf('.')
-    if (dotIndex !== -1) v = v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
-    else v = v.slice(0, 10)
-    return v
-  }
-
-  const handleSubmitPayment = async () => {
-    if (!paymentLoan || !paymentAmount) return
-    const loanPaymentAmount = parseFloat(paymentAmount)
-    const remaining = paymentLoan.amount - paymentLoan.paidAmount
-    if (isNaN(loanPaymentAmount) || loanPaymentAmount <= 0 || loanPaymentAmount > remaining) return
-
-    // For multi-currency, also need account amount
-    if (isMultiCurrencyPayment && !accountPaymentAmount) return
-    const accountAmount = isMultiCurrencyPayment
-      ? parseFloat(accountPaymentAmount)
-      : loanPaymentAmount
-
-    if (isMultiCurrencyPayment && (isNaN(accountAmount) || accountAmount <= 0)) return
-
-    setIsProcessing(true)
-    try {
-      await loanRepo.recordPayment(paymentLoan.id!, loanPaymentAmount)
-
-      // If an account is selected, update its balance and create transaction
-      if (selectedPaymentAccountId) {
-        // Given loan: money coming back to you (+)
-        // Received loan: money you're paying back (-)
-        const balanceChange = paymentLoan.type === 'given' ? accountAmount : -accountAmount
-        await accountRepo.updateBalance(selectedPaymentAccountId, balanceChange)
-
-        await transactionRepo.create({
-          type: 'loan_payment',
-          amount: accountAmount,
-          currency: selectedPaymentAccount?.currency || paymentLoan.currency,
-          date: new Date(),
-          loanId: paymentLoan.id,
-          accountId: selectedPaymentAccountId,
-          mainCurrencyAmount: paymentLoan.currency === mainCurrency ? loanPaymentAmount : undefined,
-          comment: `${paymentLoan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${paymentLoan.personName}`,
-        })
-
-        await refreshAccounts()
-        await refreshTransactions()
-      }
-
-      await refreshLoans()
-      setPaymentModalOpen(false)
-      setPaymentLoan(null)
-    } catch (error) {
-      console.error('Failed to record payment:', error)
-    } finally {
-      setIsProcessing(false)
-    }
-  }
 
   const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
     if (isEdit && loanId) {
@@ -210,58 +118,9 @@ export function LoansPage() {
     await refreshLoans()
   }
 
-  const handleDeleteLoan = async (loan: Loan) => {
-    if (!loan.id) return
-    if (!confirm(t('deleteLoan'))) return
-
-    try {
-      // Find all transactions related to this loan
-      const allTransactions = useAppStore.getState().transactions
-      const loanTransactions = allTransactions.filter((tx) => tx.loanId === loan.id)
-
-      // Reverse each transaction's account balance effect
-      for (const tx of loanTransactions) {
-        if (tx.accountId) {
-          if (tx.type === 'loan_given') {
-            // Original: balance decreased → reverse: add back
-            await accountRepo.updateBalance(tx.accountId, tx.amount)
-          } else if (tx.type === 'loan_received') {
-            // Original: balance increased → reverse: subtract
-            await accountRepo.updateBalance(tx.accountId, -tx.amount)
-          } else if (tx.type === 'loan_payment') {
-            if (loan.type === 'given') {
-              // Payment on given loan: money came back → reverse: subtract
-              await accountRepo.updateBalance(tx.accountId, -tx.amount)
-            } else {
-              // Payment on received loan: money went out → reverse: add back
-              await accountRepo.updateBalance(tx.accountId, tx.amount)
-            }
-          }
-        }
-        // Delete the transaction
-        await transactionRepo.delete(tx.id!)
-      }
-
-      // Delete the loan itself
-      await loanRepo.delete(loan.id)
-
-      await Promise.all([refreshLoans(), refreshAccounts(), refreshTransactions()])
-    } catch (error) {
-      console.error('Failed to delete loan:', error)
-    }
-  }
-
   const handleAddNew = () => {
-    setEditingLoan(null)
     setLoanFormOpen(true)
   }
-
-  const handleEdit = (loan: Loan) => {
-    setEditingLoan(loan)
-    setLoanFormOpen(true)
-  }
-
-  const remainingAmount = paymentLoan ? paymentLoan.amount - paymentLoan.paidAmount : 0
 
   return (
     <div className="flex flex-col min-h-full pb-4">
@@ -344,13 +203,7 @@ export function LoansPage() {
               </p>
             ) : (
               activeGiven.map((loan) => (
-                <LoanCard
-                  key={loan.id}
-                  loan={loan}
-                  onEdit={() => handleEdit(loan)}
-                  onPayment={() => handleOpenPayment(loan)}
-                  onDelete={() => handleDeleteLoan(loan)}
-                />
+                <LoanCard key={loan.id} loan={loan} />
               ))
             )}
           </div>
@@ -385,13 +238,7 @@ export function LoansPage() {
               </p>
             ) : (
               activeReceived.map((loan) => (
-                <LoanCard
-                  key={loan.id}
-                  loan={loan}
-                  onEdit={() => handleEdit(loan)}
-                  onPayment={() => handleOpenPayment(loan)}
-                  onDelete={() => handleDeleteLoan(loan)}
-                />
+                <LoanCard key={loan.id} loan={loan} />
               ))
             )}
           </div>
@@ -416,17 +263,9 @@ export function LoansPage() {
                     {loan.type === 'given' ? t('repaid') : t('paidOff')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-muted-foreground">
-                    {formatCurrency(loan.amount, loan.currency)}
-                  </p>
-                  <button
-                    onClick={() => handleDeleteLoan(loan)}
-                    className="p-1 rounded-full hover:bg-destructive/20"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </button>
-                </div>
+                <p className="font-medium text-muted-foreground">
+                  {formatCurrency(loan.amount, loan.currency)}
+                </p>
               </div>
             ))}
           </div>
@@ -435,148 +274,17 @@ export function LoansPage() {
 
       {/* Loan Form */}
       <LoanForm
-        loan={editingLoan}
+        loan={null}
         open={loanFormOpen}
         onClose={() => setLoanFormOpen(false)}
         onSave={handleSaveLoan}
       />
-
-      {/* Payment Modal */}
-      <Dialog open={paymentModalOpen} onOpenChange={(open) => !open && setPaymentModalOpen(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {paymentLoan?.type === 'given' ? t('recordRepayment') : t('makePayment')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="text-center">
-              <p className="text-muted-foreground">
-                {paymentLoan?.type === 'given'
-                  ? `${paymentLoan?.personName} ${t('owes')}`
-                  : `${t('youOweTo')} ${paymentLoan?.personName}`}
-              </p>
-              <p className="text-2xl font-bold mt-1">
-                {formatCurrency(remainingAmount, paymentLoan?.currency || 'USD')}
-              </p>
-            </div>
-
-            {/* Account Selector */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('relatedAccount')}</label>
-              <Select
-                value={selectedPaymentAccountId?.toString() || 'none'}
-                onValueChange={(v) => setSelectedPaymentAccountId(v === 'none' ? null : parseInt(v))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t('none')}>
-                    {selectedPaymentAccount
-                      ? `${selectedPaymentAccount.name} (${selectedPaymentAccount.currency})`
-                      : t('none')}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t('none')}</SelectItem>
-                  {accounts.map((account) => (
-                    <SelectItem key={account.id} value={account.id!.toString()}>
-                      {account.name} ({account.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Multi-currency payment amounts */}
-            {isMultiCurrencyPayment ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 space-y-1">
-                    <label className="text-xs text-muted-foreground">
-                      {paymentLoan?.currency} ({t('amountOnLoan')})
-                    </label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={paymentAmount}
-                      onChange={(e) => setPaymentAmount(sanitizeAmount(e.target.value))}
-                      placeholder={`${getCurrencySymbol(paymentLoan?.currency || 'USD')}0.00`}
-                    />
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
-                  <div className="flex-1 space-y-1">
-                    <label className="text-xs text-muted-foreground">
-                      {selectedPaymentAccount?.currency} ({t('amountOnAccount')})
-                    </label>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={accountPaymentAmount}
-                      onChange={(e) => setAccountPaymentAmount(sanitizeAmount(e.target.value))}
-                      placeholder={`${getCurrencySymbol(selectedPaymentAccount?.currency || 'USD')}0.00`}
-                    />
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handlePayFull}
-                >
-                  {t('payFullAmount')} ({formatCurrency(remainingAmount, paymentLoan?.currency || 'USD')})
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t('paymentAmount')}</label>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(sanitizeAmount(e.target.value))}
-                  placeholder={t('amount')}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={handlePayFull}
-                >
-                  {t('payFullAmount')} ({formatCurrency(remainingAmount, paymentLoan?.currency || 'USD')})
-                </Button>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPaymentModalOpen(false)}>
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={handleSubmitPayment}
-              disabled={isProcessing || !paymentAmount || (!!isMultiCurrencyPayment && !accountPaymentAmount) || parseFloat(paymentAmount) > remainingAmount || parseFloat(paymentAmount) <= 0}
-            >
-              {isProcessing ? t('processing') : t('confirm')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
 
-// Helper component for loan cards
-function LoanCard({
-  loan,
-  onEdit,
-  onPayment,
-  onDelete,
-}: {
-  loan: Loan
-  onEdit: () => void
-  onPayment: () => void
-  onDelete: () => void
-}) {
+// Helper component for loan cards (view-only)
+function LoanCard({ loan }: { loan: Loan }) {
   const { t } = useLanguage()
   const remaining = loan.amount - loan.paidAmount
   const progress = (loan.paidAmount / loan.amount) * 100
@@ -590,20 +298,9 @@ function LoanCard({
             <p className="text-sm text-muted-foreground">{loan.description}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onEdit}
-            className="text-xs text-primary hover:underline"
-          >
-            {t('edit')}
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1 rounded-full hover:bg-destructive/20"
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </button>
-        </div>
+        <p className="font-semibold">
+          {formatCurrency(loan.amount, loan.currency)}
+        </p>
       </div>
 
       {/* Progress bar */}
@@ -623,16 +320,6 @@ function LoanCard({
           />
         </div>
       </div>
-
-      {/* Payment button */}
-      <Button
-        size="sm"
-        variant="outline"
-        className="w-full"
-        onClick={onPayment}
-      >
-        {loan.type === 'given' ? t('recordRepayment') : t('makePayment')}
-      </Button>
     </div>
   )
 }

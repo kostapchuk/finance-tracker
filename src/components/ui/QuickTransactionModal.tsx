@@ -5,9 +5,10 @@ import { transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
-import type { Category, IncomeSource, Account } from '@/database/types'
+import { reverseTransactionBalance } from '@/utils/transactionBalance'
+import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
 
-type TransactionMode =
+export type TransactionMode =
   | { type: 'income'; source: IncomeSource }
   | { type: 'expense'; category: Category }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
@@ -16,6 +17,7 @@ interface QuickTransactionModalProps {
   mode: TransactionMode
   accounts: Account[]
   preselectedAccountId?: number
+  editTransaction?: Transaction
   onClose: () => void
 }
 
@@ -23,12 +25,16 @@ export function QuickTransactionModal({
   mode,
   accounts,
   preselectedAccountId,
+  editTransaction,
   onClose,
 }: QuickTransactionModalProps) {
   const refreshTransactions = useAppStore((state) => state.refreshTransactions)
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
+  const loans = useAppStore((state) => state.loans)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t, language } = useLanguage()
+
+  const isEditMode = !!editTransaction
 
   const [amount, setAmount] = useState('')
   const [targetAmount, setTargetAmount] = useState('')  // mainCurrency amount for totals
@@ -41,6 +47,21 @@ export function QuickTransactionModal({
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const amountInputRef = useRef<HTMLInputElement>(null)
+
+  // Pre-populate form when editing
+  useEffect(() => {
+    if (editTransaction) {
+      setAmount(editTransaction.amount.toString())
+      setDate(new Date(editTransaction.date).toISOString().split('T')[0])
+      setComment(editTransaction.comment || '')
+      if (editTransaction.mainCurrencyAmount != null) {
+        setTargetAmount(editTransaction.mainCurrencyAmount.toString())
+      }
+      if (editTransaction.toAmount != null) {
+        setTargetAmount(editTransaction.toAmount.toString())
+      }
+    }
+  }, [editTransaction])
 
   useEffect(() => {
     // Try focusing at multiple intervals to catch after animation
@@ -138,15 +159,19 @@ export function QuickTransactionModal({
     setIsSubmitting(true)
 
     try {
+      // If editing, first reverse the old transaction's balance effects
+      if (isEditMode && editTransaction) {
+        await reverseTransactionBalance(editTransaction, loans)
+      }
+
       if (mode.type === 'transfer') {
         // Handle transfer between accounts - single transaction record
         const fromAccount = mode.fromAccount
         const toAccount = mode.toAccount
         const numTargetAmount = isMultiCurrencyTransfer ? parseFloat(targetAmount) : numAmount
 
-        // Create single transfer transaction
-        await transactionRepo.create({
-          type: 'transfer',
+        const transactionData = {
+          type: 'transfer' as const,
           amount: numAmount,
           currency: fromAccount.currency,
           accountId: fromAccount.id,
@@ -154,7 +179,13 @@ export function QuickTransactionModal({
           toAmount: isMultiCurrencyTransfer ? numTargetAmount : undefined,
           date: new Date(date),
           comment: comment || undefined,
-        })
+        }
+
+        if (isEditMode && editTransaction?.id) {
+          await transactionRepo.update(editTransaction.id, transactionData)
+        } else {
+          await transactionRepo.create(transactionData)
+        }
 
         // Update balances
         await accountRepo.updateBalance(fromAccount.id!, -numAmount)
@@ -189,8 +220,8 @@ export function QuickTransactionModal({
             storedMainCurrencyAmount = parseFloat(targetAmount)  // separate field
           }
 
-          await transactionRepo.create({
-            type: 'income',
+          const transactionData = {
+            type: 'income' as const,
             amount: sourceAmount,  // source currency amount for display
             currency: mode.source.currency,  // income source currency
             date: new Date(date),
@@ -198,7 +229,13 @@ export function QuickTransactionModal({
             accountId: selectedAccountId,
             incomeSourceId: mode.source.id,
             mainCurrencyAmount: storedMainCurrencyAmount,
-          })
+          }
+
+          if (isEditMode && editTransaction?.id) {
+            await transactionRepo.update(editTransaction.id, transactionData)
+          } else {
+            await transactionRepo.create(transactionData)
+          }
 
           // Update account balance
           await accountRepo.updateBalance(selectedAccountId!, balanceAmount)
@@ -211,8 +248,8 @@ export function QuickTransactionModal({
             ? parseFloat(targetAmount)
             : undefined
 
-          await transactionRepo.create({
-            type: 'expense',
+          const transactionData = {
+            type: 'expense' as const,
             amount: transactionAmount,
             currency: account.currency,
             date: new Date(date),
@@ -220,7 +257,13 @@ export function QuickTransactionModal({
             accountId: selectedAccountId,
             categoryId: mode.category.id,
             mainCurrencyAmount: storedMainCurrencyAmount,
-          })
+          }
+
+          if (isEditMode && editTransaction?.id) {
+            await transactionRepo.update(editTransaction.id, transactionData)
+          } else {
+            await transactionRepo.create(transactionData)
+          }
 
           // Update account balance
           await accountRepo.updateBalance(selectedAccountId!, -transactionAmount)
@@ -287,7 +330,9 @@ export function QuickTransactionModal({
             <div>
               <p className="font-semibold">{title}</p>
               <p className="text-xs text-muted-foreground">
-                {mode.type === 'income' ? t('addIncome') : mode.type === 'expense' ? t('addExpense') : t('transfer')}
+                {isEditMode
+                  ? (mode.type === 'income' ? t('editIncome') : mode.type === 'expense' ? t('editExpense') : t('editTransfer'))
+                  : (mode.type === 'income' ? t('addIncome') : mode.type === 'expense' ? t('addExpense') : t('transfer'))}
               </p>
             </div>
           </div>
@@ -525,7 +570,7 @@ export function QuickTransactionModal({
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
-            {isSubmitting ? t('saving') : t('save')}
+            {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
           </button>
         </div>
       </div>

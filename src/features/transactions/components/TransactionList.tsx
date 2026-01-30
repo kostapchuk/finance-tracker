@@ -1,13 +1,11 @@
 import { useState, useMemo } from 'react'
-import { Trash2, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Filter } from 'lucide-react'
+import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
-import { transactionRepo, accountRepo, loanRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 import type { Transaction, TransactionType } from '@/database/types'
@@ -29,10 +27,6 @@ export function TransactionList() {
   const accounts = useAppStore((state) => state.accounts)
   const categories = useAppStore((state) => state.categories)
   const incomeSources = useAppStore((state) => state.incomeSources)
-  const loans = useAppStore((state) => state.loans)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
 
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [accountFilter, setAccountFilter] = useState<string>('all')
@@ -59,42 +53,6 @@ export function TransactionList() {
       return true
     })
   }, [transactions, typeFilter, accountFilter, searchQuery, accounts, categories, incomeSources])
-
-  const handleDelete = async (transaction: Transaction) => {
-    if (!transaction.id) return
-    if (!confirm(t('deleteTransaction'))) return
-
-    // Reverse the balance change
-    if (transaction.type === 'income' && transaction.accountId) {
-      await accountRepo.updateBalance(transaction.accountId, -transaction.amount)
-    } else if (transaction.type === 'expense' && transaction.accountId) {
-      await accountRepo.updateBalance(transaction.accountId, transaction.amount)
-    } else if (transaction.type === 'transfer') {
-      // Reverse transfer: add back to source, subtract from target
-      if (transaction.accountId) {
-        await accountRepo.updateBalance(transaction.accountId, transaction.amount)
-      }
-      if (transaction.toAccountId) {
-        // Use toAmount for multi-currency transfers, otherwise use amount
-        const targetAmount = transaction.toAmount ?? transaction.amount
-        await accountRepo.updateBalance(transaction.toAccountId, -targetAmount)
-      }
-    } else if (transaction.type === 'loan_payment' && transaction.loanId) {
-      const paymentAmount = transaction.mainCurrencyAmount ?? transaction.amount
-      await loanRepo.reversePayment(transaction.loanId, paymentAmount)
-      if (transaction.accountId) {
-        const loan = loans.find((l) => l.id === transaction.loanId)
-        if (loan?.type === 'given') {
-          await accountRepo.updateBalance(transaction.accountId, -transaction.amount)
-        } else if (loan?.type === 'received') {
-          await accountRepo.updateBalance(transaction.accountId, transaction.amount)
-        }
-      }
-    }
-
-    await transactionRepo.delete(transaction.id)
-    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
-  }
 
   const getTransactionDescription = (t: Transaction): string => {
     switch (t.type) {
@@ -188,25 +146,15 @@ export function TransactionList() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`font-mono font-medium ${
-                        transaction.type === 'income' ? 'text-foreground' :
-                        transaction.type === 'expense' ? 'text-red-600' : ''
-                      }`}
-                    >
-                      {transaction.type === 'expense' ? '- ' : ''}
-                      {formatCurrency(transaction.amount, transaction.currency)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => handleDelete(transaction)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <span
+                    className={`font-mono font-medium ${
+                      transaction.type === 'income' ? 'text-foreground' :
+                      transaction.type === 'expense' ? 'text-red-600' : ''
+                    }`}
+                  >
+                    {transaction.type === 'expense' ? '- ' : ''}
+                    {formatCurrency(transaction.amount, transaction.currency)}
+                  </span>
                 </div>
               )
             })}
