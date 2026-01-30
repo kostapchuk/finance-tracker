@@ -58,10 +58,6 @@ export const translations = {
     categories: 'Categories',
     incomeSources: 'Income Sources',
     currencies: 'Currencies',
-    security: 'Security',
-    autoLock: 'Auto-lock',
-    disabled: 'Disabled',
-    lockAppNow: 'Lock App Now',
     data: 'Data',
     exportBackup: 'Export Backup',
     importBackup: 'Import Backup',
@@ -223,29 +219,6 @@ export const translations = {
 
     // Delete confirmation
     deleteConfirmationMessage: 'This will permanently delete ALL your data including accounts, transactions, categories, and loans. This action cannot be undone.',
-    enterPasswordFirst: 'Enter your password',
-    confirmPassword: 'Confirm password',
-    password: 'Password',
-    passwordsDontMatch: 'Passwords do not match',
-    enterPassword: 'Please enter your password',
-    incorrectPassword: 'Incorrect password',
-
-    // Authentication
-    welcomeToFinanceTracker: 'Welcome to Finance Tracker',
-    setupPassphraseDescription: 'Set up a passphrase to protect your financial data. This is stored locally and never leaves your device.',
-    passphrase: 'Passphrase',
-    confirmPassphrase: 'Confirm Passphrase',
-    passphraseTooShort: 'Passphrase must be at least 4 characters',
-    passphrasesDoNotMatch: 'Passphrases do not match',
-    failedToSetupPassphrase: 'Failed to set up passphrase. Please try again.',
-    settingUp: 'Setting up...',
-    continue: 'Continue',
-    passphraseSecurityNote: 'Your passphrase is hashed locally using PBKDF2. We never store or transmit your passphrase.',
-    welcomeBack: 'Welcome Back',
-    unlockDescription: 'Enter your passphrase to unlock your finance tracker',
-    pleaseEnterPassphrase: 'Please enter your passphrase',
-    unlocking: 'Unlocking...',
-    unlock: 'Unlock',
 
     // Investments
     addInvestment: 'Add Investment',
@@ -342,10 +315,6 @@ export const translations = {
     categories: 'Категории',
     incomeSources: 'Источники дохода',
     currencies: 'Валюты',
-    security: 'Безопасность',
-    autoLock: 'Автоблокировка',
-    disabled: 'Отключено',
-    lockAppNow: 'Заблокировать',
     data: 'Данные',
     exportBackup: 'Экспорт резервной копии',
     importBackup: 'Импорт резервной копии',
@@ -507,29 +476,6 @@ export const translations = {
 
     // Delete confirmation
     deleteConfirmationMessage: 'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и займы. Это действие нельзя отменить.',
-    enterPasswordFirst: 'Введите пароль',
-    confirmPassword: 'Подтвердите пароль',
-    password: 'Пароль',
-    passwordsDontMatch: 'Пароли не совпадают',
-    enterPassword: 'Пожалуйста, введите пароль',
-    incorrectPassword: 'Неверный пароль',
-
-    // Authentication
-    welcomeToFinanceTracker: 'Добро пожаловать в Finance Tracker',
-    setupPassphraseDescription: 'Установите пароль для защиты ваших финансовых данных. Он хранится локально и никогда не покидает ваше устройство.',
-    passphrase: 'Пароль',
-    confirmPassphrase: 'Подтвердите пароль',
-    passphraseTooShort: 'Пароль должен содержать не менее 4 символов',
-    passphrasesDoNotMatch: 'Пароли не совпадают',
-    failedToSetupPassphrase: 'Не удалось установить пароль. Попробуйте ещё раз.',
-    settingUp: 'Настройка...',
-    continue: 'Продолжить',
-    passphraseSecurityNote: 'Ваш пароль хешируется локально с помощью PBKDF2. Мы никогда не храним и не передаём ваш пароль.',
-    welcomeBack: 'С возвращением',
-    unlockDescription: 'Введите пароль, чтобы разблокировать ваш трекер финансов',
-    pleaseEnterPassphrase: 'Пожалуйста, введите пароль',
-    unlocking: 'Разблокировка...',
-    unlock: 'Разблокировать',
 
     // Investments
     addInvestment: 'Добавить инвестицию',

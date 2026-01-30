@@ -310,27 +310,6 @@ export const settingsRepo = {
       })
     }
   },
-
-  async setPassphrase(hash: string, salt: string) {
-    const settings = await db.settings.toArray()
-    if (settings[0]?.id) {
-      return db.settings.update(settings[0].id, {
-        passphraseHash: hash,
-        passphraseSalt: salt,
-        updatedAt: new Date(),
-      })
-    } else {
-      const now = new Date()
-      return db.settings.add({
-        passphraseHash: hash,
-        passphraseSalt: salt,
-        autoLockMinutes: 0,
-        defaultCurrency: 'BYN',
-        createdAt: now,
-        updatedAt: now,
-      })
-    }
-  },
 }
 
 // Custom Currency Repository

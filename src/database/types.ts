@@ -112,9 +112,6 @@ export interface Loan {
 
 export interface AppSettings {
   id?: number
-  passphraseHash?: string
-  passphraseSalt?: string
-  autoLockMinutes: number
   defaultCurrency: string
   createdAt: Date
   updatedAt: Date

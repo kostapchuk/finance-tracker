@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { version } from '../../../../package.json'
 import {
-  Wallet, Tags, DollarSign, Download, Upload, Trash2, Shield, Lock, ChevronRight,
+  Wallet, Tags, DollarSign, Download, Upload, Trash2, ChevronRight,
   Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical
 } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -9,11 +9,9 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useAppStore } from '@/store/useAppStore'
-import { useAuthStore } from '@/store/useAuthStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { db } from '@/database/db'
 import { accountRepo, categoryRepo, incomeSourceRepo, customCurrencyRepo } from '@/database/repositories'
@@ -33,7 +31,6 @@ export function SettingsPage() {
     mainCurrency, setMainCurrency,
     loadAllData, refreshAccounts, refreshCategories, refreshIncomeSources, refreshCustomCurrencies
   } = useAppStore()
-  const { autoLockMinutes, lock, setAutoLockMinutes, authenticate } = useAuthStore()
   const { language, setLanguage, t } = useLanguage()
 
   const [activeSection, setActiveSection] = useState<ManagementSection>(null)
@@ -86,9 +83,6 @@ export function SettingsPage() {
 
   // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [deletePassword1, setDeletePassword1] = useState('')
-  const [deletePassword2, setDeletePassword2] = useState('')
-  const [deleteError, setDeleteError] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleExportJSON = async () => {
@@ -198,37 +192,13 @@ export function SettingsPage() {
   }
 
   const handleOpenDeleteModal = () => {
-    setDeletePassword1('')
-    setDeletePassword2('')
-    setDeleteError('')
     setDeleteModalOpen(true)
   }
 
   const handleConfirmDelete = async () => {
-    // Validate passwords match
-    if (deletePassword1 !== deletePassword2) {
-      setDeleteError(t('passwordsDontMatch'))
-      return
-    }
-
-    if (!deletePassword1) {
-      setDeleteError(t('enterPassword'))
-      return
-    }
-
     setIsDeleting(true)
-    setDeleteError('')
 
     try {
-      // Verify password is correct
-      const isValid = await authenticate(deletePassword1)
-      if (!isValid) {
-        setDeleteError(t('incorrectPassword'))
-        setIsDeleting(false)
-        return
-      }
-
-      // Password verified, delete all data
       await db.transaction('rw', [db.accounts, db.incomeSources, db.categories, db.transactions, db.investments, db.loans], async () => {
         await db.accounts.clear()
         await db.incomeSources.clear()
@@ -241,14 +211,9 @@ export function SettingsPage() {
       setDeleteModalOpen(false)
     } catch (error) {
       console.error('Failed to clear data:', error)
-      setDeleteError('Failed to delete data')
     } finally {
       setIsDeleting(false)
     }
-  }
-
-  const handleAutoLockChange = async (value: string) => {
-    await setAutoLockMinutes(parseInt(value))
   }
 
   const handleDeleteAccount = async (account: Account) => {
@@ -487,44 +452,6 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Security Section */}
-      <div className="px-4 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          {t('security')}
-        </h3>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl">
-            <div className="flex items-center gap-3">
-              <Shield className="h-5 w-5 text-muted-foreground" />
-              <span>{t('autoLock')}</span>
-            </div>
-            <Select value={autoLockMinutes.toString()} onValueChange={handleAutoLockChange}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">{t('disabled')}</SelectItem>
-                <SelectItem value="1">1 {t('min')}</SelectItem>
-                <SelectItem value="5">5 {t('min')}</SelectItem>
-                <SelectItem value="15">15 {t('min')}</SelectItem>
-                <SelectItem value="30">30 {t('min')}</SelectItem>
-                <SelectItem value="60">1 {t('hour')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <button
-            onClick={lock}
-            className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl"
-          >
-            <div className="flex items-center gap-3">
-              <Lock className="h-5 w-5 text-muted-foreground" />
-              <span>{t('lockAppNow')}</span>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </button>
-        </div>
-      </div>
-
       {/* Data Section */}
       <div className="px-4 py-4">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
@@ -609,35 +536,6 @@ export function SettingsPage() {
             <p className="text-sm text-muted-foreground">
               {t('deleteConfirmationMessage')}
             </p>
-
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t('enterPasswordFirst')}</label>
-                <Input
-                  type="password"
-                  value={deletePassword1}
-                  onChange={(e) => setDeletePassword1(e.target.value)}
-                  placeholder={t('password')}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t('confirmPassword')}</label>
-                <Input
-                  type="password"
-                  value={deletePassword2}
-                  onChange={(e) => setDeletePassword2(e.target.value)}
-                  placeholder={t('password')}
-                />
-              </div>
-            </div>
-
-            {deleteError && (
-              <div className="p-3 bg-destructive/20 text-destructive rounded-lg text-sm flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                {deleteError}
-              </div>
-            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
@@ -646,7 +544,7 @@ export function SettingsPage() {
             <Button
               variant="destructive"
               onClick={handleConfirmDelete}
-              disabled={isDeleting || !deletePassword1 || !deletePassword2}
+              disabled={isDeleting}
             >
               {isDeleting ? t('processing') : t('deleteAllData')}
             </Button>

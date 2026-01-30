@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { BottomNav } from './BottomNav'
 import { useAppStore } from '@/store/useAppStore'
-import { useAuthStore } from '@/store/useAuthStore'
 import { setCustomCurrencies } from '@/utils/currency'
 
 interface AppShellProps {
@@ -20,39 +19,10 @@ export function AppShell({ children }: AppShellProps) {
       symbol: c.symbol,
     })))
   }, [customCurrencies])
-  const updateActivity = useAuthStore((state) => state.updateActivity)
-  const checkAutoLock = useAuthStore((state) => state.checkAutoLock)
 
   useEffect(() => {
     loadAllData()
   }, [loadAllData])
-
-  useEffect(() => {
-    const handleActivity = () => {
-      updateActivity()
-    }
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkAutoLock()
-      }
-    }
-
-    window.addEventListener('touchstart', handleActivity)
-    window.addEventListener('click', handleActivity)
-    window.addEventListener('scroll', handleActivity)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    const lockInterval = setInterval(checkAutoLock, 60000)
-
-    return () => {
-      window.removeEventListener('touchstart', handleActivity)
-      window.removeEventListener('click', handleActivity)
-      window.removeEventListener('scroll', handleActivity)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      clearInterval(lockInterval)
-    }
-  }, [updateActivity, checkAutoLock])
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
