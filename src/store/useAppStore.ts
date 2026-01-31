@@ -28,6 +28,9 @@ interface AppState {
   historyCategoryFilter: number | null
   historyAccountFilter: number | null
 
+  // Onboarding state (0 = not active, 1-5 = steps)
+  onboardingStep: number
+
   // Actions
   setActiveView: (view: AppState['activeView']) => void
   navigateToHistoryWithCategory: (categoryId: number) => void
@@ -42,6 +45,9 @@ interface AppState {
   refreshInvestments: () => Promise<void>
   refreshLoans: () => Promise<void>
   refreshCustomCurrencies: () => Promise<void>
+  setOnboardingStep: (step: number) => void
+  completeOnboarding: () => void
+  skipOnboarding: () => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -58,6 +64,7 @@ export const useAppStore = create<AppState>((set) => ({
   selectedMonth: new Date(),
   historyCategoryFilter: null,
   historyAccountFilter: null,
+  onboardingStep: 0,
 
   setActiveView: (view) => set({ activeView: view }),
   navigateToHistoryWithCategory: (categoryId) => set({ historyCategoryFilter: categoryId, activeView: 'history' }),
@@ -82,17 +89,72 @@ export const useAppStore = create<AppState>((set) => ({
         customCurrencyRepo.getAll(),
         settingsRepo.get(),
       ])
-      set({
-        accounts,
-        incomeSources,
-        categories,
-        transactions,
-        investments,
-        loans,
-        customCurrencies,
-        mainCurrency: settings?.defaultCurrency || 'BYN',
-        isLoading: false,
-      })
+
+      const mainCurrency = settings?.defaultCurrency || 'BYN'
+
+      // Check if this is a new user (no data in IndexedDB)
+      const hasExistingData = accounts.length > 0 || transactions.length > 0 || incomeSources.length > 0
+      const onboardingCompleted = localStorage.getItem('finance-tracker-onboarding-completed') === 'true'
+
+      if (!hasExistingData && !onboardingCompleted) {
+        // New user - create seed data and start onboarding
+        await Promise.all([
+          incomeSourceRepo.create({
+            name: 'Salary',
+            currency: mainCurrency,
+            color: '#22c55e',
+            icon: 'Banknote',
+          }),
+          accountRepo.create({
+            name: 'Bank Account',
+            type: 'bank',
+            balance: 0,
+            currency: mainCurrency,
+            color: '#3b82f6',
+            icon: 'Building2',
+          }),
+          categoryRepo.create({
+            name: 'Groceries',
+            categoryType: 'expense',
+            color: '#f97316',
+            icon: 'ShoppingCart',
+          }),
+        ])
+
+        // Reload data after creating seed data
+        const [newAccounts, newIncomeSources, newCategories] = await Promise.all([
+          accountRepo.getAll(),
+          incomeSourceRepo.getAll(),
+          categoryRepo.getAll(),
+        ])
+
+        set({
+          accounts: newAccounts,
+          incomeSources: newIncomeSources,
+          categories: newCategories,
+          transactions,
+          investments,
+          loans,
+          customCurrencies,
+          mainCurrency,
+          isLoading: false,
+          onboardingStep: 1, // Start onboarding
+        })
+      } else {
+        // Existing user or onboarding already completed
+        set({
+          accounts,
+          incomeSources,
+          categories,
+          transactions,
+          investments,
+          loans,
+          customCurrencies,
+          mainCurrency,
+          isLoading: false,
+          onboardingStep: 0,
+        })
+      }
     } catch (error) {
       console.error('Failed to load data:', error)
       set({ isLoading: false })
@@ -132,5 +194,17 @@ export const useAppStore = create<AppState>((set) => ({
   refreshCustomCurrencies: async () => {
     const customCurrencies = await customCurrencyRepo.getAll()
     set({ customCurrencies })
+  },
+
+  setOnboardingStep: (step) => set({ onboardingStep: step }),
+
+  completeOnboarding: () => {
+    localStorage.setItem('finance-tracker-onboarding-completed', 'true')
+    set({ onboardingStep: 0 })
+  },
+
+  skipOnboarding: () => {
+    localStorage.setItem('finance-tracker-onboarding-completed', 'true')
+    set({ onboardingStep: 0 })
   },
 }))

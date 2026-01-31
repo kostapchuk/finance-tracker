@@ -263,6 +263,25 @@ export const translations = {
     to: 'To',
     tapToEdit: 'Tap to edit',
     noBudget: 'No budget',
+
+    // Onboarding
+    onboardingWelcomeTitle: 'Welcome to Finance Tracker',
+    onboardingWelcomeText: 'Track your income and expenses with simple drag & drop gestures',
+    onboardingGetStarted: 'Get Started',
+    onboardingSkip: 'Skip',
+    onboardingIncomeTitle: 'Record Income',
+    onboardingIncomeText: 'Drag "Salary" to "Bank Account" to record your income',
+    onboardingExpenseTitle: 'Record Expense',
+    onboardingExpenseText: 'Now drag "Bank Account" to "Groceries" to record an expense',
+    onboardingCurrencyTitle: 'Settings',
+    onboardingCurrencyText: 'You can change your main currency and other settings here',
+    onboardingNext: 'Next',
+    onboardingCompletionTitle: "You're All Set!",
+    onboardingCompletionText: 'You now know the basics. Start tracking your finances!',
+    onboardingStartApp: 'Start Using App',
+    onboardingSalary: 'Salary',
+    onboardingBankAccount: 'Bank Account',
+    onboardingGroceries: 'Groceries',
   },
   ru: {
     // Navigation
@@ -526,6 +545,25 @@ export const translations = {
     to: 'По',
     tapToEdit: 'Нажмите для редактирования',
     noBudget: 'Без бюджета',
+
+    // Onboarding
+    onboardingWelcomeTitle: 'Добро пожаловать',
+    onboardingWelcomeText: 'Отслеживайте доходы и расходы с помощью простых жестов перетаскивания',
+    onboardingGetStarted: 'Начать',
+    onboardingSkip: 'Пропустить',
+    onboardingIncomeTitle: 'Запись дохода',
+    onboardingIncomeText: 'Перетащите "Зарплата" на "Банковский счёт" чтобы записать доход',
+    onboardingExpenseTitle: 'Запись расхода',
+    onboardingExpenseText: 'Теперь перетащите "Банковский счёт" на "Продукты" чтобы записать расход',
+    onboardingCurrencyTitle: 'Настройки',
+    onboardingCurrencyText: 'Здесь вы можете изменить основную валюту и другие настройки',
+    onboardingNext: 'Далее',
+    onboardingCompletionTitle: 'Всё готово!',
+    onboardingCompletionText: 'Теперь вы знаете основы. Начните отслеживать финансы!',
+    onboardingStartApp: 'Начать использование',
+    onboardingSalary: 'Зарплата',
+    onboardingBankAccount: 'Банковский счёт',
+    onboardingGroceries: 'Продукты',
   },
 } as const
 

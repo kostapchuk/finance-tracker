@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BottomNav } from './BottomNav'
+import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
 import { useAppStore } from '@/store/useAppStore'
 import { setCustomCurrencies } from '@/utils/currency'
 
@@ -30,6 +31,7 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </main>
       <BottomNav />
+      <OnboardingOverlay />
     </div>
   )
 }

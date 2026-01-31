@@ -44,6 +44,8 @@ export function Dashboard() {
   const incomeSources = useAppStore((state) => state.incomeSources)
   const selectedMonth = useAppStore((state) => state.selectedMonth)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
+  const onboardingStep = useAppStore((state) => state.onboardingStep)
+  const setOnboardingStep = useAppStore((state) => state.setOnboardingStep)
   const { t } = useLanguage()
 
   const [incomeExpanded, setIncomeExpanded] = useState(() => {
@@ -158,6 +160,10 @@ export function Dashboard() {
         source: dragData.source as IncomeSource,
         preselectedAccountId: account.id,
       })
+      // Advance onboarding if on step 2
+      if (onboardingStep === 2) {
+        setOnboardingStep(3)
+      }
     }
     // Account dropped onto Category → record expense
     else if (dragData.type === 'account' && dropData.type === 'category') {
@@ -168,6 +174,10 @@ export function Dashboard() {
         category,
         preselectedAccountId: account.id,
       })
+      // Advance onboarding if on step 3
+      if (onboardingStep === 3) {
+        setOnboardingStep(4)
+      }
     }
     // Account dropped onto another Account → transfer
     else if (dragData.type === 'account' && dropData.type === 'account') {
