@@ -387,7 +387,7 @@ export function HistoryPage() {
                 ))}
               </SelectContent>
             </Select>
-          )
+          )}
 
           {/* Custom Date Range */}
           {dateFilter === 'custom' && (
