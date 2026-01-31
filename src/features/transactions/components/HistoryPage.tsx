@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar } from 'lucide-react'
+import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar, Wallet } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
@@ -31,10 +31,12 @@ export function HistoryPage() {
   const { t, language } = useLanguage()
 
   const historyCategoryFilter = useAppStore((state) => state.historyCategoryFilter)
+  const historyAccountFilter = useAppStore((state) => state.historyAccountFilter)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType | 'transfers' | 'loans'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [accountFilter, setAccountFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year' | 'custom'>('all')
   const [customDateFrom, setCustomDateFrom] = useState('')
   const [customDateTo, setCustomDateTo] = useState('')
@@ -56,6 +58,14 @@ export function HistoryPage() {
       useAppStore.setState({ historyCategoryFilter: null })
     }
   }, [historyCategoryFilter])
+
+  useEffect(() => {
+    if (historyAccountFilter !== null) {
+      setAccountFilter(String(historyAccountFilter))
+      setShowFilters(true)
+      useAppStore.setState({ historyAccountFilter: null })
+    }
+  }, [historyAccountFilter])
 
   const typeConfig: Record<TransactionType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
     income: { label: t('income'), icon: ArrowUpCircle, color: 'text-success' },
@@ -121,6 +131,12 @@ export function HistoryPage() {
           if (tx.type === 'income' && tx.incomeSourceId?.toString() !== categoryFilter) return false
         }
 
+        // Account filter
+        if (accountFilter !== 'all') {
+          const accountId = accountFilter
+          if (tx.accountId?.toString() !== accountId && tx.toAccountId?.toString() !== accountId) return false
+        }
+
         // Date filter
         if (dateFilter !== 'all') {
           const txDate = new Date(tx.date)
@@ -156,7 +172,7 @@ export function HistoryPage() {
         return true
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [transactions, typeFilter, categoryFilter, dateFilter, customDateFrom, customDateTo, searchQuery, accounts, categories, incomeSources])
+  }, [transactions, typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery, accounts, categories, incomeSources])
 
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {}
@@ -339,23 +355,39 @@ export function HistoryPage() {
               </SelectContent>
             </Select>
 
-            {/* Category/Source Filter */}
-            {filterOptions.length > 0 && (
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder={typeFilter === 'income' ? t('incomeSources') : t('categories')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('all')}</SelectItem>
-                  {filterOptions.map((opt) => (
-                    <SelectItem key={opt.id} value={opt.id}>
-                      {opt.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            {/* Account Filter */}
+            <Select value={accountFilter} onValueChange={setAccountFilter}>
+              <SelectTrigger className="h-9">
+                <Wallet className="h-4 w-4 mr-2" />
+                <SelectValue placeholder={t('account')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('allAccounts')}</SelectItem>
+                {accounts.map((acc) => (
+                  <SelectItem key={acc.id} value={acc.id!.toString()}>
+                    {acc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Category/Source Filter */}
+          {filterOptions.length > 0 && (
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder={typeFilter === 'income' ? t('incomeSources') : t('categories')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('all')}</SelectItem>
+                {filterOptions.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>
+                    {opt.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )
 
           {/* Custom Date Range */}
           {dateFilter === 'custom' && (

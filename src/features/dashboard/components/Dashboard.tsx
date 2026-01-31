@@ -114,9 +114,14 @@ export function Dashboard() {
   }, [transactions, selectedMonth])
 
   const navigateToHistoryWithCategory = useAppStore((state) => state.navigateToHistoryWithCategory)
+  const navigateToHistoryWithAccount = useAppStore((state) => state.navigateToHistoryWithAccount)
 
   const handleCategoryClick = (category: Category) => {
     navigateToHistoryWithCategory(category.id!)
+  }
+
+  const handleAccountClick = (account: Account) => {
+    navigateToHistoryWithAccount(account.id!)
   }
 
   const handleCloseModal = () => {
@@ -293,6 +298,7 @@ export function Dashboard() {
                       currency={account.currency}
                       color={account.color}
                       icon={account.icon}
+                      onClick={() => handleAccountClick(account)}
                       dragHandleProps={{ ...handle.listeners, ...handle.attributes }}
                     />
                   )}
