@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Calendar, MessageSquare, ArrowRight } from 'lucide-react'
+import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
@@ -18,6 +18,8 @@ interface QuickTransactionModalProps {
   accounts: Account[]
   preselectedAccountId?: number
   editTransaction?: Transaction
+  disableAutoFocus?: boolean
+  onDelete?: (transaction: Transaction) => void
   onClose: () => void
 }
 
@@ -26,6 +28,8 @@ export function QuickTransactionModal({
   accounts,
   preselectedAccountId,
   editTransaction,
+  disableAutoFocus,
+  onDelete,
   onClose,
 }: QuickTransactionModalProps) {
   const refreshTransactions = useAppStore((state) => state.refreshTransactions)
@@ -64,12 +68,13 @@ export function QuickTransactionModal({
   }, [editTransaction])
 
   useEffect(() => {
+    if (disableAutoFocus) return
     // Try focusing at multiple intervals to catch after animation
     const timers = [50, 150, 300, 500].map(ms =>
       setTimeout(() => amountInputRef.current?.focus(), ms)
     )
     return () => timers.forEach(clearTimeout)
-  }, [])
+  }, [disableAutoFocus])
 
   // Detect multi-currency transfer
   const isMultiCurrencyTransfer = mode.type === 'transfer' &&
@@ -336,12 +341,22 @@ export function QuickTransactionModal({
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-secondary touch-target"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {isEditMode && onDelete && editTransaction && (
+              <button
+                onClick={() => onDelete(editTransaction)}
+                className="p-2 rounded-full hover:bg-destructive/20 touch-target"
+              >
+                <Trash2 className="h-5 w-5 text-destructive" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-secondary touch-target"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Amount Display */}

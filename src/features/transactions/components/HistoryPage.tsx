@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Trash2, Pencil, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar } from 'lucide-react'
+import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
@@ -171,6 +171,9 @@ export function HistoryPage() {
   const handleDelete = async (transaction: Transaction) => {
     if (!transaction.id) return
     if (!confirm(t('deleteTransaction'))) return
+
+    // Close the modal first
+    handleCloseEditModal()
 
     // Reverse the balance effects
     await reverseTransactionBalance(transaction, loans)
@@ -401,7 +404,8 @@ export function HistoryPage() {
                   return (
                     <div
                       key={transaction.id}
-                      className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl"
+                      onClick={() => handleEdit(transaction)}
+                      className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl cursor-pointer active:bg-secondary/70 transition-colors"
                     >
                       <div className={cn('p-2 rounded-full bg-secondary', config.color)}>
                         <Icon className="h-5 w-5" />
@@ -415,51 +419,37 @@ export function HistoryPage() {
                           {transaction.comment && ` • ${transaction.comment}`}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          {transaction.type === 'transfer' ? (
-                            // Transfer: show both amounts
-                            <>
-                              <span className="font-mono font-semibold text-foreground">
-                                {formatCurrency(transaction.amount, transaction.currency)}
-                              </span>
-                              {transaction.toAmount != null && (
-                                <p className="text-xs text-muted-foreground">
-                                  → {formatCurrency(transaction.toAmount, accounts.find(a => a.id === transaction.toAccountId)?.currency || transaction.currency)}
-                                </p>
+                      <div className="text-right">
+                        {transaction.type === 'transfer' ? (
+                          // Transfer: show both amounts
+                          <>
+                            <span className="font-mono font-semibold text-foreground">
+                              {formatCurrency(transaction.amount, transaction.currency)}
+                            </span>
+                            {transaction.toAmount != null && (
+                              <p className="text-xs text-muted-foreground">
+                                → {formatCurrency(transaction.toAmount, accounts.find(a => a.id === transaction.toAccountId)?.currency || transaction.currency)}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          // Income/Expense
+                          <>
+                            <span
+                              className={cn(
+                                'font-mono font-semibold',
+                                transaction.type === 'income' ? 'text-success' : 'text-foreground'
                               )}
-                            </>
-                          ) : (
-                            // Income/Expense
-                            <>
-                              <span
-                                className={cn(
-                                  'font-mono font-semibold',
-                                  transaction.type === 'income' ? 'text-success' : 'text-foreground'
-                                )}
-                              >
-                                {formatCurrency(transaction.amount, transaction.currency)}
-                              </span>
-                              {transaction.mainCurrencyAmount != null && (
-                                <p className="text-xs text-muted-foreground">
-                                  {formatCurrency(transaction.mainCurrencyAmount, mainCurrency)}
-                                </p>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => handleEdit(transaction)}
-                          className="p-2 rounded-full hover:bg-primary/20 touch-target"
-                        >
-                          <Pencil className="h-4 w-4 text-primary" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(transaction)}
-                          className="p-2 rounded-full hover:bg-destructive/20 touch-target"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </button>
+                            >
+                              {formatCurrency(transaction.amount, transaction.currency)}
+                            </span>
+                            {transaction.mainCurrencyAmount != null && (
+                              <p className="text-xs text-muted-foreground">
+                                {formatCurrency(transaction.mainCurrencyAmount, mainCurrency)}
+                              </p>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   )
@@ -477,6 +467,8 @@ export function HistoryPage() {
           accounts={accounts}
           preselectedAccountId={editingTransaction.accountId}
           editTransaction={editingTransaction}
+          disableAutoFocus
+          onDelete={handleDelete}
           onClose={handleCloseEditModal}
         />
       )}
