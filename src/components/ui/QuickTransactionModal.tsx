@@ -377,7 +377,7 @@ export function QuickTransactionModal({
                 <div className="flex items-baseline gap-1">
                   <input
                     ref={amountInputRef}
-                    autoFocus
+                    autoFocus={!disableAutoFocus}
                     type="text"
                     inputMode="decimal"
                     value={amount}
@@ -436,7 +436,7 @@ export function QuickTransactionModal({
                 <div className="flex items-baseline gap-1">
                   <input
                     ref={amountInputRef}
-                    autoFocus
+                    autoFocus={!disableAutoFocus}
                     type="text"
                     inputMode="decimal"
                     value={amount}
@@ -515,7 +515,7 @@ export function QuickTransactionModal({
           <div className="p-6 flex items-baseline justify-center gap-2">
             <input
               ref={amountInputRef}
-              autoFocus
+              autoFocus={!disableAutoFocus}
               type="text"
               inputMode="decimal"
               value={amount}

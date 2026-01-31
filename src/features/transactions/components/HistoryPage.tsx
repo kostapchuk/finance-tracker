@@ -343,7 +343,14 @@ export function HistoryPage() {
             <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as typeof dateFilter)}>
               <SelectTrigger className="h-9">
                 <Calendar className="h-4 w-4 mr-2" />
-                <SelectValue />
+                <span className="truncate">
+                  {dateFilter === 'all' ? t('allTime') :
+                   dateFilter === 'today' ? t('today') :
+                   dateFilter === 'week' ? t('thisWeek') :
+                   dateFilter === 'month' ? t('thisMonth') :
+                   dateFilter === 'year' ? t('thisYear') :
+                   t('customRange')}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('allTime')}</SelectItem>
@@ -359,7 +366,11 @@ export function HistoryPage() {
             <Select value={accountFilter} onValueChange={setAccountFilter}>
               <SelectTrigger className="h-9">
                 <Wallet className="h-4 w-4 mr-2" />
-                <SelectValue placeholder={t('account')} />
+                <span className="truncate">
+                  {accountFilter === 'all'
+                    ? t('allAccounts')
+                    : accounts.find(a => a.id?.toString() === accountFilter)?.name || t('account')}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('allAccounts')}</SelectItem>
