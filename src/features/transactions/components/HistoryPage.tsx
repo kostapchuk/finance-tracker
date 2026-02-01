@@ -98,7 +98,11 @@ export function HistoryPage() {
     return txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { month: 'long', year: 'numeric' })
   }
 
-  const getAccountName = (id?: number) => accounts.find((a) => a.id === id)?.name || 'Unknown'
+  const getAccountName = (id?: number) => {
+    const account = accounts.find((a) => a.id === id)
+    return account ? `${account.name} (${account.currency})` : 'Unknown'
+  }
+  const getAccountNameWithCurrency = getAccountName
   const getCategoryName = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
   const getIncomeSourceName = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
@@ -369,14 +373,14 @@ export function HistoryPage() {
                 <span className="truncate">
                   {accountFilter === 'all'
                     ? t('allAccounts')
-                    : accounts.find(a => a.id?.toString() === accountFilter)?.name || t('account')}
+                    : getAccountNameWithCurrency(parseInt(accountFilter))}
                 </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('allAccounts')}</SelectItem>
                 {accounts.map((acc) => (
                   <SelectItem key={acc.id} value={acc.id!.toString()}>
-                    {acc.name}
+                    {acc.name} ({acc.currency})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -458,7 +462,8 @@ export function HistoryPage() {
                           {getTransactionTitle(transaction)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {getAccountName(transaction.accountId)} • {formatShortDate(new Date(transaction.date), language)}
+                          {getAccountNameWithCurrency(transaction.accountId)}
+                          {group !== t('today') && group !== t('yesterday') && ` • ${formatShortDate(new Date(transaction.date), language)}`}
                           {transaction.comment && ` • ${transaction.comment}`}
                         </p>
                       </div>

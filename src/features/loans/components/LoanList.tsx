@@ -46,7 +46,10 @@ export function LoanList() {
     setEditingLoan(null)
   }
 
-  const getAccountName = (id?: number) => accounts.find((a) => a.id === id)?.name || ''
+  const getAccountName = (id?: number) => {
+    const account = accounts.find((a) => a.id === id)
+    return account ? `${account.name} (${account.currency})` : ''
+  }
 
   const filteredLoans = useMemo(() => {
     switch (activeTab) {

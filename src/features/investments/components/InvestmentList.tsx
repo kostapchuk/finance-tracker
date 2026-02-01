@@ -48,7 +48,10 @@ export function InvestmentList() {
     setPriceUpdates((prev) => ({ ...prev, [investment.id!]: '' }))
   }
 
-  const getAccountName = (id: number) => accounts.find((a) => a.id === id)?.name || 'Unknown'
+  const getAccountName = (id: number) => {
+    const account = accounts.find((a) => a.id === id)
+    return account ? `${account.name} (${account.currency})` : 'Unknown'
+  }
 
   const portfolioStats = useMemo(() => {
     let totalValue = 0

@@ -100,12 +100,17 @@ export function InvestmentForm({ investment, open, onClose }: InvestmentFormProp
             <Label htmlFor="account">{t('investmentAccount')}</Label>
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger>
-                <SelectValue placeholder={t('selectAccount')} />
+                <SelectValue placeholder={t('selectAccount')}>
+                  {accountId && (() => {
+                    const a = investmentAccounts.find(acc => acc.id?.toString() === accountId)
+                    return a ? `${a.name} (${a.currency})` : undefined
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {investmentAccounts.map((a) => (
                   <SelectItem key={a.id} value={a.id!.toString()}>
-                    {a.name}
+                    {a.name} ({a.currency})
                   </SelectItem>
                 ))}
               </SelectContent>

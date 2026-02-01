@@ -32,7 +32,10 @@ export function TransactionList() {
   const [accountFilter, setAccountFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const getAccountName = (id?: number) => accounts.find((a) => a.id === id)?.name || 'Unknown'
+  const getAccountName = (id?: number) => {
+    const account = accounts.find((a) => a.id === id)
+    return account ? `${account.name} (${account.currency})` : 'Unknown'
+  }
   const getCategoryName = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
   const getIncomeSourceName = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
@@ -94,13 +97,15 @@ export function TransactionList() {
 
           <Select value={accountFilter} onValueChange={setAccountFilter}>
             <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder={t('account')} />
+              <SelectValue placeholder={t('account')}>
+                {accountFilter !== 'all' && getAccountName(parseInt(accountFilter))}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('allAccounts')}</SelectItem>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id!.toString()}>
-                  {a.name}
+                  {a.name} ({a.currency})
                 </SelectItem>
               ))}
             </SelectContent>
