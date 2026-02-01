@@ -27,6 +27,7 @@ export function TransactionList() {
   const accounts = useAppStore((state) => state.accounts)
   const categories = useAppStore((state) => state.categories)
   const incomeSources = useAppStore((state) => state.incomeSources)
+  const mainCurrency = useAppStore((state) => state.mainCurrency)
 
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [accountFilter, setAccountFilter] = useState<string>('all')
@@ -151,15 +152,30 @@ export function TransactionList() {
                       </div>
                     </div>
                   </div>
-                  <span
-                    className={`font-mono font-medium ${
-                      transaction.type === 'income' ? 'text-foreground' :
-                      transaction.type === 'expense' ? 'text-red-600' : ''
-                    }`}
-                  >
-                    {transaction.type === 'expense' ? '- ' : ''}
-                    {formatCurrency(transaction.amount, transaction.currency)}
-                  </span>
+                  <div className="text-right flex flex-col items-end">
+                    <span
+                      className={`font-mono font-medium ${
+                        transaction.type === 'income' ? 'text-foreground' :
+                        transaction.type === 'expense' ? 'text-red-600' : ''
+                      }`}
+                    >
+                      {transaction.type === 'expense' ? '- ' : ''}
+                      {transaction.mainCurrencyAmount != null
+                        ? formatCurrency(transaction.mainCurrencyAmount, mainCurrency)
+                        : formatCurrency(transaction.amount, transaction.currency)}
+                    </span>
+                    {transaction.mainCurrencyAmount != null && transaction.currency !== mainCurrency && (
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {transaction.type === 'expense' ? '- ' : ''}
+                        {formatCurrency(transaction.amount, transaction.currency)}
+                      </span>
+                    )}
+                    {transaction.type === 'transfer' && transaction.toAmount != null && (
+                      <span className="text-xs text-muted-foreground font-mono">
+                        → {formatCurrency(transaction.toAmount, accounts.find(a => a.id === transaction.toAccountId)?.currency || transaction.currency)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )
             })}

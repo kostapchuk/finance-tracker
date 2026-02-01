@@ -477,18 +477,44 @@ export function HistoryPage() {
                       <div className="text-right">
                         {transaction.type === 'transfer' ? (
                           // Transfer: show both amounts
-                          <>
-                            <span className="font-mono font-semibold text-foreground">
-                              {formatCurrency(transaction.amount, transaction.currency)}
-                            </span>
-                            {transaction.toAmount != null && (
-                              <p className="text-xs text-muted-foreground">
-                                → {formatCurrency(transaction.toAmount, accounts.find(a => a.id === transaction.toAccountId)?.currency || transaction.currency)}
-                              </p>
-                            )}
-                          </>
+                          (() => {
+                            const fromAmount = transaction.amount
+                            const fromCurrency = transaction.currency
+                            const toAmount = transaction.toAmount
+                            const toAccount = accounts.find(a => a.id === transaction.toAccountId)
+                            const toCurrency = toAccount?.currency || fromCurrency
+                            
+                            const isMultiCurrency = toAmount != null && fromCurrency !== toCurrency
+                            
+                            // If target is main currency but source is not, swap them to show main currency as primary
+                            if (isMultiCurrency && toCurrency === mainCurrency && fromCurrency !== mainCurrency) {
+                              return (
+                                <>
+                                  <span className="font-mono font-semibold text-foreground">
+                                    {formatCurrency(toAmount, toCurrency)}
+                                  </span>
+                                  <p className="text-xs text-muted-foreground">
+                                    ← {formatCurrency(fromAmount, fromCurrency)}
+                                  </p>
+                                </>
+                              )
+                            }
+                            
+                            return (
+                              <>
+                                <span className="font-mono font-semibold text-foreground">
+                                  {formatCurrency(fromAmount, fromCurrency)}
+                                </span>
+                                {toAmount != null && (
+                                  <p className="text-xs text-muted-foreground">
+                                    → {formatCurrency(toAmount, toCurrency)}
+                                  </p>
+                                )}
+                              </>
+                            )
+                          })()
                         ) : (
-                          // Income/Expense
+                          // Income/Expense/Loans/Investments
                           <>
                             <span
                               className={cn(
@@ -496,11 +522,14 @@ export function HistoryPage() {
                                 transaction.type === 'income' ? 'text-success' : 'text-foreground'
                               )}
                             >
-                              {formatCurrency(transaction.amount, transaction.currency)}
+                              {transaction.mainCurrencyAmount != null
+                                ? formatCurrency(transaction.mainCurrencyAmount, mainCurrency)
+                                : formatCurrency(transaction.amount, transaction.currency)}
                             </span>
-                            {transaction.mainCurrencyAmount != null && (
+                            {transaction.mainCurrencyAmount != null && 
+                             transaction.currency !== mainCurrency && (
                               <p className="text-xs text-muted-foreground">
-                                {formatCurrency(transaction.mainCurrencyAmount, mainCurrency)}
+                                {formatCurrency(transaction.amount, transaction.currency)}
                               </p>
                             )}
                           </>
