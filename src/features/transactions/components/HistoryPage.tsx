@@ -175,7 +175,14 @@ export function HistoryPage() {
         }
         return true
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => {
+        const dateA = new Date(a.date).getTime()
+        const dateB = new Date(b.date).getTime()
+        if (dateA !== dateB) {
+          return dateB - dateA
+        }
+        return (b.id || 0) - (a.id || 0)
+      })
   }, [transactions, typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery, accounts, categories, incomeSources])
 
   const groupedTransactions = useMemo(() => {
