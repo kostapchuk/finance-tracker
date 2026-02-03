@@ -51,29 +51,28 @@ export function QuickTransactionModal({
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const amountInputRef = useRef<HTMLInputElement>(null)
+  const buttonRef = useRef<HTMLDivElement>(null)
 
-  // Lock body scroll when modal is open
+  // Position button above keyboard using visualViewport - ref-based, no re-renders
   useEffect(() => {
-    const originalStyle = document.body.style.cssText
-    document.body.style.cssText = `
-      overflow: hidden;
-      position: fixed;
-      width: 100%;
-      height: 100%;
-    `
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateButton = () => {
+      if (buttonRef.current) {
+        // Position from top based on viewport height
+        buttonRef.current.style.top = `${viewport.offsetTop + viewport.height - 72}px`
+      }
+    }
+
+    updateButton()
+    viewport.addEventListener('resize', updateButton)
+    viewport.addEventListener('scroll', updateButton)
+
     return () => {
-      document.body.style.cssText = originalStyle
+      viewport.removeEventListener('resize', updateButton)
+      viewport.removeEventListener('scroll', updateButton)
     }
-  }, [])
-
-  // Prevent touchmove to stop iOS drag behavior
-  useEffect(() => {
-    const preventTouch = (e: TouchEvent) => {
-      e.preventDefault()
-    }
-
-    document.addEventListener('touchmove', preventTouch, { passive: false })
-    return () => document.removeEventListener('touchmove', preventTouch)
   }, [])
 
 
@@ -312,7 +311,7 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background overflow-hidden overscroll-none">
+    <div className="fixed inset-0 z-[100] bg-background">
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
@@ -585,7 +584,8 @@ export function QuickTransactionModal({
 
       {/* Submit Button - always fixed at bottom */}
       <div
-        className="fixed left-0 right-0 bottom-0 px-2 pb-safe bg-background/95 backdrop-blur-sm"
+        ref={buttonRef}
+        className="fixed left-0 right-0 px-2 pb-2 bg-background/95 backdrop-blur-sm"
       >
         <div className="max-w-lg mx-auto">
           <button
