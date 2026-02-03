@@ -70,17 +70,15 @@ export function QuickTransactionModal({
 
   // Prevent touchmove to stop iOS drag behavior
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
     const preventTouch = (e: TouchEvent) => {
       // Allow scrolling inside textarea
       if ((e.target as HTMLElement)?.tagName === 'TEXTAREA') return
       e.preventDefault()
     }
 
-    container.addEventListener('touchmove', preventTouch, { passive: false })
-    return () => container.removeEventListener('touchmove', preventTouch)
+    // Add to document to catch all touch events
+    document.addEventListener('touchmove', preventTouch, { passive: false })
+    return () => document.removeEventListener('touchmove', preventTouch)
   }, [])
 
   // Track keyboard visibility using visualViewport API
@@ -88,23 +86,30 @@ export function QuickTransactionModal({
     const viewport = window.visualViewport
     if (!viewport) return
 
-    const handleResize = () => {
+    const resetScroll = () => {
+      // Force scroll to top to prevent iOS viewport panning
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+
+    const handleViewportChange = () => {
       // Calculate keyboard height from viewport difference
       const heightDiff = window.innerHeight - viewport.height
       setKeyboardHeight(heightDiff > 50 ? heightDiff : 0)
-
-      // Reset any viewport scroll that iOS might have done
-      if (viewport.offsetTop > 0) {
-        window.scrollTo(0, 0)
-      }
+      resetScroll()
     }
 
-    viewport.addEventListener('resize', handleResize)
-    viewport.addEventListener('scroll', handleResize)
+    viewport.addEventListener('resize', handleViewportChange)
+    viewport.addEventListener('scroll', handleViewportChange)
+
+    // Also listen on window scroll
+    window.addEventListener('scroll', resetScroll)
 
     return () => {
-      viewport.removeEventListener('resize', handleResize)
-      viewport.removeEventListener('scroll', handleResize)
+      viewport.removeEventListener('resize', handleViewportChange)
+      viewport.removeEventListener('scroll', handleViewportChange)
+      window.removeEventListener('scroll', resetScroll)
     }
   }, [])
 
