@@ -83,27 +83,33 @@ export function QuickTransactionModal({
     const viewport = window.visualViewport
     if (!viewport) return
 
+    let debounceTimer: ReturnType<typeof setTimeout>
+
     const resetScroll = () => {
-      // Force scroll to top to prevent iOS viewport panning
       window.scrollTo(0, 0)
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
     }
 
     const handleViewportChange = () => {
-      // Calculate keyboard height from viewport difference
       const heightDiff = window.innerHeight - viewport.height
-      setKeyboardHeight(heightDiff > 50 ? heightDiff : 0)
+      const newHeight = heightDiff > 50 ? heightDiff : 0
+
+      // Debounce to prevent flicker during keyboard switch
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        setKeyboardHeight(newHeight)
+      }, 50)
+
       resetScroll()
     }
 
     viewport.addEventListener('resize', handleViewportChange)
     viewport.addEventListener('scroll', handleViewportChange)
-
-    // Also listen on window scroll
     window.addEventListener('scroll', resetScroll)
 
     return () => {
+      clearTimeout(debounceTimer)
       viewport.removeEventListener('resize', handleViewportChange)
       viewport.removeEventListener('scroll', handleViewportChange)
       window.removeEventListener('scroll', resetScroll)
@@ -612,17 +618,6 @@ export function QuickTransactionModal({
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              onFocus={() => {
-                // Aggressively reset scroll before paint to prevent visible jump
-                const resetScroll = () => {
-                  window.scrollTo(0, 0)
-                  document.documentElement.scrollTop = 0
-                  document.body.scrollTop = 0
-                }
-                resetScroll()
-                requestAnimationFrame(resetScroll)
-                requestAnimationFrame(() => requestAnimationFrame(resetScroll))
-              }}
               rows={3}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
             />
@@ -658,7 +653,7 @@ export function QuickTransactionModal({
       {/* Submit Button - fixed above keyboard when open */}
       {keyboardHeight > 0 && (
         <div
-          className="fixed left-0 right-0 px-2 pb-2 bg-background"
+          className="fixed left-0 right-0 px-2 pb-2 bg-background transition-[bottom] duration-100"
           style={{ bottom: keyboardHeight }}
         >
           <div className="max-w-lg mx-auto">
