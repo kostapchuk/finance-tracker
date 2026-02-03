@@ -117,12 +117,27 @@ export function QuickTransactionModal({
     }, 0)
   }
 
-  // Handle "Done" button on iOS keyboard (sends Enter key)
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleSubmit()
-    }
+  // Handle "Done" button on iOS keyboard - submit on blur if valid
+  const handleAmountBlur = () => {
+    // Small delay to check if keyboard actually closed (not just switching fields)
+    setTimeout(() => {
+      const viewport = window.visualViewport
+      const keyboardClosed = viewport ? (window.innerHeight - viewport.height) < 50 : true
+
+      if (keyboardClosed && amount && parseFloat(amount) > 0) {
+        // Check all validation conditions
+        const isValid =
+          !(!amount ||
+            (isMultiCurrencyTransfer && !targetAmount) ||
+            (isMultiCurrencyIncomeExpense && !targetAmount) ||
+            (needsAccountConversion && !accountAmount) ||
+            (mode.type !== 'transfer' && !selectedAccountId))
+
+        if (isValid) {
+          handleSubmit()
+        }
+      }
+    }, 100)
   }
 
   // Track keyboard height and check if button is covered
@@ -481,7 +496,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                     onTouchStart={handleInputTouchStart}
-                    onKeyDown={handleKeyDown}
+                    onBlur={handleAmountBlur}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -509,7 +524,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('target')}
                     onTouchStart={handleInputTouchStart}
-                    onKeyDown={handleKeyDown}
+                    onBlur={handleAmountBlur}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -544,7 +559,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                     onTouchStart={handleInputTouchStart}
-                    onKeyDown={handleKeyDown}
+                    onBlur={handleAmountBlur}
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -574,7 +589,7 @@ export function QuickTransactionModal({
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('target')}
                     onTouchStart={handleInputTouchStart}
-                        onKeyDown={handleKeyDown}
+                        onBlur={handleAmountBlur}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -606,7 +621,7 @@ export function QuickTransactionModal({
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('account')}
                         onTouchStart={handleInputTouchStart}
-                        onKeyDown={handleKeyDown}
+                        onBlur={handleAmountBlur}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -628,7 +643,7 @@ export function QuickTransactionModal({
               value={amount}
               onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
               onTouchStart={handleInputTouchStart}
-              onKeyDown={handleKeyDown}
+              onBlur={handleAmountBlur}
               placeholder="0"
               className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
             />
