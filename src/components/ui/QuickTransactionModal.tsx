@@ -71,12 +71,9 @@ export function QuickTransactionModal({
   // Prevent touchmove to stop iOS drag behavior
   useEffect(() => {
     const preventTouch = (e: TouchEvent) => {
-      // Allow scrolling inside textarea
-      if ((e.target as HTMLElement)?.tagName === 'TEXTAREA') return
       e.preventDefault()
     }
 
-    // Add to document to catch all touch events
     document.addEventListener('touchmove', preventTouch, { passive: false })
     return () => document.removeEventListener('touchmove', preventTouch)
   }, [])
@@ -615,6 +612,14 @@ export function QuickTransactionModal({
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              onFocus={() => {
+                // Reset scroll after iOS auto-scrolls to focused element
+                setTimeout(() => {
+                  window.scrollTo(0, 0)
+                  document.documentElement.scrollTop = 0
+                  document.body.scrollTop = 0
+                }, 50)
+              }}
               rows={3}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
             />
