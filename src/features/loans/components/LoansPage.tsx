@@ -6,6 +6,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 import { LoanForm } from './LoanForm'
+import { PaymentDialog } from './PaymentDialog'
 import type { LoanFormData } from './LoanForm'
 import type { Loan } from '@/database/types'
 
@@ -21,6 +22,8 @@ export function LoansPage() {
   const [loanFormOpen, setLoanFormOpen] = useState(false)
   const [givenExpanded, setGivenExpanded] = useState(true)
   const [receivedExpanded, setReceivedExpanded] = useState(true)
+  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null)
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
 
   // Split loans by type and status
   const { activeGiven, activeReceived, paidGiven, paidReceived } = useMemo(() => {
@@ -122,6 +125,11 @@ export function LoansPage() {
     setLoanFormOpen(true)
   }
 
+  const handleLoanClick = (loan: Loan) => {
+    setSelectedLoan(loan)
+    setPaymentDialogOpen(true)
+  }
+
   return (
     <div className="flex flex-col min-h-full pb-4">
       {/* Header */}
@@ -203,7 +211,7 @@ export function LoansPage() {
               </p>
             ) : (
               activeGiven.map((loan) => (
-                <LoanCard key={loan.id} loan={loan} />
+                <LoanCard key={loan.id} loan={loan} onClick={() => handleLoanClick(loan)} />
               ))
             )}
           </div>
@@ -238,7 +246,7 @@ export function LoansPage() {
               </p>
             ) : (
               activeReceived.map((loan) => (
-                <LoanCard key={loan.id} loan={loan} />
+                <LoanCard key={loan.id} loan={loan} onClick={() => handleLoanClick(loan)} />
               ))
             )}
           </div>
@@ -279,47 +287,57 @@ export function LoansPage() {
         onClose={() => setLoanFormOpen(false)}
         onSave={handleSaveLoan}
       />
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        loan={selectedLoan}
+        open={paymentDialogOpen}
+        onClose={() => {
+          setPaymentDialogOpen(false)
+          setSelectedLoan(null)
+        }}
+      />
     </div>
   )
 }
 
-// Helper component for loan cards (view-only)
-function LoanCard({ loan }: { loan: Loan }) {
+// Helper component for loan cards
+function LoanCard({ loan, onClick }: { loan: Loan; onClick?: () => void }) {
   const { t } = useLanguage()
   const remaining = loan.amount - loan.paidAmount
   const progress = (loan.paidAmount / loan.amount) * 100
 
   return (
-    <div className="p-4 bg-secondary/50 rounded-xl space-y-3">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="font-semibold">{loan.personName}</p>
+    <button
+      onClick={onClick}
+      className="w-full text-left p-4 bg-secondary/50 rounded-xl active:scale-[0.98] transition-all"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold truncate">{loan.personName}</p>
           {loan.description && (
-            <p className="text-sm text-muted-foreground">{loan.description}</p>
+            <p className="text-sm text-muted-foreground truncate">{loan.description}</p>
           )}
         </div>
-        <p className="font-semibold">
-          {formatCurrency(loan.amount, loan.currency)}
-        </p>
+        <div className="text-right ml-3">
+          <p className="font-semibold whitespace-nowrap">
+            {formatCurrency(remaining, loan.currency)}
+          </p>
+          <p className="text-xs text-muted-foreground">{t('left')}</p>
+        </div>
       </div>
 
       {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">
-            {t('paid')}: {formatCurrency(loan.paidAmount, loan.currency)}
-          </span>
-          <span className="font-medium">
-            {formatCurrency(remaining, loan.currency)} {t('left')}
-          </span>
-        </div>
-        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-          <div
-            className={`h-full transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+      <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+        <div
+          className={`h-full transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
+          style={{ width: `${progress}%` }}
+        />
       </div>
-    </div>
+      <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
+        <span>{formatCurrency(loan.paidAmount, loan.currency)} {t('paid').toLowerCase()}</span>
+        <span>{formatCurrency(loan.amount, loan.currency)}</span>
+      </div>
+    </button>
   )
 }

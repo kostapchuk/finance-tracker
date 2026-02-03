@@ -177,35 +177,37 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? t('editPayment') : t('recordPayment')}</DialogTitle>
+          <DialogTitle>{loan.personName}</DialogTitle>
           <DialogDescription>
-            {loan.type === 'given'
-              ? `${isEditMode ? t('editingPaymentFrom') : t('recordingPaymentFrom')} ${loan.personName}`
-              : `${isEditMode ? t('editingPaymentTo') : t('recordingPaymentTo')} ${loan.personName}`}
+            {loan.type === 'given' ? t('moneyGiven') : t('moneyReceived')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="p-4 bg-muted rounded-lg space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>{t('totalAmount')}</span>
-              <span className="font-medium">{formatCurrency(loan.amount, loan.currency)}</span>
+          {/* Progress summary */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-bold">{formatCurrency(displayRemaining, loan.currency)}</span>
+              <span className="text-sm text-muted-foreground">{t('remaining')}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>{t('alreadyPaid')}</span>
-              <span className="font-medium">{formatCurrency(loan.paidAmount, loan.currency)}</span>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
+                style={{ width: `${(loan.paidAmount / loan.amount) * 100}%` }}
+              />
             </div>
-            <div className="flex justify-between text-sm font-medium">
-              <span>{t('remaining')}</span>
-              <span className="text-primary">{formatCurrency(displayRemaining, loan.currency)}</span>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>{formatCurrency(loan.paidAmount, loan.currency)} {t('paid').toLowerCase()}</span>
+              <span>{formatCurrency(loan.amount, loan.currency)} {t('total').toLowerCase()}</span>
             </div>
           </div>
 
+          {/* Amount input */}
           {isMultiCurrency ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="flex-1 space-y-1">
                   <label className="text-xs text-muted-foreground">
-                    {loan.currency} ({t('amountOnLoan')})
+                    {loan.currency}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -216,7 +218,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
                       inputMode="decimal"
                       value={amount}
                       onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                      className="pl-8"
+                      className="pl-8 text-lg"
                       placeholder="0.00"
                       autoFocus
                       required
@@ -226,7 +228,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
                 <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
                 <div className="flex-1 space-y-1">
                   <label className="text-xs text-muted-foreground">
-                    {account?.currency} ({t('amountOnAccount')})
+                    {account?.currency}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -237,29 +239,18 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
                       inputMode="decimal"
                       value={accountAmount}
                       onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
-                      className="pl-8"
+                      className="pl-8 text-lg"
                       placeholder="0.00"
                       required
                     />
                   </div>
                 </div>
               </div>
-              {!isEditMode && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAmount(effectiveRemaining.toString())}
-                >
-                  {t('payFullRemaining')} ({formatCurrency(effectiveRemaining, loan.currency)})
-                </Button>
-              )}
             </div>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="amount">{t('paymentAmount')}</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">
                   {getCurrencySymbol(loan.currency)}
                 </span>
                 <Input
@@ -268,23 +259,24 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                  className="pl-8"
+                  className="pl-8 text-lg h-12"
                   placeholder="0.00"
                   autoFocus
                   required
                 />
               </div>
-              {!isEditMode && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAmount(effectiveRemaining.toString())}
-                >
-                  {t('payFullRemaining')}
-                </Button>
-              )}
             </div>
+          )}
+
+          {/* Quick action - pay full */}
+          {!isEditMode && displayRemaining > 0 && (
+            <button
+              type="button"
+              onClick={() => setAmount(effectiveRemaining.toString())}
+              className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+            >
+              {t('payFullRemaining')} ({formatCurrency(effectiveRemaining, loan.currency)})
+            </button>
           )}
 
           {/* Comment field for edit mode */}
@@ -301,13 +293,14 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button type="button" variant="outline" onClick={handleClose} className="flex-1 sm:flex-none">
               {t('cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isLoading || !amount || (!!isMultiCurrency && !accountAmount) || parseFloat(amount) > effectiveRemaining}
+              className="flex-1 sm:flex-none"
             >
               {isLoading ? t('recording') : isEditMode ? t('update') : t('recordPayment')}
             </Button>
