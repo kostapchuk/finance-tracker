@@ -442,7 +442,11 @@ export function HistoryPage() {
           {filterOptions.length > 0 && (
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="h-9">
-                <SelectValue placeholder={typeFilter === 'income' ? t('incomeSources') : t('categories')} />
+                <SelectValue placeholder={typeFilter === 'income' ? t('incomeSources') : t('categories')}>
+                  {categoryFilter === 'all'
+                    ? t('all')
+                    : filterOptions.find(opt => opt.id === categoryFilter)?.name || t('all')}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('all')}</SelectItem>

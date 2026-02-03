@@ -420,7 +420,9 @@ export function SettingsPage() {
             </div>
             <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
               <SelectTrigger className="w-[140px]">
-                <SelectValue />
+                <SelectValue>
+                  {language === 'en' ? t('english') : t('russian')}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="en">{t('english')}</SelectItem>
@@ -438,7 +440,9 @@ export function SettingsPage() {
             </div>
             <Select value={mainCurrency} onValueChange={(v) => setMainCurrency(v)}>
               <SelectTrigger className="w-[100px]">
-                <SelectValue />
+                <SelectValue>
+                  {getAllCurrencies().find(c => c.code === mainCurrency)?.symbol} {mainCurrency}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {getAllCurrencies().map((c) => (

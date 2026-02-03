@@ -86,7 +86,12 @@ export function TransactionList() {
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder={t('type')} />
+              <SelectValue placeholder={t('type')}>
+                {typeFilter === 'all' ? t('allTypes') :
+                 typeFilter === 'income' ? t('income') :
+                 typeFilter === 'expense' ? t('expense') :
+                 t('transfer')}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('allTypes')}</SelectItem>

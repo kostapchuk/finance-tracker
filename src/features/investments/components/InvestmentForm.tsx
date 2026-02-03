@@ -149,7 +149,9 @@ export function InvestmentForm({ investment, open, onClose }: InvestmentFormProp
             <Label htmlFor="currency">{t('currency')}</Label>
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger>
-                <SelectValue placeholder={t('selectCurrency')} />
+                <SelectValue placeholder={t('selectCurrency')}>
+                  {getAllCurrencies().find(c => c.code === currency)?.symbol} {currency}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {getAllCurrencies().map((c) => (

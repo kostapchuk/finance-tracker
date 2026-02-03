@@ -237,7 +237,9 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
                 <Label htmlFor="currency">{t('currency')}</Label>
                 <Select value={currency} onValueChange={setCurrency}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t('currency')} />
+                    <SelectValue placeholder={t('currency')}>
+                      {getAllCurrencies().find(c => c.code === currency)?.symbol} {currency}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {getAllCurrencies().map((c) => (
@@ -257,7 +259,9 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
               <Label htmlFor="currency">{t('currency')}</Label>
               <Select value={currency} onValueChange={setCurrency}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('currency')} />
+                  <SelectValue placeholder={t('currency')}>
+                    {getAllCurrencies().find(c => c.code === currency)?.symbol} {currency}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {getAllCurrencies().map((c) => (

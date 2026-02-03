@@ -120,7 +120,11 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
               <Label htmlFor="budgetPeriod">{t('budgetPeriod')}</Label>
               <Select value={budgetPeriod} onValueChange={(v) => setBudgetPeriod(v as typeof budgetPeriod)}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('selectPeriod')} />
+                  <SelectValue placeholder={t('selectPeriod')}>
+                    {budgetPeriod === 'weekly' ? t('weekly') :
+                     budgetPeriod === 'monthly' ? t('monthly') :
+                     t('yearly')}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="weekly">{t('weekly')}</SelectItem>
