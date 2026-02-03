@@ -48,11 +48,11 @@ export function AccountCard({
       )}
     >
       <div
-        className={cn("w-10 h-10 rounded-full flex items-center justify-center", dragHandleProps && "touch-none cursor-grab")}
+        className={cn("w-12 h-12 rounded-full flex items-center justify-center", dragHandleProps && "touch-none cursor-grab")}
         style={{ backgroundColor: color + '20' }}
         {...dragHandleProps}
       >
-        <IconComponent className="h-5 w-5" style={{ color }} />
+        <IconComponent className="h-6 w-6" style={{ color }} />
       </div>
       <div className="text-center w-full">
         <p className="text-sm text-muted-foreground truncate w-full">{name}</p>

@@ -399,10 +399,10 @@ export function Dashboard() {
               : icons.Circle
             return (
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center shadow-xl scale-110"
+                className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl scale-110"
                 style={{ backgroundColor: color + '20' }}
               >
-                <Icon className="h-5 w-5" style={{ color }} />
+                <Icon className="h-6 w-6" style={{ color }} />
               </div>
             )
           })()}
