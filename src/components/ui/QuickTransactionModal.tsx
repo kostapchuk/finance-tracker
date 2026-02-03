@@ -53,6 +53,20 @@ export function QuickTransactionModal({
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const amountInputRef = useRef<HTMLInputElement>(null)
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    const originalStyle = document.body.style.cssText
+    document.body.style.cssText = `
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    `
+    return () => {
+      document.body.style.cssText = originalStyle
+    }
+  }, [])
+
   // Track keyboard visibility using visualViewport API
   useEffect(() => {
     const viewport = window.visualViewport
@@ -62,6 +76,11 @@ export function QuickTransactionModal({
       // Calculate keyboard height from viewport difference
       const heightDiff = window.innerHeight - viewport.height
       setKeyboardHeight(heightDiff > 50 ? heightDiff : 0)
+
+      // Reset any viewport scroll that iOS might have done
+      if (viewport.offsetTop > 0) {
+        window.scrollTo(0, 0)
+      }
     }
 
     viewport.addEventListener('resize', handleResize)
@@ -308,7 +327,7 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-background overflow-hidden overscroll-none">
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
