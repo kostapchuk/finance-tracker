@@ -53,6 +53,27 @@ export function QuickTransactionModal({
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const amountInputRef = useRef<HTMLInputElement>(null)
 
+  // Lock body scroll and prevent touchmove
+  useEffect(() => {
+    const originalStyle = document.body.style.cssText
+    document.body.style.cssText = `
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    `
+
+    const preventTouch = (e: TouchEvent) => {
+      e.preventDefault()
+    }
+    document.addEventListener('touchmove', preventTouch, { passive: false })
+
+    return () => {
+      document.body.style.cssText = originalStyle
+      document.removeEventListener('touchmove', preventTouch)
+    }
+  }, [])
+
   // Prevent page scroll on input focus using transform hack
   // Must intercept BEFORE focus happens
   const handleInputTouchStart = (e: React.TouchEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -317,7 +338,7 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background">
+    <div className="fixed inset-0 z-[100] bg-background overflow-hidden">
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
