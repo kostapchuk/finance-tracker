@@ -430,8 +430,7 @@ export function QuickTransactionModal({
                     ref={amountInputRef}
                     autoFocus={!disableAutoFocus}
                     type="text"
-                    inputMode="decimal"
-                    value={amount}
+                                        value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                     placeholder="0"
@@ -456,8 +455,7 @@ export function QuickTransactionModal({
                 <div className="flex items-baseline gap-1">
                   <input
                     type="text"
-                    inputMode="decimal"
-                    value={targetAmount}
+                                        value={targetAmount}
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('target')}
                     placeholder="0"
@@ -489,8 +487,7 @@ export function QuickTransactionModal({
                     ref={amountInputRef}
                     autoFocus={!disableAutoFocus}
                     type="text"
-                    inputMode="decimal"
-                    value={amount}
+                                        value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                     placeholder="0"
@@ -516,8 +513,7 @@ export function QuickTransactionModal({
                     <div className="flex items-baseline gap-1">
                       <input
                         type="text"
-                        inputMode="decimal"
-                    step="0.01"
+                                            step="0.01"
                         value={targetAmount}
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('target')}
@@ -546,8 +542,7 @@ export function QuickTransactionModal({
                     <div className="flex items-baseline gap-1">
                       <input
                         type="text"
-                        inputMode="decimal"
-                    step="0.01"
+                                            step="0.01"
                         value={accountAmount}
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('account')}
@@ -568,8 +563,7 @@ export function QuickTransactionModal({
               ref={amountInputRef}
               autoFocus={!disableAutoFocus}
               type="text"
-              inputMode="decimal"
-              value={amount}
+                            value={amount}
               onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
               placeholder="0"
               className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
