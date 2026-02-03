@@ -51,7 +51,9 @@ export function QuickTransactionModal({
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [swipeY, setSwipeY] = useState(0)
   const amountInputRef = useRef<HTMLInputElement>(null)
+  const touchStartY = useRef(0)
 
   // Lock body scroll and prevent touchmove
   useEffect(() => {
@@ -73,6 +75,30 @@ export function QuickTransactionModal({
       document.removeEventListener('touchmove', preventTouch)
     }
   }, [])
+
+  // Swipe down to close
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Only track if not touching an input
+    if ((e.target as HTMLElement).tagName === 'INPUT' ||
+        (e.target as HTMLElement).tagName === 'TEXTAREA') return
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartY.current) return
+    const deltaY = e.touches[0].clientY - touchStartY.current
+    if (deltaY > 0) {
+      setSwipeY(deltaY)
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (swipeY > 100) {
+      onClose()
+    }
+    setSwipeY(0)
+    touchStartY.current = 0
+  }
 
   // Prevent page scroll on input focus using transform hack
   // Must intercept BEFORE focus happens
@@ -338,7 +364,13 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-x-0 top-2 bottom-2 z-[100] bg-card overflow-hidden rounded-3xl">
+    <div
+      className="fixed inset-x-0 top-2 bottom-2 z-[100] bg-card overflow-hidden rounded-3xl transition-transform"
+      style={{ transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined, opacity: swipeY > 0 ? 1 - swipeY / 300 : 1 }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
