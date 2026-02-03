@@ -616,8 +616,8 @@ export function QuickTransactionModal({
 
       {/* Submit Button - at bottom of modal or above keyboard */}
       <div
-        className="absolute left-0 right-0 px-2 pb-4"
-        style={{ bottom: keyboardHeight > 0 ? keyboardHeight : 0 }}
+        className="absolute left-0 right-0 px-2"
+        style={{ bottom: keyboardHeight > 0 ? keyboardHeight + 8 : 64 }}
       >
         <div className="max-w-lg mx-auto">
           <button
