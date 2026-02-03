@@ -51,6 +51,7 @@ export function QuickTransactionModal({
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const amountInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Pre-populate form when editing
   useEffect(() => {
@@ -287,15 +288,9 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-lg bg-card rounded-t-3xl pb-20 animate-in slide-in-from-bottom duration-300">
+    <div ref={containerRef} className="fixed inset-0 z-[100] bg-background overflow-y-auto">
+      {/* Full-page transaction form */}
+      <div className="min-h-full w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
@@ -560,6 +555,15 @@ export function QuickTransactionModal({
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              onFocus={() => {
+                // Preserve scroll position to prevent iOS auto-scroll on focus
+                if (containerRef.current) {
+                  const scrollTop = containerRef.current.scrollTop
+                  requestAnimationFrame(() => {
+                    containerRef.current?.scrollTo({ top: scrollTop })
+                  })
+                }
+              }}
               rows={3}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
             />
@@ -567,7 +571,7 @@ export function QuickTransactionModal({
         </div>
 
         {/* Submit Button */}
-        <div className="px-2 pb-4">
+        <div className="px-2 pb-8">
           <button
             onClick={handleSubmit}
             disabled={
@@ -588,6 +592,9 @@ export function QuickTransactionModal({
             {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
           </button>
         </div>
+
+        {/* Extra padding at bottom for keyboard visibility */}
+        <div className="h-[50vh]" />
       </div>
     </div>
   )
