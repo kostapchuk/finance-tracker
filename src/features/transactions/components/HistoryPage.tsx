@@ -6,6 +6,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { cn } from '@/utils/cn'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 import { QuickTransactionModal, type TransactionMode } from '@/components/ui/QuickTransactionModal'
@@ -538,24 +539,24 @@ export function HistoryPage() {
                             if (isMultiCurrency && toCurrency === mainCurrency && fromCurrency !== mainCurrency) {
                               return (
                                 <>
-                                  <span className="font-mono font-semibold text-foreground">
+                                  <BlurredAmount className="font-mono font-semibold text-foreground">
                                     {formatCurrency(toAmount, toCurrency)}
-                                  </span>
+                                  </BlurredAmount>
                                   <p className="text-xs text-muted-foreground">
-                                    ← {formatCurrency(fromAmount, fromCurrency)}
+                                    ← <BlurredAmount>{formatCurrency(fromAmount, fromCurrency)}</BlurredAmount>
                                   </p>
                                 </>
                               )
                             }
-                            
+
                             return (
                               <>
-                                <span className="font-mono font-semibold text-foreground">
+                                <BlurredAmount className="font-mono font-semibold text-foreground">
                                   {formatCurrency(fromAmount, fromCurrency)}
-                                </span>
+                                </BlurredAmount>
                                 {toAmount != null && (
                                   <p className="text-xs text-muted-foreground">
-                                    → {formatCurrency(toAmount, toCurrency)}
+                                    → <BlurredAmount>{formatCurrency(toAmount, toCurrency)}</BlurredAmount>
                                   </p>
                                 )}
                               </>
@@ -564,7 +565,7 @@ export function HistoryPage() {
                         ) : (
                           // Income/Expense/Loans/Investments
                           <>
-                            <span
+                            <BlurredAmount
                               className={cn(
                                 'font-mono font-semibold',
                                 transaction.type === 'income' ? 'text-success' : 'text-foreground'
@@ -573,11 +574,11 @@ export function HistoryPage() {
                               {transaction.mainCurrencyAmount != null
                                 ? formatCurrency(transaction.mainCurrencyAmount, mainCurrency)
                                 : formatCurrency(transaction.amount, transaction.currency)}
-                            </span>
-                            {transaction.mainCurrencyAmount != null && 
+                            </BlurredAmount>
+                            {transaction.mainCurrencyAmount != null &&
                              transaction.currency !== mainCurrency && (
                               <p className="text-xs text-muted-foreground">
-                                {formatCurrency(transaction.amount, transaction.currency)}
+                                <BlurredAmount>{formatCurrency(transaction.amount, transaction.currency)}</BlurredAmount>
                               </p>
                             )}
                           </>

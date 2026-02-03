@@ -4,6 +4,7 @@ import { MonthSelector } from '@/components/ui/MonthSelector'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { formatCurrency, formatCurrencyWithSign, getAmountColorClass } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import { cn } from '@/utils/cn'
 
@@ -143,9 +144,9 @@ export function ReportPage() {
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">{t('totalBalance')}</p>
-              <p className={cn('text-2xl font-bold', getAmountColorClass(stats.totalBalance))}>
+              <BlurredAmount className={cn('text-2xl font-bold block', getAmountColorClass(stats.totalBalance))}>
                 {formatCurrency(stats.totalBalance, mainCurrency)}
-              </p>
+              </BlurredAmount>
             </div>
           </div>
         </div>
@@ -157,18 +158,18 @@ export function ReportPage() {
               <TrendingUp className={`h-4 w-4 ${getAmountColorClass(stats.monthlyIncome)}`} />
               <span className="text-sm text-muted-foreground">{t('income')}</span>
             </div>
-            <p className={cn('text-xl font-bold', getAmountColorClass(stats.monthlyIncome))}>
+            <BlurredAmount className={cn('text-xl font-bold block', getAmountColorClass(stats.monthlyIncome))}>
               {formatCurrencyWithSign(stats.monthlyIncome, mainCurrency)}
-            </p>
+            </BlurredAmount>
           </div>
           <div className="p-4 bg-secondary/50 rounded-2xl">
             <div className="flex items-center gap-2 mb-2">
               <TrendingDown className={`h-4 w-4 ${stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive'}`} />
               <span className="text-sm text-muted-foreground">{t('expenses')}</span>
             </div>
-            <p className={cn('text-xl font-bold', stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive')}>
+            <BlurredAmount className={cn('text-xl font-bold block', stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive')}>
               {stats.monthlyExpenses === 0 ? formatCurrency(0, mainCurrency) : `- ${formatCurrency(stats.monthlyExpenses, mainCurrency)}`}
-            </p>
+            </BlurredAmount>
           </div>
         </div>
 
@@ -176,9 +177,9 @@ export function ReportPage() {
         <div className="p-4 bg-secondary/50 rounded-2xl">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t('netFlow')}</span>
-            <span className={cn('text-xl font-bold', getAmountColorClass(stats.netFlow))}>
+            <BlurredAmount className={cn('text-xl font-bold', getAmountColorClass(stats.netFlow))}>
               {formatCurrencyWithSign(stats.netFlow, mainCurrency)}
-            </span>
+            </BlurredAmount>
           </div>
         </div>
 
@@ -197,18 +198,18 @@ export function ReportPage() {
                   <ArrowUpRight className={`h-4 w-4 ${getAmountColorClass(loanStats.givenTotal)}`} />
                   <span className="text-sm text-muted-foreground">{t('owedToYou')}</span>
                 </div>
-                <p className={cn('text-xl font-bold', getAmountColorClass(loanStats.givenTotal))}>
+                <BlurredAmount className={cn('text-xl font-bold block', getAmountColorClass(loanStats.givenTotal))}>
                   {formatCurrency(loanStats.givenTotal, mainCurrency)}
-                </p>
+                </BlurredAmount>
               </div>
               <div className="p-4 bg-secondary/50 rounded-2xl">
                 <div className="flex items-center gap-2 mb-2">
                   <ArrowDownLeft className={`h-4 w-4 ${loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'}`} />
                   <span className="text-sm text-muted-foreground">{t('youOwe')}</span>
                 </div>
-                <p className={cn('text-xl font-bold', loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive')}>
+                <BlurredAmount className={cn('text-xl font-bold block', loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive')}>
                   {formatCurrency(loanStats.receivedTotal, mainCurrency)}
-                </p>
+                </BlurredAmount>
               </div>
             </div>
           </div>
@@ -255,9 +256,9 @@ export function ReportPage() {
                     />
                     <span className="text-sm">{category.name}</span>
                   </div>
-                  <span className="text-sm font-medium">
+                  <BlurredAmount className="text-sm font-medium">
                     {formatCurrency(category.value, mainCurrency)}
-                  </span>
+                  </BlurredAmount>
                 </div>
               ))}
             </div>

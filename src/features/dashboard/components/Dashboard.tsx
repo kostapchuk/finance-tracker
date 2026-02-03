@@ -12,6 +12,7 @@ import { DroppableZone } from '@/components/drag-drop/DroppableZone'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { formatCurrency } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
@@ -230,9 +231,9 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('income')}
               </h3>
-              <span className="font-semibold text-foreground">
+              <BlurredAmount className="font-semibold text-foreground">
                 {formatCurrency(monthlyData.totalIncome, mainCurrency)}
-              </span>
+              </BlurredAmount>
               {incomeExpanded ? (
                 <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
@@ -338,9 +339,9 @@ export function Dashboard() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                 {t('expenses')}
               </h3>
-              <span className="font-semibold text-foreground">
+              <BlurredAmount className="font-semibold text-foreground">
                 {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
-              </span>
+              </BlurredAmount>
               {isDraggingAccount && (
                 <span className="text-xs text-primary">{t('dropHere')}</span>
               )}

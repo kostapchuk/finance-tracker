@@ -1,6 +1,7 @@
 import { icons, type LucideIcon } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 
 interface CategoryTileProps {
   name: string
@@ -56,9 +57,9 @@ export function CategoryTile({
       </div>
       <div className="text-center w-full min-w-0 overflow-hidden">
         <p className="text-sm text-muted-foreground truncate">{name}</p>
-        <p className={cn('text-xs font-semibold truncate', getAmountColor())}>
+        <BlurredAmount className={cn('text-xs font-semibold truncate block', getAmountColor())}>
           {formatCurrency(amount, currency)}
-        </p>
+        </BlurredAmount>
       </div>
     </button>
   )

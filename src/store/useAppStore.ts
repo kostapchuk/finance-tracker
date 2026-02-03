@@ -17,6 +17,7 @@ interface AppState {
 
   // Settings
   mainCurrency: string
+  blurFinancialFigures: boolean
 
   // Loading states
   isLoading: boolean
@@ -40,6 +41,7 @@ interface AppState {
   navigateToHistoryWithAccount: (accountId: number) => void
   setSelectedMonth: (date: Date) => void
   setMainCurrency: (currency: string) => Promise<void>
+  setBlurFinancialFigures: (blur: boolean) => Promise<void>
   loadAllData: () => Promise<void>
   refreshAccounts: () => Promise<void>
   refreshIncomeSources: () => Promise<void>
@@ -62,6 +64,7 @@ export const useAppStore = create<AppState>((set) => ({
   loans: [],
   customCurrencies: [],
   mainCurrency: 'BYN',
+  blurFinancialFigures: false,
   isLoading: true,
   activeView: 'dashboard',
   selectedMonth: new Date(),
@@ -77,6 +80,11 @@ export const useAppStore = create<AppState>((set) => ({
   setMainCurrency: async (currency: string) => {
     await settingsRepo.update({ defaultCurrency: currency })
     set({ mainCurrency: currency })
+  },
+
+  setBlurFinancialFigures: async (blur: boolean) => {
+    await settingsRepo.update({ blurFinancialFigures: blur })
+    set({ blurFinancialFigures: blur })
   },
 
   loadAllData: async () => {
@@ -98,6 +106,7 @@ export const useAppStore = create<AppState>((set) => ({
       ])
 
       const mainCurrency = settings?.defaultCurrency || 'BYN'
+      const blurFinancialFigures = settings?.blurFinancialFigures || false
 
       // Check if this is a new user (no data in IndexedDB)
       const hasExistingData = accounts.length > 0 || transactions.length > 0 || incomeSources.length > 0
@@ -144,6 +153,7 @@ export const useAppStore = create<AppState>((set) => ({
           loans,
           customCurrencies,
           mainCurrency,
+          blurFinancialFigures,
           isLoading: false,
           onboardingStep: 1, // Start onboarding
         })
@@ -158,6 +168,7 @@ export const useAppStore = create<AppState>((set) => ({
           loans,
           customCurrencies,
           mainCurrency,
+          blurFinancialFigures,
           isLoading: false,
           onboardingStep: 0,
         })

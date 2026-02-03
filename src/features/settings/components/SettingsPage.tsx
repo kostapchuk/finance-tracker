@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { version } from '../../../../package.json'
 import {
   Wallet, Tags, DollarSign, Download, Upload, Trash2, ChevronRight,
-  Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical
+  Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical, EyeOff
 } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -16,6 +16,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { db } from '@/database/db'
 import { accountRepo, categoryRepo, incomeSourceRepo, customCurrencyRepo } from '@/database/repositories'
 import { formatCurrency, getAllCurrencies } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
@@ -29,6 +30,7 @@ export function SettingsPage() {
   const {
     accounts, incomeSources, categories, transactions, investments, loans, customCurrencies,
     mainCurrency, setMainCurrency,
+    blurFinancialFigures, setBlurFinancialFigures,
     loadAllData, refreshAccounts, refreshCategories, refreshIncomeSources, refreshCustomCurrencies
   } = useAppStore()
   const { language, setLanguage, t } = useLanguage()
@@ -262,7 +264,7 @@ export function SettingsPage() {
                   id={account.id!}
                   color={account.color}
                   title={account.name}
-                  subtitle={formatCurrency(account.balance, account.currency)}
+                  subtitle={<BlurredAmount>{formatCurrency(account.balance, account.currency)}</BlurredAmount>}
                   onEdit={() => { setEditingAccount(account); setAccountFormOpen(true) }}
                   onDelete={() => handleDeleteAccount(account)}
                 />
@@ -299,7 +301,7 @@ export function SettingsPage() {
                   id={category.id!}
                   color={category.color}
                   title={category.name}
-                  subtitle={category.budget ? `${t('budget')}: ${formatCurrency(category.budget, mainCurrency)}` : undefined}
+                  subtitle={category.budget ? <><span>{t('budget')}: </span><BlurredAmount>{formatCurrency(category.budget, mainCurrency)}</BlurredAmount></> : undefined}
                   onEdit={() => { setEditingCategory(category); setCategoryFormOpen(true) }}
                   onDelete={() => handleDeleteCategory(category)}
                 />
@@ -452,6 +454,27 @@ export function SettingsPage() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl">
+            <div className="flex items-center gap-3">
+              <EyeOff className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <span>{t('privacyMode')}</span>
+                <p className="text-xs text-muted-foreground">{t('privacyModeDescription')}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setBlurFinancialFigures(!blurFinancialFigures)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                blurFinancialFigures ? 'bg-primary' : 'bg-secondary'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  blurFinancialFigures ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
         </div>
       </div>
@@ -630,7 +653,7 @@ function SortableManagementItem({
   id: number
   color: string
   title: string
-  subtitle?: string
+  subtitle?: React.ReactNode
   onEdit: () => void
   onDelete: () => void
 }) {

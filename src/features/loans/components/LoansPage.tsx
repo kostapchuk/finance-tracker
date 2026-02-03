@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { LoanForm } from './LoanForm'
 import { PaymentDialog } from './PaymentDialog'
 import type { LoanFormData } from './LoanForm'
@@ -150,14 +151,14 @@ export function LoansPage() {
           </div>
           <div className="space-y-1">
             {Object.keys(totals.givenByCurrency).length === 0 ? (
-              <p className="text-xl font-bold text-foreground">
+              <BlurredAmount className="text-xl font-bold text-foreground block">
                 {formatCurrency(0, mainCurrency)}
-              </p>
+              </BlurredAmount>
             ) : (
               Object.entries(totals.givenByCurrency).map(([currency, amount]) => (
-                <p key={currency} className={`text-xl font-bold ${getAmountColorClass(amount)}`}>
+                <BlurredAmount key={currency} className={`text-xl font-bold block ${getAmountColorClass(amount)}`}>
                   {formatCurrency(amount, currency)}
-                </p>
+                </BlurredAmount>
               ))
             )}
           </div>
@@ -169,14 +170,14 @@ export function LoansPage() {
           </div>
           <div className="space-y-1">
             {Object.keys(totals.receivedByCurrency).length === 0 ? (
-              <p className="text-xl font-bold text-foreground">
+              <BlurredAmount className="text-xl font-bold text-foreground block">
                 {formatCurrency(0, mainCurrency)}
-              </p>
+              </BlurredAmount>
             ) : (
               Object.entries(totals.receivedByCurrency).map(([currency, amount]) => (
-                <p key={currency} className={`text-xl font-bold ${amount === 0 ? 'text-foreground' : 'text-destructive'}`}>
+                <BlurredAmount key={currency} className={`text-xl font-bold block ${amount === 0 ? 'text-foreground' : 'text-destructive'}`}>
                   {formatCurrency(amount, currency)}
-                </p>
+                </BlurredAmount>
               ))
             )}
           </div>
@@ -271,9 +272,9 @@ export function LoansPage() {
                     {loan.type === 'given' ? t('repaid') : t('paidOff')}
                   </p>
                 </div>
-                <p className="font-medium text-muted-foreground">
+                <BlurredAmount className="font-medium text-muted-foreground">
                   {formatCurrency(loan.amount, loan.currency)}
-                </p>
+                </BlurredAmount>
               </div>
             ))}
           </div>
@@ -320,9 +321,9 @@ function LoanCard({ loan, onClick }: { loan: Loan; onClick?: () => void }) {
           )}
         </div>
         <div className="text-right ml-3">
-          <p className="font-semibold whitespace-nowrap">
+          <BlurredAmount className="font-semibold whitespace-nowrap block">
             {formatCurrency(remaining, loan.currency)}
-          </p>
+          </BlurredAmount>
           <p className="text-xs text-muted-foreground">{t('left')}</p>
         </div>
       </div>
@@ -335,8 +336,8 @@ function LoanCard({ loan, onClick }: { loan: Loan; onClick?: () => void }) {
         />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
-        <span>{formatCurrency(loan.paidAmount, loan.currency)} {t('paid').toLowerCase()}</span>
-        <span>{formatCurrency(loan.amount, loan.currency)}</span>
+        <span><BlurredAmount>{formatCurrency(loan.paidAmount, loan.currency)}</BlurredAmount> {t('paid').toLowerCase()}</span>
+        <BlurredAmount>{formatCurrency(loan.amount, loan.currency)}</BlurredAmount>
       </div>
     </button>
   )

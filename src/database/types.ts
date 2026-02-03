@@ -116,6 +116,7 @@ export interface Loan {
 export interface AppSettings {
   id?: number
   defaultCurrency: string
+  blurFinancialFigures?: boolean
   createdAt: Date
   updatedAt: Date
 }

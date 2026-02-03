@@ -5,6 +5,7 @@ import { transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
@@ -547,7 +548,7 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedSource?.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(sourceMonthlyTotal, selectedSource?.currency || mainCurrency)}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(sourceMonthlyTotal, selectedSource?.currency || mainCurrency)}</BlurredAmount>
                   </div>
                 </button>
                 <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
@@ -566,7 +567,7 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedAccount?.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</BlurredAmount>
                   </div>
                 </button>
               </div>
@@ -588,7 +589,7 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedAccount?.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</BlurredAmount>
                   </div>
                 </button>
                 <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
@@ -607,7 +608,7 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedCategory?.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(categoryMonthlyTotal, mainCurrency)}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(categoryMonthlyTotal, mainCurrency)}</BlurredAmount>
                   </div>
                 </button>
               </div>
@@ -936,9 +937,9 @@ export function QuickTransactionModal({
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <p className="font-medium truncate">{account.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <BlurredAmount className="text-sm text-muted-foreground truncate block">
                     {formatCurrency(account.balance, account.currency)}
-                  </p>
+                  </BlurredAmount>
                 </div>
                 {account.id === selectedAccountId && (
                   <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />

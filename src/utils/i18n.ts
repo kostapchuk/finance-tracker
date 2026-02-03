@@ -67,6 +67,8 @@ export const translations = {
     russian: 'Russian',
     mainCurrency: 'Main Currency',
     mainCurrencyDescription: 'Used for displaying summaries',
+    privacyMode: 'Privacy Mode',
+    privacyModeDescription: 'Hide all amounts for screenshots',
 
     // Category management
     manageAccounts: 'Manage Accounts',
@@ -351,6 +353,8 @@ export const translations = {
     russian: 'Русский',
     mainCurrency: 'Основная валюта',
     mainCurrencyDescription: 'Используется для отображения итогов',
+    privacyMode: 'Режим приватности',
+    privacyModeDescription: 'Скрыть суммы для скриншотов',
 
     // Category management
     manageAccounts: 'Управление счетами',

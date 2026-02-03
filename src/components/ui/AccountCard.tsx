@@ -1,6 +1,7 @@
 import { icons, type LucideIcon } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import type { AccountType } from '@/database/types'
 
 interface AccountCardProps {
@@ -56,9 +57,9 @@ export function AccountCard({
       </div>
       <div className="text-center w-full min-w-0 overflow-hidden">
         <p className="text-sm text-muted-foreground truncate">{name}</p>
-        <p className="text-xs font-semibold text-foreground truncate">
+        <BlurredAmount className="text-xs font-semibold text-foreground truncate block">
           {formatCurrency(balance, currency)}
-        </p>
+        </BlurredAmount>
       </div>
     </button>
   )
