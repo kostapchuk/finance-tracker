@@ -103,6 +103,23 @@ export function QuickTransactionModal({
   }
 
 
+  // Prevent page scroll on input focus using transform hack
+  const handleInputTouchStart = (e: React.TouchEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const el = e.currentTarget
+    if (document.activeElement === el) return // Already focused
+
+    e.preventDefault()
+    el.style.transform = 'translateY(-8000px)'
+    el.focus()
+    setTimeout(() => {
+      el.style.transform = 'none'
+      window.scrollTo(0, 0)
+      // Refocus to show cursor
+      el.blur()
+      el.focus()
+    }, 0)
+  }
+
   // Handle "Done" button on iOS keyboard - submit on blur if valid
   const handleAmountBlur = () => {
     if (amount && parseFloat(amount) > 0) {
@@ -476,6 +493,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                                         onBlur={handleAmountBlur}
+                    onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -503,6 +521,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('target')}
                                         onBlur={handleAmountBlur}
+                    onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -537,6 +556,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                                         onBlur={handleAmountBlur}
+                    onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -566,6 +586,7 @@ export function QuickTransactionModal({
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('target')}
                                             onBlur={handleAmountBlur}
+                        onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -597,6 +618,7 @@ export function QuickTransactionModal({
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('account')}
                                                 onBlur={handleAmountBlur}
+                        onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -618,6 +640,7 @@ export function QuickTransactionModal({
               value={amount}
               onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                             onBlur={handleAmountBlur}
+              onTouchStart={handleInputTouchStart}
               placeholder="0"
               className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
             />
@@ -658,7 +681,8 @@ export function QuickTransactionModal({
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-                            rows={2}
+              onTouchStart={handleInputTouchStart}
+              rows={2}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
             />
           </div>
