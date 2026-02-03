@@ -288,9 +288,12 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-[100] bg-background overflow-y-auto">
+    <div
+      ref={containerRef}
+      className="fixed inset-0 z-[100] bg-background overflow-y-auto overscroll-y-contain"
+    >
       {/* Full-page transaction form */}
-      <div className="min-h-full w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
+      <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
@@ -571,7 +574,7 @@ export function QuickTransactionModal({
         </div>
 
         {/* Submit Button */}
-        <div className="px-2 pb-8">
+        <div className="px-2 pb-4">
           <button
             onClick={handleSubmit}
             disabled={
@@ -592,9 +595,6 @@ export function QuickTransactionModal({
             {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
           </button>
         </div>
-
-        {/* Extra padding at bottom for keyboard visibility */}
-        <div className="h-[50vh]" />
       </div>
     </div>
   )
