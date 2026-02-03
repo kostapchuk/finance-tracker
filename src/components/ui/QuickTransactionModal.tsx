@@ -903,7 +903,7 @@ export function QuickTransactionModal({
 
       {/* Account Picker Overlay */}
       {showAccountPicker && (
-        <div className="absolute inset-0 bg-background/95 z-10 flex flex-col">
+        <div className="absolute inset-0 bg-background z-10 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h3 className="font-semibold">{t('selectAccount')}</h3>
             <button
@@ -951,7 +951,7 @@ export function QuickTransactionModal({
 
       {/* Income Source Picker Overlay */}
       {showSourcePicker && mode.type === 'income' && (
-        <div className="absolute inset-0 bg-background/95 z-10 flex flex-col">
+        <div className="absolute inset-0 bg-background z-10 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h3 className="font-semibold">{t('incomeSources')}</h3>
             <button
@@ -997,7 +997,7 @@ export function QuickTransactionModal({
 
       {/* Category Picker Overlay */}
       {showCategoryPicker && mode.type === 'expense' && (
-        <div className="absolute inset-0 bg-background/95 z-10 flex flex-col">
+        <div className="absolute inset-0 bg-background z-10 flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h3 className="font-semibold">{t('categories')}</h3>
             <button
