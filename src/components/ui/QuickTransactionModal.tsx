@@ -114,6 +114,11 @@ export function QuickTransactionModal({
     requestAnimationFrame(() => {
       el.style.transform = 'none'
       window.scrollTo(0, 0)
+      // Re-trigger cursor visibility
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+        const len = el.value.length
+        el.setSelectionRange(len, len)
+      }
     })
   }
 
