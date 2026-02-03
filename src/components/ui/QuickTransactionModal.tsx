@@ -117,6 +117,14 @@ export function QuickTransactionModal({
     }, 0)
   }
 
+  // Handle "Done" button on iOS keyboard (sends Enter key)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
   // Track keyboard height and check if button is covered
   useEffect(() => {
     const viewport = window.visualViewport
@@ -473,6 +481,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                     onTouchStart={handleInputTouchStart}
+                    onKeyDown={handleKeyDown}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -500,6 +509,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('target')}
                     onTouchStart={handleInputTouchStart}
+                    onKeyDown={handleKeyDown}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -534,6 +544,7 @@ export function QuickTransactionModal({
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
                     onTouchStart={handleInputTouchStart}
+                    onKeyDown={handleKeyDown}
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -563,6 +574,7 @@ export function QuickTransactionModal({
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('target')}
                     onTouchStart={handleInputTouchStart}
+                        onKeyDown={handleKeyDown}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -594,6 +606,7 @@ export function QuickTransactionModal({
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('account')}
                         onTouchStart={handleInputTouchStart}
+                        onKeyDown={handleKeyDown}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -615,6 +628,7 @@ export function QuickTransactionModal({
               value={amount}
               onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
               onTouchStart={handleInputTouchStart}
+              onKeyDown={handleKeyDown}
               placeholder="0"
               className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
             />
