@@ -656,7 +656,7 @@ export function QuickTransactionModal({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onTouchStart={handleInputTouchStart}
-              rows={3}
+              rows={2}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
             />
           </div>
