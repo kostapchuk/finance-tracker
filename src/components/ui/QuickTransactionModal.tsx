@@ -227,6 +227,21 @@ export function QuickTransactionModal({
       .reduce((sum, t) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
   }, [mode.type, selectedCategoryId, transactions, selectedMonth])
 
+  // Calculate monthly total for selected income source
+  const sourceMonthlyTotal = useMemo(() => {
+    if (mode.type !== 'income' || !selectedSourceId) return 0
+    const startOfMonth = getStartOfMonth(selectedMonth)
+    const endOfMonth = getEndOfMonth(selectedMonth)
+    return transactions
+      .filter(t =>
+        t.type === 'income' &&
+        t.incomeSourceId === selectedSourceId &&
+        new Date(t.date) >= startOfMonth &&
+        new Date(t.date) <= endOfMonth
+      )
+      .reduce((sum, t) => sum + t.amount, 0)
+  }, [mode.type, selectedSourceId, transactions, selectedMonth])
+
   // Detect multi-currency transfer
   const isMultiCurrencyTransfer = mode.type === 'transfer' &&
     mode.fromAccount.currency !== mode.toAccount.currency
@@ -532,6 +547,7 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedSource?.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(sourceMonthlyTotal, selectedSource?.currency || mainCurrency)}</p>
                   </div>
                 </button>
                 <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
