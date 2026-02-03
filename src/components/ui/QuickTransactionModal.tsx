@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
+import { X, Calendar, MessageSquare, ArrowRight, Trash2, ChevronDown } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
@@ -9,8 +9,8 @@ import { reverseTransactionBalance } from '@/utils/transactionBalance'
 import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
 
 export type TransactionMode =
-  | { type: 'income'; source: IncomeSource }
-  | { type: 'expense'; category: Category }
+  | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
+  | { type: 'expense'; category: Category; preselectedAccountId?: number }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
 
 interface QuickTransactionModalProps {
@@ -35,6 +35,8 @@ export function QuickTransactionModal({
   const refreshTransactions = useAppStore((state) => state.refreshTransactions)
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const loans = useAppStore((state) => state.loans)
+  const incomeSources = useAppStore((state) => state.incomeSources)
+  const categories = useAppStore((state) => state.categories)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t, language } = useLanguage()
 
@@ -44,9 +46,18 @@ export function QuickTransactionModal({
   const [targetAmount, setTargetAmount] = useState('')  // mainCurrency amount for totals
   const [accountAmount, setAccountAmount] = useState('')  // account currency amount (for income when account != source)
   const [activeAmountField, setActiveAmountField] = useState<'source' | 'target' | 'account'>('source')
-  const [selectedAccountId] = useState<number | undefined>(
+  const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(
     preselectedAccountId ?? accounts[0]?.id
   )
+  const [selectedSourceId, setSelectedSourceId] = useState<number | undefined>(
+    mode.type === 'income' ? mode.source.id : undefined
+  )
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
+    mode.type === 'expense' ? mode.category.id : undefined
+  )
+  const [showAccountPicker, setShowAccountPicker] = useState(false)
+  const [showSourcePicker, setShowSourcePicker] = useState(false)
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -187,6 +198,17 @@ export function QuickTransactionModal({
     return () => timers.forEach(clearTimeout)
   }, [disableAutoFocus])
 
+  // Get the currently selected income source
+  const selectedSource = mode.type === 'income'
+    ? incomeSources.find(s => s.id === selectedSourceId) || mode.source
+    : null
+
+  // Get the currently selected category (filter out loan categories)
+  const expenseCategories = categories.filter(c => c.categoryType !== 'loan')
+  const selectedCategory = mode.type === 'expense'
+    ? expenseCategories.find(c => c.id === selectedCategoryId) || mode.category
+    : null
+
   // Detect multi-currency transfer
   const isMultiCurrencyTransfer = mode.type === 'transfer' &&
     mode.fromAccount.currency !== mode.toAccount.currency
@@ -195,8 +217,9 @@ export function QuickTransactionModal({
   const selectedAccount = accounts.find(a => a.id === selectedAccountId)
   // For income: need SEPARATE mainCurrency field only if source != mainCurrency AND account != mainCurrency
   // If account IS mainCurrency, the accountAmount serves as mainCurrencyAmount (no separate field needed)
+  const sourceCurrency = selectedSource?.currency || (mode.type === 'income' ? mode.source.currency : '')
   const isMultiCurrencyIncome = mode.type === 'income' &&
-    mode.source.currency !== mainCurrency &&
+    sourceCurrency !== mainCurrency &&
     selectedAccount?.currency !== mainCurrency
   // For expense: need mainCurrency conversion when account currency differs from mainCurrency (for budgets)
   const isMultiCurrencyExpense = mode.type === 'expense' &&
@@ -204,21 +227,53 @@ export function QuickTransactionModal({
   const isMultiCurrencyIncomeExpense = isMultiCurrencyIncome || isMultiCurrencyExpense
   // For income: need account currency conversion if account differs from source
   const needsAccountConversion = mode.type === 'income' &&
-    selectedAccount?.currency !== mode.source.currency
+    selectedAccount?.currency !== sourceCurrency
+
+  // Reset amounts when account or source changes
+  const handleAccountChange = (newAccountId: number) => {
+    const newAccount = accounts.find(a => a.id === newAccountId)
+    const oldAccount = selectedAccount
+    if (newAccount && oldAccount && newAccount.currency !== oldAccount.currency) {
+      // Currency changed, reset conversion amounts
+      setTargetAmount('')
+      setAccountAmount('')
+    }
+    setSelectedAccountId(newAccountId)
+    setShowAccountPicker(false)
+  }
+
+  const handleSourceChange = (newSourceId: number) => {
+    const newSource = incomeSources.find(s => s.id === newSourceId)
+    const oldSource = selectedSource
+    if (newSource && oldSource && newSource.currency !== oldSource.currency) {
+      // Currency changed, reset amounts
+      setAmount('')
+      setTargetAmount('')
+      setAccountAmount('')
+    }
+    setSelectedSourceId(newSourceId)
+    setShowSourcePicker(false)
+  }
+
+  const handleCategoryChange = (newCategoryId: number) => {
+    setSelectedCategoryId(newCategoryId)
+    setShowCategoryPicker(false)
+  }
 
   // Determine title and color based on mode type
   const getTitle = () => {
-    if (mode.type === 'income') return mode.source.name
-    if (mode.type === 'expense') return mode.category.name
+    if (mode.type === 'income') return selectedSource?.name || mode.source.name
+    if (mode.type === 'expense') return selectedCategory?.name || mode.category.name
     return `${mode.fromAccount.name} → ${mode.toAccount.name}`
   }
   const getColor = () => {
-    if (mode.type === 'income') return mode.source.color
-    if (mode.type === 'expense') return mode.category.color
+    if (mode.type === 'income') return selectedSource?.color || mode.source.color
+    if (mode.type === 'expense') return selectedCategory?.color || mode.category.color
     return '#6366f1' // Indigo for transfers
   }
   const title = getTitle()
   const color = getColor()
+  const currentSourceCurrency = selectedSource?.currency || (mode.type === 'income' ? mode.source.currency : '')
 
   // Get current currency symbol for display
   const getCurrentCurrency = () => {
@@ -316,6 +371,7 @@ export function QuickTransactionModal({
           // - amount = source currency (what you earned, for tile display)
           // - mainCurrencyAmount = main currency (for totals)
           // - account balance = accountAmount if account != source, else use amount
+          const incomeSource = selectedSource || mode.source
           const sourceAmount = numAmount  // source currency
           const balanceAmount = needsAccountConversion
             ? parseFloat(accountAmount)  // account currency if different from source
@@ -325,7 +381,7 @@ export function QuickTransactionModal({
           // - If source == mainCurrency: no conversion needed (undefined)
           // - If account == mainCurrency: balanceAmount IS the mainCurrency amount
           // - Otherwise: use the separate targetAmount field
-          const sourceIsMain = mode.source.currency === mainCurrency
+          const sourceIsMain = incomeSource.currency === mainCurrency
           const accountIsMain = account.currency === mainCurrency
           let storedMainCurrencyAmount: number | undefined
           if (sourceIsMain) {
@@ -339,11 +395,11 @@ export function QuickTransactionModal({
           const transactionData = {
             type: 'income' as const,
             amount: sourceAmount,  // source currency amount for display
-            currency: mode.source.currency,  // income source currency
+            currency: incomeSource.currency,  // income source currency
             date: new Date(date),
             comment: comment || undefined,
             accountId: selectedAccountId,
-            incomeSourceId: mode.source.id,
+            incomeSourceId: incomeSource.id,
             mainCurrencyAmount: storedMainCurrencyAmount,
           }
 
@@ -359,6 +415,7 @@ export function QuickTransactionModal({
           // Expense handling:
           // - amount = account currency
           // - mainCurrencyAmount = main currency (for budgets)
+          const expenseCategory = selectedCategory || mode.category
           const transactionAmount = numAmount
           const storedMainCurrencyAmount = isMultiCurrencyExpense
             ? parseFloat(targetAmount)
@@ -371,7 +428,7 @@ export function QuickTransactionModal({
             date: new Date(date),
             comment: comment || undefined,
             accountId: selectedAccountId,
-            categoryId: mode.category.id,
+            categoryId: expenseCategory.id,
             mainCurrencyAmount: storedMainCurrencyAmount,
           }
 
@@ -432,6 +489,38 @@ export function QuickTransactionModal({
                   />
                 </div>
               </div>
+            ) : mode.type === 'income' ? (
+              <button
+                onClick={() => setShowSourcePicker(true)}
+                className="flex items-center gap-1 p-1 -m-1 rounded-lg hover:bg-secondary/50 transition-colors"
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: color + '20' }}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            ) : mode.type === 'expense' ? (
+              <button
+                onClick={() => setShowCategoryPicker(true)}
+                className="flex items-center gap-1 p-1 -m-1 rounded-lg hover:bg-secondary/50 transition-colors"
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: color + '20' }}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
             ) : (
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -544,7 +633,7 @@ export function QuickTransactionModal({
                 )}
               >
                 <p className="text-xs text-muted-foreground mb-1">
-                  {mode.type === 'income' ? mode.source.currency : selectedAccount.currency}
+                  {mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency}
                 </p>
                 <div className="flex items-baseline gap-1">
                   <input
@@ -559,7 +648,7 @@ export function QuickTransactionModal({
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
-                  <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.type === 'income' ? mode.source.currency : selectedAccount.currency)}</span>
+                  <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency)}</span>
                 </div>
               </div>
 
@@ -662,10 +751,18 @@ export function QuickTransactionModal({
             />
           </label>
           {mode.type !== 'transfer' && selectedAccount && (
-            <div className="w-3/5 px-3 py-2.5 bg-secondary/50 rounded-lg flex items-center gap-1.5 min-w-0">
+            <button
+              onClick={() => setShowAccountPicker(true)}
+              className="w-3/5 px-3 py-2.5 bg-secondary/50 rounded-lg flex items-center gap-1.5 min-w-0 hover:bg-secondary/70 transition-colors"
+            >
+              <div
+                className="w-3 h-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: selectedAccount.color }}
+              />
               <span className="font-medium truncate">{selectedAccount.name}</span>
               <span className="text-muted-foreground whitespace-nowrap text-sm">{formatCurrency(selectedAccount.balance, selectedAccount.currency)}</span>
-            </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto flex-shrink-0" />
+            </button>
           )}
         </div>
 
@@ -734,6 +831,145 @@ export function QuickTransactionModal({
             >
               {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Account Picker Overlay */}
+      {showAccountPicker && (
+        <div className="absolute inset-0 bg-background/95 z-10 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h3 className="font-semibold">{t('selectAccount')}</h3>
+            <button
+              onClick={() => setShowAccountPicker(false)}
+              className="p-2 rounded-full hover:bg-secondary touch-target"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {accounts.map((account) => (
+              <button
+                key={account.id}
+                onClick={() => handleAccountChange(account.id!)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
+                  account.id === selectedAccountId
+                    ? 'bg-primary/20'
+                    : 'hover:bg-secondary/50'
+                )}
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: account.color + '20' }}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: account.color }}
+                  />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium">{account.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatCurrency(account.balance, account.currency)}
+                  </p>
+                </div>
+                {account.id === selectedAccountId && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Income Source Picker Overlay */}
+      {showSourcePicker && mode.type === 'income' && (
+        <div className="absolute inset-0 bg-background/95 z-10 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h3 className="font-semibold">{t('incomeSources')}</h3>
+            <button
+              onClick={() => setShowSourcePicker(false)}
+              className="p-2 rounded-full hover:bg-secondary touch-target"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {incomeSources.map((source) => (
+              <button
+                key={source.id}
+                onClick={() => handleSourceChange(source.id!)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
+                  source.id === selectedSourceId
+                    ? 'bg-primary/20'
+                    : 'hover:bg-secondary/50'
+                )}
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: source.color + '20' }}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: source.color }}
+                  />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium">{source.name}</p>
+                  <p className="text-sm text-muted-foreground">{source.currency}</p>
+                </div>
+                {source.id === selectedSourceId && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Category Picker Overlay */}
+      {showCategoryPicker && mode.type === 'expense' && (
+        <div className="absolute inset-0 bg-background/95 z-10 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h3 className="font-semibold">{t('categories')}</h3>
+            <button
+              onClick={() => setShowCategoryPicker(false)}
+              className="p-2 rounded-full hover:bg-secondary touch-target"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {expenseCategories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => handleCategoryChange(category.id!)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
+                  category.id === selectedCategoryId
+                    ? 'bg-primary/20'
+                    : 'hover:bg-secondary/50'
+                )}
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: category.color + '20' }}
+                >
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium">{category.name}</p>
+                </div>
+                {category.id === selectedCategoryId && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
       )}
