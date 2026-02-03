@@ -4,7 +4,7 @@ import { type Language, type TranslationKey, translations, getStoredLanguage, se
 // Global subscribers for language changes
 const subscribers = new Set<() => void>()
 
-let currentLang: Language = 'en'
+let currentLang: Language = 'ru'
 
 // Initialize from localStorage
 if (typeof window !== 'undefined') {
