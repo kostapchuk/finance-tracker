@@ -52,6 +52,7 @@ export function QuickTransactionModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const amountInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -65,6 +66,21 @@ export function QuickTransactionModal({
     return () => {
       document.body.style.cssText = originalStyle
     }
+  }, [])
+
+  // Prevent touchmove to stop iOS drag behavior
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const preventTouch = (e: TouchEvent) => {
+      // Allow scrolling inside textarea
+      if ((e.target as HTMLElement)?.tagName === 'TEXTAREA') return
+      e.preventDefault()
+    }
+
+    container.addEventListener('touchmove', preventTouch, { passive: false })
+    return () => container.removeEventListener('touchmove', preventTouch)
   }, [])
 
   // Track keyboard visibility using visualViewport API
@@ -327,7 +343,7 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background overflow-hidden overscroll-none">
+    <div ref={containerRef} className="fixed inset-0 z-[100] bg-background overflow-hidden overscroll-none">
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
