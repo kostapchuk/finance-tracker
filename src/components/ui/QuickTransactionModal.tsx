@@ -613,12 +613,15 @@ export function QuickTransactionModal({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onFocus={() => {
-                // Reset scroll after iOS auto-scrolls to focused element
-                setTimeout(() => {
+                // Aggressively reset scroll before paint to prevent visible jump
+                const resetScroll = () => {
                   window.scrollTo(0, 0)
                   document.documentElement.scrollTop = 0
                   document.body.scrollTop = 0
-                }, 50)
+                }
+                resetScroll()
+                requestAnimationFrame(resetScroll)
+                requestAnimationFrame(() => requestAnimationFrame(resetScroll))
               }}
               rows={3}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
