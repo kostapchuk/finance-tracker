@@ -122,25 +122,19 @@ export function QuickTransactionModal({
 
   // Handle "Done" button on iOS keyboard - submit on blur if valid
   const handleAmountBlur = () => {
-    // Small delay to check if keyboard actually closed (not just switching fields)
-    setTimeout(() => {
-      const viewport = window.visualViewport
-      const keyboardClosed = viewport ? (window.innerHeight - viewport.height) < 50 : true
+    if (amount && parseFloat(amount) > 0) {
+      // Check all validation conditions
+      const isValid =
+        !(!amount ||
+          (isMultiCurrencyTransfer && !targetAmount) ||
+          (isMultiCurrencyIncomeExpense && !targetAmount) ||
+          (needsAccountConversion && !accountAmount) ||
+          (mode.type !== 'transfer' && !selectedAccountId))
 
-      if (keyboardClosed && amount && parseFloat(amount) > 0) {
-        // Check all validation conditions
-        const isValid =
-          !(!amount ||
-            (isMultiCurrencyTransfer && !targetAmount) ||
-            (isMultiCurrencyIncomeExpense && !targetAmount) ||
-            (needsAccountConversion && !accountAmount) ||
-            (mode.type !== 'transfer' && !selectedAccountId))
-
-        if (isValid) {
-          handleSubmit()
-        }
+      if (isValid) {
+        handleSubmit()
       }
-    }, 100)
+    }
   }
 
   // Track keyboard height and check if button is covered
