@@ -4,12 +4,12 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
-import { transactionRepo } from '@/database/repositories'
+import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
 import { cn } from '@/utils/cn'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 import { QuickTransactionModal, type TransactionMode } from '@/components/ui/QuickTransactionModal'
-import { LoanForm } from '@/features/loans/components/LoanForm'
+import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
 import type { Transaction, TransactionType, Loan } from '@/database/types'
 
@@ -257,6 +257,50 @@ export function HistoryPage() {
     setEditModalType(null)
     setEditTransactionMode(null)
     setEditingLoan(null)
+  }
+
+  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
+    if (!isEdit || !loanId || !editingTransaction) return
+
+    // Get the old transaction to reverse its effects
+    const oldTransaction = editingTransaction
+
+    // 1. Reverse old transaction's balance effect
+    await reverseTransactionBalance(oldTransaction, loans)
+
+    // 2. Update the loan record
+    await loanRepo.update(loanId, {
+      type: data.type,
+      personName: data.personName,
+      description: data.description,
+      amount: data.amount,
+      currency: data.currency,
+      accountId: data.accountId,
+      dueDate: data.dueDate,
+    })
+
+    // 3. Calculate new balance amount
+    const newBalanceAmount = data.accountAmount ?? data.amount
+    const account = accounts.find(a => a.id === data.accountId)
+
+    // 4. Update the transaction record
+    await transactionRepo.update(oldTransaction.id!, {
+      amount: newBalanceAmount,
+      currency: account?.currency || data.currency,
+      accountId: data.accountId,
+      mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
+      comment: oldTransaction.comment,
+    })
+
+    // 5. Apply new balance effect
+    // loan_given: money goes out → balance decreases
+    // loan_received: money comes in → balance increases
+    const balanceChange = data.type === 'given' ? -newBalanceAmount : newBalanceAmount
+    await accountRepo.updateBalance(data.accountId, balanceChange)
+
+    // Refresh all data
+    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
+    handleCloseEditModal()
   }
 
   const getTransactionTitle = (t: Transaction): string => {
@@ -562,6 +606,7 @@ export function HistoryPage() {
           loan={editingLoan}
           open={true}
           onClose={handleCloseEditModal}
+          onSave={handleSaveLoan}
         />
       )}
 
