@@ -806,9 +806,9 @@ export function QuickTransactionModal({
         )}
 
         {/* Comment */}
-        <div className="px-2 pb-3">
+        <div className="px-4 pb-3">
           <div className={cn(
-            "flex items-start gap-3 px-3 py-3 rounded-lg transition-all",
+            "flex items-start gap-3 px-3 py-3 rounded-xl transition-all",
             activeField === 'comment' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
           )}>
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -825,9 +825,9 @@ export function QuickTransactionModal({
         </div>
 
         {/* Date row */}
-        <div className="px-2 pb-4 flex justify-end">
+        <div className="px-4 pb-4 flex justify-end">
           <label className={cn(
-            "inline-flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer relative transition-all",
+            "inline-flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer relative transition-all",
             activeField === 'date' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
           )}>
             <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -848,7 +848,7 @@ export function QuickTransactionModal({
         </div>
 
         {/* Submit Button - inline after comment */}
-        <div ref={buttonContainerRef} className={cn("px-2 pb-4", buttonCovered && "invisible")}>
+        <div ref={buttonContainerRef} className={cn("px-4 pb-4", buttonCovered && "invisible")}>
           <button
             onClick={handleSubmit}
             disabled={
@@ -874,7 +874,7 @@ export function QuickTransactionModal({
       {/* Submit Button - fixed above keyboard when covered */}
       {buttonCovered && (
         <div
-          className="absolute left-0 right-0 px-2 pb-2"
+          className="absolute left-0 right-0 px-4 pb-2"
           style={{ bottom: keyboardHeight + 8 }}
         >
           <div className="max-w-lg mx-auto">
