@@ -51,11 +51,12 @@ export function QuickTransactionModal({
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
-  const [swipeY, setSwipeY] = useState(0)
   const [buttonCovered, setButtonCovered] = useState(false)
   const amountInputRef = useRef<HTMLInputElement>(null)
   const buttonContainerRef = useRef<HTMLDivElement>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef(0)
+  const currentSwipeY = useRef(0)
 
   // Lock body scroll and prevent touchmove
   useEffect(() => {
@@ -78,27 +79,44 @@ export function QuickTransactionModal({
     }
   }, [])
 
-  // Swipe down to close
+  // Swipe down to close - using refs for smooth animation
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Only track if not touching an input
     if ((e.target as HTMLElement).tagName === 'INPUT' ||
         (e.target as HTMLElement).tagName === 'TEXTAREA') return
     touchStartY.current = e.touches[0].clientY
+    if (modalRef.current) {
+      modalRef.current.style.transition = 'none'
+    }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!touchStartY.current) return
     const deltaY = e.touches[0].clientY - touchStartY.current
-    if (deltaY > 0) {
-      setSwipeY(deltaY)
+    if (deltaY > 0 && modalRef.current) {
+      currentSwipeY.current = deltaY
+      // Apply resistance for more natural feel
+      const resistedY = deltaY * 0.6
+      modalRef.current.style.transform = `translateY(${resistedY}px)`
+      modalRef.current.style.opacity = `${1 - resistedY / 400}`
     }
   }
 
   const handleTouchEnd = () => {
-    if (swipeY > 100) {
-      onClose()
+    if (!modalRef.current) return
+    modalRef.current.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out'
+
+    if (currentSwipeY.current > 80) {
+      // Swipe far enough - close with animation
+      modalRef.current.style.transform = 'translateY(100%)'
+      modalRef.current.style.opacity = '0'
+      setTimeout(onClose, 300)
+    } else {
+      // Snap back
+      modalRef.current.style.transform = 'translateY(0)'
+      modalRef.current.style.opacity = '1'
     }
-    setSwipeY(0)
+    touchStartY.current = 0
+    currentSwipeY.current = 0
     touchStartY.current = 0
   }
 
@@ -381,8 +399,8 @@ export function QuickTransactionModal({
 
   return (
     <div
-      className="fixed inset-x-0 top-2 bottom-2 z-[100] bg-card overflow-hidden rounded-3xl transition-transform"
-      style={{ transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined, opacity: swipeY > 0 ? 1 - swipeY / 300 : 1 }}
+      ref={modalRef}
+      className="fixed inset-x-0 top-2 bottom-2 z-[100] bg-card overflow-hidden rounded-3xl"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
