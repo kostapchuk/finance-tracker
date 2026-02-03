@@ -424,6 +424,7 @@ export function QuickTransactionModal({
                     ref={amountInputRef}
                     autoFocus={!disableAutoFocus}
                     type="text"
+                    inputMode="decimal"
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
@@ -450,6 +451,7 @@ export function QuickTransactionModal({
                 <div className="flex items-baseline gap-1">
                   <input
                     type="text"
+                    inputMode="decimal"
                                         value={targetAmount}
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('target')}
@@ -483,6 +485,7 @@ export function QuickTransactionModal({
                     ref={amountInputRef}
                     autoFocus={!disableAutoFocus}
                     type="text"
+                    inputMode="decimal"
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
@@ -510,6 +513,7 @@ export function QuickTransactionModal({
                     <div className="flex items-baseline gap-1">
                       <input
                         type="text"
+                    inputMode="decimal"
                                             step="0.01"
                         value={targetAmount}
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
@@ -540,6 +544,7 @@ export function QuickTransactionModal({
                     <div className="flex items-baseline gap-1">
                       <input
                         type="text"
+                    inputMode="decimal"
                                             step="0.01"
                         value={accountAmount}
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
@@ -562,6 +567,7 @@ export function QuickTransactionModal({
               ref={amountInputRef}
               autoFocus={!disableAutoFocus}
               type="text"
+                    inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
               onTouchStart={handleInputTouchStart}
