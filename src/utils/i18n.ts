@@ -47,7 +47,6 @@ export const translations = {
     expenses: 'Expenses',
     netFlow: 'Net Flow',
     currentLoansStatus: 'Current Loans Status',
-    netLoans: 'Net Loans',
     spendingByCategory: 'Spending by Category',
     noExpenseDataThisMonth: 'No expense data this month',
     sixMonthTrend: '6-Month Trend',
@@ -290,7 +289,7 @@ export const translations = {
     // Navigation
     dashboard: 'Главная',
     history: 'История',
-    loans: 'Займы',
+    loans: 'Долги',
     report: 'Отчёт',
     settings: 'Настройки',
 
@@ -303,13 +302,13 @@ export const translations = {
     dropHere: '(Перетащите сюда)',
 
     // Loans
-    loansAndDebts: 'Займы и долги',
+    loansAndDebts: 'Долги',
     add: 'Добавить',
     owedToYou: 'Должны вам',
     youOwe: 'Вы должны',
-    moneyGiven: 'Деньги выданы',
-    moneyReceived: 'Деньги получены',
-    noActiveLoansGiven: 'Нет активных займов',
+    moneyGiven: 'Дал в долг',
+    moneyReceived: 'Взял в долг',
+    noActiveLoansGiven: 'Нет активных долгов',
     noActiveDebts: 'Нет активных долгов',
     completed: 'Завершено',
     repaid: 'Возвращено',
@@ -331,8 +330,7 @@ export const translations = {
     totalBalance: 'Общий баланс',
     expenses: 'Расходы',
     netFlow: 'Чистый поток',
-    currentLoansStatus: 'Текущий статус займов',
-    netLoans: 'Чистые займы',
+    currentLoansStatus: 'Текущий статус долгов',
     spendingByCategory: 'Расходы по категориям',
     noExpenseDataThisMonth: 'Нет данных о расходах за этот месяц',
     sixMonthTrend: 'Тренд за 6 месяцев',
@@ -389,8 +387,8 @@ export const translations = {
     editIncomeSource: 'Редактировать источник дохода',
     addCurrency: 'Добавить валюту',
     editCurrency: 'Редактировать валюту',
-    addLoan: 'Добавить займ',
-    editLoan: 'Редактировать займ',
+    addLoan: 'Добавить долг',
+    editLoan: 'Редактировать долг',
     expense: 'Расход',
     savingsInvestment: 'Сбережения / Инвестиции',
     hideFromDashboard: 'Скрыть с главной',
@@ -408,8 +406,8 @@ export const translations = {
     // Loan comments
     paymentReceivedFrom: 'Платёж получен от',
     paymentMadeTo: 'Платёж отправлен',
-    loanTo: 'Займ для',
-    loanFrom: 'Займ от',
+    loanTo: 'Долг для',
+    loanFrom: 'Долг от',
     recordPayment: 'Записать платёж',
     tapToRecordPayment: 'Нажмите для записи платежа',
     editPayment: 'Редактировать платёж',
@@ -424,19 +422,19 @@ export const translations = {
     recording: 'Запись...',
 
     // Loan form
-    moneyILent: 'Деньги, которые я одолжил',
-    moneyIBorrowed: 'Деньги, которые я занял',
+    moneyILent: 'Дал в долг',
+    moneyIBorrowed: 'Взял в долг',
     whoDidYouLendTo: 'Кому вы одолжили?',
     whoDidYouBorrowFrom: 'У кого вы заняли?',
     personOrCompanyName: 'Имя человека или компании',
     amount: 'Сумма',
-    amountOnLoan: 'сумма займа',
+    amountOnLoan: 'сумма долга',
     amountOnAccount: 'сумма на счёте',
     relatedAccount: 'Счёт',
     none: 'Нет',
     dueDate: 'Дата погашения (необязательно)',
     description: 'Описание (необязательно)',
-    addNotesAboutLoan: 'Добавьте заметки о займе...',
+    addNotesAboutLoan: 'Добавьте заметки о долге...',
 
     // Account types
     cash: 'Наличные',
@@ -509,10 +507,10 @@ export const translations = {
     buy: 'Покупка',
     sell: 'Продажа',
     deleteTransaction: 'Удалить эту транзакцию?',
-    deleteLoan: 'Удалить этот займ? Все связанные транзакции будут удалены, а балансы счетов возвращены.',
+    deleteLoan: 'Удалить этот долг? Все связанные транзакции будут удалены, а балансы счетов возвращены.',
 
     // Delete confirmation
-    deleteConfirmationMessage: 'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и займы. Это действие нельзя отменить.',
+    deleteConfirmationMessage: 'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и долги. Это действие нельзя отменить.',
 
     // Investments
     addInvestment: 'Добавить инвестицию',
@@ -534,8 +532,8 @@ export const translations = {
     account: 'Счёт',
 
     // Transaction types
-    loanGiven: 'Займ выдан',
-    loanReceived: 'Займ получен',
+    loanGiven: 'Дал в долг',
+    loanReceived: 'Взял в долг',
     payment: 'Платёж',
     allTypes: 'Все типы',
     allAccounts: 'Все счета',
@@ -545,7 +543,7 @@ export const translations = {
     // History page filters
     transfers: 'Переводы',
     investments: 'Инвестиции',
-    loansFilter: 'Займы',
+    loansFilter: 'Долги',
     customRange: 'Свой период',
     from: 'С',
     to: 'По',

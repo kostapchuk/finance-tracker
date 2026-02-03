@@ -211,14 +211,6 @@ export function ReportPage() {
                 </p>
               </div>
             </div>
-            <div className="p-4 bg-secondary/50 rounded-2xl">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{t('netLoans')}</span>
-                <span className={cn('text-xl font-bold', getAmountColorClass(loanStats.netLoan))}>
-                  {formatCurrencyWithSign(loanStats.netLoan, mainCurrency)}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       )}
