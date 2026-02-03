@@ -52,7 +52,9 @@ export function QuickTransactionModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [swipeY, setSwipeY] = useState(0)
+  const [buttonCovered, setButtonCovered] = useState(false)
   const amountInputRef = useRef<HTMLInputElement>(null)
+  const buttonContainerRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef(0)
 
   // Lock body scroll and prevent touchmove
@@ -115,14 +117,24 @@ export function QuickTransactionModal({
     }, 0)
   }
 
-  // Track keyboard height for button positioning
+  // Track keyboard height and check if button is covered
   useEffect(() => {
     const viewport = window.visualViewport
     if (!viewport) return
 
     const updateKeyboardHeight = () => {
       const heightDiff = window.innerHeight - viewport.height
-      setKeyboardHeight(heightDiff > 50 ? heightDiff : 0)
+      const kbHeight = heightDiff > 50 ? heightDiff : 0
+      setKeyboardHeight(kbHeight)
+
+      // Check if button would be covered by keyboard
+      if (buttonContainerRef.current && kbHeight > 0) {
+        const buttonRect = buttonContainerRef.current.getBoundingClientRect()
+        const viewportBottom = viewport.height
+        setButtonCovered(buttonRect.bottom > viewportBottom)
+      } else {
+        setButtonCovered(false)
+      }
     }
 
     viewport.addEventListener('resize', updateKeyboardHeight)
@@ -650,14 +662,8 @@ export function QuickTransactionModal({
           </div>
         </div>
 
-      </div>
-
-      {/* Submit Button - at bottom of modal or above keyboard */}
-      <div
-        className="absolute left-0 right-0 px-2"
-        style={{ bottom: keyboardHeight > 0 ? keyboardHeight + 8 : 64 }}
-      >
-        <div className="max-w-lg mx-auto">
+        {/* Submit Button - inline after comment */}
+        <div ref={buttonContainerRef} className={cn("px-2 pb-4", buttonCovered && "invisible")}>
           <button
             onClick={handleSubmit}
             disabled={
@@ -679,6 +685,36 @@ export function QuickTransactionModal({
           </button>
         </div>
       </div>
+
+      {/* Submit Button - fixed above keyboard when covered */}
+      {buttonCovered && (
+        <div
+          className="absolute left-0 right-0 px-2 pb-2"
+          style={{ bottom: keyboardHeight + 8 }}
+        >
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={handleSubmit}
+              disabled={
+                !amount ||
+                (isMultiCurrencyTransfer && !targetAmount) ||
+                (isMultiCurrencyIncomeExpense && !targetAmount) ||
+                (needsAccountConversion && !accountAmount) ||
+                (mode.type !== 'transfer' && !selectedAccountId) ||
+                isSubmitting
+              }
+              className={cn(
+                'w-full py-4 rounded-xl text-lg font-semibold transition-colors touch-target',
+                'bg-primary text-primary-foreground',
+                'hover:bg-primary/90 active:bg-primary/80',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
