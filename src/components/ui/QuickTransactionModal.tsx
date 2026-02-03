@@ -53,8 +53,16 @@ export function QuickTransactionModal({
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const amountInputRef = useRef<HTMLInputElement>(null)
 
-  // Prevent page scroll on input focus
-  const preventScroll = () => window.scrollTo(0, 0)
+  // Prevent page scroll on input focus using transform hack
+  const preventScrollOnFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const el = e.target
+    // Already focused, just prevent scroll
+    el.style.transform = 'translateY(-8000px)'
+    requestAnimationFrame(() => {
+      el.style.transform = 'none'
+      window.scrollTo(0, 0)
+    })
+  }
 
   // Track keyboard height for button positioning
   useEffect(() => {
@@ -393,7 +401,7 @@ export function QuickTransactionModal({
                     type="text"
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => { setActiveAmountField('source'); preventScroll() }}
+                    onFocus={(e) => { setActiveAmountField('source'); preventScrollOnFocus(e) }}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -418,7 +426,7 @@ export function QuickTransactionModal({
                     type="text"
                                         value={targetAmount}
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => { setActiveAmountField('target'); preventScroll() }}
+                    onFocus={(e) => { setActiveAmountField('target'); preventScrollOnFocus(e) }}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -450,7 +458,7 @@ export function QuickTransactionModal({
                     type="text"
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => { setActiveAmountField('source'); preventScroll() }}
+                    onFocus={(e) => { setActiveAmountField('source'); preventScrollOnFocus(e) }}
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -477,7 +485,7 @@ export function QuickTransactionModal({
                                             step="0.01"
                         value={targetAmount}
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
-                        onFocus={() => { setActiveAmountField('target'); preventScroll() }}
+                        onFocus={(e) => { setActiveAmountField('target'); preventScrollOnFocus(e) }}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -506,7 +514,7 @@ export function QuickTransactionModal({
                                             step="0.01"
                         value={accountAmount}
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
-                        onFocus={() => { setActiveAmountField('account'); preventScroll() }}
+                        onFocus={(e) => { setActiveAmountField('account'); preventScrollOnFocus(e) }}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -526,7 +534,7 @@ export function QuickTransactionModal({
               type="text"
               value={amount}
               onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-              onFocus={preventScroll}
+              onFocus={preventScrollOnFocus}
               placeholder="0"
               className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
             />
@@ -567,7 +575,7 @@ export function QuickTransactionModal({
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              onFocus={preventScroll}
+              onFocus={preventScrollOnFocus}
               rows={3}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
             />
