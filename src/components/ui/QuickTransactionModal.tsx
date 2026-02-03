@@ -103,23 +103,15 @@ export function QuickTransactionModal({
   }
 
   // Prevent page scroll on input focus using transform hack
-  // Must intercept BEFORE focus happens
   const handleInputTouchStart = (e: React.TouchEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const el = e.currentTarget
     if (document.activeElement === el) return // Already focused
 
     e.preventDefault()
     el.style.transform = 'translateY(-8000px)'
-    el.focus()
-    requestAnimationFrame(() => {
-      el.style.transform = 'none'
-      window.scrollTo(0, 0)
-      // Re-trigger cursor visibility
-      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-        const len = el.value.length
-        el.setSelectionRange(len, len)
-      }
-    })
+    el.focus({ preventScroll: true })
+    el.style.transform = 'none'
+    window.scrollTo(0, 0)
   }
 
   // Handle "Done" button on iOS keyboard - submit on blur if valid
