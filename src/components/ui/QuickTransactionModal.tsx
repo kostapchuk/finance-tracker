@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
-import { X, Calendar, MessageSquare, ArrowRight, Trash2, ChevronDown } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
+import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
 
 export type TransactionMode =
@@ -37,6 +38,8 @@ export function QuickTransactionModal({
   const loans = useAppStore((state) => state.loans)
   const incomeSources = useAppStore((state) => state.incomeSources)
   const categories = useAppStore((state) => state.categories)
+  const transactions = useAppStore((state) => state.transactions)
+  const selectedMonth = useAppStore((state) => state.selectedMonth)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t, language } = useLanguage()
 
@@ -208,6 +211,21 @@ export function QuickTransactionModal({
   const selectedCategory = mode.type === 'expense'
     ? expenseCategories.find(c => c.id === selectedCategoryId) || mode.category
     : null
+
+  // Calculate monthly total for selected category
+  const categoryMonthlyTotal = useMemo(() => {
+    if (mode.type !== 'expense' || !selectedCategoryId) return 0
+    const startOfMonth = getStartOfMonth(selectedMonth)
+    const endOfMonth = getEndOfMonth(selectedMonth)
+    return transactions
+      .filter(t =>
+        t.type === 'expense' &&
+        t.categoryId === selectedCategoryId &&
+        new Date(t.date) >= startOfMonth &&
+        new Date(t.date) <= endOfMonth
+      )
+      .reduce((sum, t) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
+  }, [mode.type, selectedCategoryId, transactions, selectedMonth])
 
   // Detect multi-currency transfer
   const isMultiCurrencyTransfer = mode.type === 'transfer' &&
@@ -465,98 +483,128 @@ export function QuickTransactionModal({
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 p-4 border-b border-border">
+          <div className="flex items-center flex-1 min-w-0">
             {mode.type === 'transfer' ? (
-              <div className="flex items-center gap-2">
+              // Transfer: fromAccount → toAccount
+              <>
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: (mode.fromAccount.color || '#6366f1') + '20' }}
                 >
                   <div
-                    className="w-4 h-4 rounded-full"
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: mode.fromAccount.color || '#6366f1' }}
                   />
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: (mode.toAccount.color || '#6366f1') + '20' }}
                 >
                   <div
-                    className="w-4 h-4 rounded-full"
+                    className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: mode.toAccount.color || '#6366f1' }}
                   />
                 </div>
-              </div>
+                <div className="ml-1 min-w-0">
+                  <p className="font-semibold truncate">{title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isEditMode ? t('editTransfer') : t('transfer')}
+                  </p>
+                </div>
+              </>
             ) : mode.type === 'income' ? (
-              <button
-                onClick={() => setShowSourcePicker(true)}
-                className="flex items-center gap-1 p-1 -m-1 rounded-lg hover:bg-secondary/50 transition-colors"
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: color + '20' }}
+              // Income: source → account
+              <div className="flex items-center justify-between flex-1 min-w-0">
+                <button
+                  onClick={() => setShowSourcePicker(true)}
+                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
                 >
                   <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </button>
-            ) : mode.type === 'expense' ? (
-              <button
-                onClick={() => setShowCategoryPicker(true)}
-                className="flex items-center gap-1 p-1 -m-1 rounded-lg hover:bg-secondary/50 transition-colors"
-              >
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: color + '20' }}
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: (selectedSource?.color || color) + '20' }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: selectedSource?.color || color }}
+                    />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="font-semibold truncate">{selectedSource?.name}</p>
+                  </div>
+                </button>
+                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+                <button
+                  onClick={() => setShowAccountPicker(true)}
+                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
                 >
                   <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                </div>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </button>
-            ) : (
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: color + '20' }}
-              >
-                <div
-                  className="w-4 h-4 rounded-full"
-                  style={{ backgroundColor: color }}
-                />
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
+                    />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="font-semibold truncate">{selectedAccount?.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</p>
+                  </div>
+                </button>
               </div>
-            )}
-            <div>
-              <p className="font-semibold">{title}</p>
-              <p className="text-xs text-muted-foreground">
-                {isEditMode
-                  ? (mode.type === 'income' ? t('editIncome') : mode.type === 'expense' ? t('editExpense') : t('editTransfer'))
-                  : (mode.type === 'income' ? t('addIncome') : mode.type === 'expense' ? t('addExpense') : t('transfer'))}
-              </p>
-            </div>
+            ) : mode.type === 'expense' ? (
+              // Expense: account → category
+              <div className="flex items-center justify-between flex-1 min-w-0">
+                <button
+                  onClick={() => setShowAccountPicker(true)}
+                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
+                    />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="font-semibold truncate">{selectedAccount?.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</p>
+                  </div>
+                </button>
+                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+                <button
+                  onClick={() => setShowCategoryPicker(true)}
+                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: (selectedCategory?.color || color) + '20' }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: selectedCategory?.color || color }}
+                    />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="font-semibold truncate">{selectedCategory?.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{formatCurrency(categoryMonthlyTotal, mainCurrency)}</p>
+                  </div>
+                </button>
+              </div>
+            ) : null}
           </div>
-          <div className="flex items-center gap-1">
-            {isEditMode && onDelete && editTransaction && (
-              <button
-                onClick={() => onDelete(editTransaction)}
-                className="p-2 rounded-full hover:bg-destructive/20 touch-target"
-              >
-                <Trash2 className="h-5 w-5 text-destructive" />
-              </button>
-            )}
+          {isEditMode && onDelete && editTransaction && (
             <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-secondary touch-target"
+              onClick={() => onDelete(editTransaction)}
+              className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
             >
-              <X className="h-5 w-5" />
+              <Trash2 className="h-5 w-5 text-destructive" />
             </button>
-          </div>
+          )}
         </div>
 
         {/* Amount Display */}
@@ -717,25 +765,44 @@ export function QuickTransactionModal({
           </div>
         ) : (
           // Single currency: show one amount
-          <div className="p-6 flex items-baseline justify-center gap-2">
-            <input
-              ref={amountInputRef}
-              autoFocus={!disableAutoFocus}
-              type="text"
-                    inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                            onTouchStart={handleInputTouchStart}
-              placeholder="0"
-              className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
-            />
-            <span className="text-5xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(getCurrentCurrency())}</span>
+          <div className="p-4">
+            <div className="p-4 rounded-xl bg-secondary/50 transition-all focus-within:bg-primary/20 focus-within:ring-2 focus-within:ring-primary">
+              <div className="flex items-baseline justify-center gap-2">
+                <input
+                  ref={amountInputRef}
+                  autoFocus={!disableAutoFocus}
+                  type="text"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                  onTouchStart={handleInputTouchStart}
+                  placeholder="0"
+                  className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
+                />
+                <span className="text-5xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(getCurrentCurrency())}</span>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Date & Account info row */}
-        <div className="px-2 pb-3 flex items-center gap-1.5">
-          <label className="w-2/5 flex items-center gap-2 px-3 py-2.5 bg-secondary/50 rounded-lg cursor-pointer relative">
+        {/* Comment */}
+        <div className="px-2 pb-3">
+          <div className="flex items-start gap-3 px-3 py-3 bg-secondary/50 rounded-lg transition-all focus-within:bg-primary/20 focus-within:ring-2 focus-within:ring-primary">
+            <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <textarea
+              placeholder={t('addComment')}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onTouchStart={handleInputTouchStart}
+              rows={2}
+              className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Date row */}
+        <div className="px-2 pb-4 flex justify-end">
+          <label className="inline-flex items-center gap-2 px-3 py-2.5 bg-secondary/50 rounded-lg cursor-pointer relative transition-all focus-within:bg-primary/20 focus-within:ring-2 focus-within:ring-primary">
             <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="text-sm">{
               date === new Date().toISOString().split('T')[0]
@@ -750,35 +817,6 @@ export function QuickTransactionModal({
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
           </label>
-          {mode.type !== 'transfer' && selectedAccount && (
-            <button
-              onClick={() => setShowAccountPicker(true)}
-              className="w-3/5 px-3 py-2.5 bg-secondary/50 rounded-lg flex items-center gap-1.5 min-w-0 hover:bg-secondary/70 transition-colors"
-            >
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: selectedAccount.color }}
-              />
-              <span className="font-medium truncate">{selectedAccount.name}</span>
-              <span className="text-muted-foreground whitespace-nowrap text-sm">{formatCurrency(selectedAccount.balance, selectedAccount.currency)}</span>
-              <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto flex-shrink-0" />
-            </button>
-          )}
-        </div>
-
-        {/* Comment */}
-        <div className="px-2 pb-4">
-          <div className="flex items-start gap-3 px-3 py-3 bg-secondary/50 rounded-lg">
-            <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-            <textarea
-              placeholder={t('addComment')}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              onTouchStart={handleInputTouchStart}
-              rows={2}
-              className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
-            />
-          </div>
         </div>
 
         {/* Submit Button - inline after comment */}
@@ -868,14 +906,14 @@ export function QuickTransactionModal({
                     style={{ backgroundColor: account.color }}
                   />
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium">{account.name}</p>
-                  <p className="text-sm text-muted-foreground">
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-medium truncate">{account.name}</p>
+                  <p className="text-sm text-muted-foreground truncate">
                     {formatCurrency(account.balance, account.currency)}
                   </p>
                 </div>
                 {account.id === selectedAccountId && (
-                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 )}
               </button>
             ))}
@@ -916,12 +954,12 @@ export function QuickTransactionModal({
                     style={{ backgroundColor: source.color }}
                   />
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium">{source.name}</p>
-                  <p className="text-sm text-muted-foreground">{source.currency}</p>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-medium truncate">{source.name}</p>
+                  <p className="text-sm text-muted-foreground truncate">{source.currency}</p>
                 </div>
                 {source.id === selectedSourceId && (
-                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 )}
               </button>
             ))}
@@ -962,11 +1000,11 @@ export function QuickTransactionModal({
                     style={{ backgroundColor: category.color }}
                   />
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium">{category.name}</p>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-medium truncate">{category.name}</p>
                 </div>
                 {category.id === selectedCategoryId && (
-                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 )}
               </button>
             ))}
