@@ -338,7 +338,7 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-card overflow-hidden">
+    <div className="fixed inset-2 z-[100] bg-card overflow-hidden rounded-3xl">
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
