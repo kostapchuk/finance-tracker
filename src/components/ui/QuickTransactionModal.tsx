@@ -48,7 +48,7 @@ export function QuickTransactionModal({
   const [amount, setAmount] = useState('')
   const [targetAmount, setTargetAmount] = useState('')  // mainCurrency amount for totals
   const [accountAmount, setAccountAmount] = useState('')  // account currency amount (for income when account != source)
-  const [activeField, setActiveField] = useState<'amount' | 'source' | 'target' | 'account' | 'comment' | 'date' | null>('amount')
+  const [activeField, setActiveField] = useState<'source' | 'target' | 'account' | 'comment' | 'date' | null>('source')
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(
     preselectedAccountId ?? accounts[0]?.id
   )
@@ -768,7 +768,7 @@ export function QuickTransactionModal({
           <div className="p-4">
             <div className={cn(
               "p-4 rounded-xl transition-all",
-              activeField === 'amount' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
+              activeField === 'source' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
             )}>
               <div className="flex items-baseline justify-center gap-2">
                 <input
@@ -778,7 +778,7 @@ export function QuickTransactionModal({
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                  onFocus={() => setActiveField('amount')}
+                  onFocus={() => setActiveField('source')}
                   onTouchStart={handleInputTouchStart}
                   placeholder="0"
                   className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
