@@ -109,12 +109,15 @@ export function QuickTransactionModal({
     if (document.activeElement === el) return // Already focused
 
     e.preventDefault()
+    // Hide element during transform to prevent blink
+    el.style.opacity = '0'
     el.style.transform = 'translateY(-8000px)'
     el.focus()
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       el.style.transform = 'none'
+      el.style.opacity = '1'
       window.scrollTo(0, 0)
-    }, 0)
+    })
   }
 
   // Handle "Done" button on iOS keyboard - submit on blur if valid
