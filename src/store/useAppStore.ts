@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import type { Account, IncomeSource, Category, Transaction, Investment, Loan, CustomCurrency } from '@/database/types'
 import { accountRepo, incomeSourceRepo, categoryRepo, transactionRepo, investmentRepo, loanRepo, customCurrencyRepo, settingsRepo } from '@/database/repositories'
 
+// Guard to prevent duplicate data initialization (React StrictMode calls effects twice)
+let isInitializing = false
+
 interface AppState {
   // Data
   accounts: Account[]
@@ -77,6 +80,10 @@ export const useAppStore = create<AppState>((set) => ({
   },
 
   loadAllData: async () => {
+    // Prevent duplicate initialization (React StrictMode calls effects twice)
+    if (isInitializing) return
+    isInitializing = true
+
     set({ isLoading: true })
     try {
       const [accounts, incomeSources, categories, transactions, investments, loans, customCurrencies, settings] = await Promise.all([
@@ -158,6 +165,7 @@ export const useAppStore = create<AppState>((set) => ({
     } catch (error) {
       console.error('Failed to load data:', error)
       set({ isLoading: false })
+      isInitializing = false
     }
   },
 

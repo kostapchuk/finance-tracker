@@ -66,6 +66,12 @@ export function OnboardingOverlay() {
               <ArrowRight className="h-4 w-4" />
               <span className="text-sm font-medium">{t('onboardingBankAccount')}</span>
             </div>
+            <button
+              onClick={() => setOnboardingStep(3)}
+              className="w-full mt-3 py-2 bg-primary text-primary-foreground rounded-lg font-medium"
+            >
+              {t('onboardingNext')}
+            </button>
           </div>
         </div>
 
@@ -97,6 +103,15 @@ export function OnboardingOverlay() {
               <ArrowRight className="h-4 w-4" />
               <span className="text-sm font-medium">{t('onboardingGroceries')}</span>
             </div>
+            <button
+              onClick={() => {
+                setActiveView('settings')
+                setOnboardingStep(4)
+              }}
+              className="w-full mt-3 py-2 bg-primary text-primary-foreground rounded-lg font-medium"
+            >
+              {t('onboardingNext')}
+            </button>
           </div>
         </div>
 
@@ -123,10 +138,7 @@ export function OnboardingOverlay() {
               </button>
             </div>
             <button
-              onClick={() => {
-                setActiveView('settings')
-                setOnboardingStep(5)
-              }}
+              onClick={() => setOnboardingStep(5)}
               className="w-full mt-3 py-2 bg-primary text-primary-foreground rounded-lg font-medium"
             >
               {t('onboardingNext')}
