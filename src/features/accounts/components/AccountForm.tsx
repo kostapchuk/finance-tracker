@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ColorPicker } from '@/components/ui/color-picker'
+import { Toggle } from '@/components/ui/toggle'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
@@ -37,6 +38,7 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
   const [currency, setCurrency] = useState(mainCurrency)
   const [balance, setBalance] = useState('0')
   const [color, setColor] = useState(getRandomColor())
+  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
   useEffect(() => {
     if (account) {
@@ -45,12 +47,14 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
       setCurrency(account.currency)
       setBalance(account.balance.toString())
       setColor(account.color)
+      setHiddenFromDashboard(account.hiddenFromDashboard || false)
     } else {
       setName('')
       setType('bank')
       setCurrency(mainCurrency)
       setBalance('0')
       setColor(getRandomColor())
+      setHiddenFromDashboard(false)
     }
   }, [account, open, mainCurrency])
 
@@ -67,6 +71,7 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
           currency,
           balance: parseFloat(balance) || 0,
           color,
+          hiddenFromDashboard,
         })
       } else {
         await accountRepo.create({
@@ -75,6 +80,7 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
           currency,
           balance: parseFloat(balance) || 0,
           color,
+          hiddenFromDashboard,
         })
       }
       await refreshAccounts()
@@ -153,6 +159,11 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
           <div className="space-y-2">
             <Label>{t('color')}</Label>
             <ColorPicker value={color} onChange={setColor} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label>{t('hideFromDashboard')}</Label>
+            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
           </div>
 
           <DialogFooter>

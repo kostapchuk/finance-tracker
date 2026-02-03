@@ -108,6 +108,7 @@ export const translations = {
     editLoan: 'Edit Loan',
     expense: 'Expense',
     savingsInvestment: 'Savings / Investment',
+    hideFromDashboard: 'Hide from Dashboard',
 
     // Transaction modal
     addIncome: 'Add income',
@@ -390,6 +391,7 @@ export const translations = {
     editLoan: 'Редактировать займ',
     expense: 'Расход',
     savingsInvestment: 'Сбережения / Инвестиции',
+    hideFromDashboard: 'Скрыть с главной',
 
     // Transaction modal
     addIncome: 'Добавить доход',

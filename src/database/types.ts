@@ -17,6 +17,7 @@ export interface Account {
   color: string
   icon?: string
   sortOrder?: number
+  hiddenFromDashboard?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -28,6 +29,7 @@ export interface IncomeSource {
   color: string
   icon?: string
   sortOrder?: number
+  hiddenFromDashboard?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -41,6 +43,7 @@ export interface Category {
   budget?: number
   budgetPeriod?: 'monthly' | 'weekly' | 'yearly'
   sortOrder?: number
+  hiddenFromDashboard?: boolean
   createdAt: Date
   updatedAt: Date
 }

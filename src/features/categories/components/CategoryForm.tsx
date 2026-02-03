@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ColorPicker } from '@/components/ui/color-picker'
+import { Toggle } from '@/components/ui/toggle'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { categoryRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
@@ -26,6 +27,7 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
   const [color, setColor] = useState(getRandomColor())
   const [budget, setBudget] = useState('')
   const [budgetPeriod, setBudgetPeriod] = useState<'monthly' | 'weekly' | 'yearly'>('monthly')
+  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
   useEffect(() => {
     if (category) {
@@ -33,11 +35,13 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
       setColor(category.color)
       setBudget(category.budget?.toString() || '')
       setBudgetPeriod(category.budgetPeriod || 'monthly')
+      setHiddenFromDashboard(category.hiddenFromDashboard || false)
     } else {
       setName('')
       setColor(getRandomColor())
       setBudget('')
       setBudgetPeriod('monthly')
+      setHiddenFromDashboard(false)
     }
   }, [category, open])
 
@@ -55,6 +59,7 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
           categoryType: 'expense',
           budget: budgetValue,
           budgetPeriod: budgetValue ? budgetPeriod : undefined,
+          hiddenFromDashboard,
         })
       } else {
         await categoryRepo.create({
@@ -63,6 +68,7 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
           categoryType: 'expense',
           budget: budgetValue,
           budgetPeriod: budgetValue ? budgetPeriod : undefined,
+          hiddenFromDashboard,
         })
       }
       await refreshCategories()
@@ -124,6 +130,11 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
               </Select>
             </div>
           )}
+
+          <div className="flex items-center justify-between">
+            <Label>{t('hideFromDashboard')}</Label>
+            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

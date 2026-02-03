@@ -74,9 +74,17 @@ export function Dashboard() {
     })
   )
 
-  // Filter out loan categories (handled in Loans tab)
+  // Filter visible items for dashboard (exclude hidden and loan categories)
+  const visibleIncomeSources = useMemo(() => {
+    return incomeSources.filter((s) => !s.hiddenFromDashboard)
+  }, [incomeSources])
+
+  const visibleAccounts = useMemo(() => {
+    return accounts.filter((a) => !a.hiddenFromDashboard)
+  }, [accounts])
+
   const expenseCategories = useMemo(() => {
-    return categories.filter((cat) => cat.categoryType !== 'loan')
+    return categories.filter((cat) => cat.categoryType !== 'loan' && !cat.hiddenFromDashboard)
   }, [categories])
 
   // Calculate monthly data
@@ -242,7 +250,7 @@ export function Dashboard() {
 
           {incomeExpanded && (
             <div className="grid grid-cols-4 gap-2 mt-1 max-h-48 overflow-y-auto">
-              {incomeSources.map((source) => (
+              {visibleIncomeSources.map((source) => (
                 <DraggableItem
                   key={source.id}
                   id={`income-${source.id}`}
@@ -290,7 +298,7 @@ export function Dashboard() {
               </span>
             </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {accounts.map((account) => (
+            {visibleAccounts.map((account) => (
               <DroppableZone
                 key={account.id}
                 id={`account-drop-${account.id}`}

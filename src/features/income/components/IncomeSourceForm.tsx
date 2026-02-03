@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ColorPicker } from '@/components/ui/color-picker'
+import { Toggle } from '@/components/ui/toggle'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { incomeSourceRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
@@ -27,16 +28,19 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState(mainCurrency)
   const [color, setColor] = useState(getRandomColor())
+  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
   useEffect(() => {
     if (source) {
       setName(source.name)
       setCurrency(source.currency || mainCurrency)
       setColor(source.color)
+      setHiddenFromDashboard(source.hiddenFromDashboard || false)
     } else {
       setName('')
       setCurrency(mainCurrency)
       setColor(getRandomColor())
+      setHiddenFromDashboard(false)
     }
   }, [source, open, mainCurrency])
 
@@ -51,12 +55,14 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
           name: name.trim(),
           currency,
           color,
+          hiddenFromDashboard,
         })
       } else {
         await incomeSourceRepo.create({
           name: name.trim(),
           currency,
           color,
+          hiddenFromDashboard,
         })
       }
       await refreshIncomeSources()
@@ -105,6 +111,11 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
           <div className="space-y-2">
             <Label>{t('color')}</Label>
             <ColorPicker value={color} onChange={setColor} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <Label>{t('hideFromDashboard')}</Label>
+            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
           </div>
 
           <DialogFooter>
