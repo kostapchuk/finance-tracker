@@ -120,22 +120,6 @@ export function QuickTransactionModal({
     }, 0)
   }
 
-  // Handle "Done" button on iOS keyboard - submit on blur if valid
-  const handleAmountBlur = () => {
-    if (amount && parseFloat(amount) > 0) {
-      // Check all validation conditions
-      const isValid =
-        !(!amount ||
-          (isMultiCurrencyTransfer && !targetAmount) ||
-          (isMultiCurrencyIncomeExpense && !targetAmount) ||
-          (needsAccountConversion && !accountAmount) ||
-          (mode.type !== 'transfer' && !selectedAccountId))
-
-      if (isValid) {
-        handleSubmit()
-      }
-    }
-  }
 
   // Track keyboard height and check if button is covered
   useEffect(() => {
@@ -492,8 +476,7 @@ export function QuickTransactionModal({
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
-                                        onBlur={handleAmountBlur}
-                    onTouchStart={handleInputTouchStart}
+                                        onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -520,8 +503,7 @@ export function QuickTransactionModal({
                                         value={targetAmount}
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('target')}
-                                        onBlur={handleAmountBlur}
-                    onTouchStart={handleInputTouchStart}
+                                        onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -555,8 +537,7 @@ export function QuickTransactionModal({
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveAmountField('source')}
-                                        onBlur={handleAmountBlur}
-                    onTouchStart={handleInputTouchStart}
+                                        onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
@@ -585,8 +566,7 @@ export function QuickTransactionModal({
                         value={targetAmount}
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('target')}
-                                            onBlur={handleAmountBlur}
-                        onTouchStart={handleInputTouchStart}
+                                            onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -617,8 +597,7 @@ export function QuickTransactionModal({
                         value={accountAmount}
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveAmountField('account')}
-                                                onBlur={handleAmountBlur}
-                        onTouchStart={handleInputTouchStart}
+                                                onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
@@ -639,8 +618,7 @@ export function QuickTransactionModal({
                     inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                            onBlur={handleAmountBlur}
-              onTouchStart={handleInputTouchStart}
+                            onTouchStart={handleInputTouchStart}
               placeholder="0"
               className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
             />
