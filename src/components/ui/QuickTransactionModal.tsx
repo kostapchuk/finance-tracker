@@ -48,7 +48,7 @@ export function QuickTransactionModal({
   const [amount, setAmount] = useState('')
   const [targetAmount, setTargetAmount] = useState('')  // mainCurrency amount for totals
   const [accountAmount, setAccountAmount] = useState('')  // account currency amount (for income when account != source)
-  const [activeAmountField, setActiveAmountField] = useState<'source' | 'target' | 'account'>('source')
+  const [activeField, setActiveField] = useState<'amount' | 'source' | 'target' | 'account' | 'comment' | 'date' | null>('amount')
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(
     preselectedAccountId ?? accounts[0]?.id
   )
@@ -297,7 +297,7 @@ export function QuickTransactionModal({
   const getCurrentCurrency = () => {
     if (mode.type === 'income') return accounts.find(a => a.id === selectedAccountId)?.currency || 'USD'
     if (mode.type === 'expense') return accounts.find(a => a.id === selectedAccountId)?.currency || 'USD'
-    return activeAmountField === 'source' ? mode.fromAccount.currency : mode.toAccount.currency
+    return activeField === 'source' ? mode.fromAccount.currency : mode.toAccount.currency
   }
 
   const sanitizeAmount = (value: string) => {
@@ -616,7 +616,7 @@ export function QuickTransactionModal({
               <div
                 className={cn(
                   'flex-1 p-4 rounded-xl transition-all',
-                  activeAmountField === 'source'
+                  activeField === 'source'
                     ? 'bg-primary/20 ring-2 ring-primary'
                     : 'bg-secondary/50'
                 )}
@@ -630,7 +630,7 @@ export function QuickTransactionModal({
                     inputMode="decimal"
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => setActiveAmountField('source')}
+                    onFocus={() => setActiveField('source')}
                                         onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
@@ -645,7 +645,7 @@ export function QuickTransactionModal({
               <div
                 className={cn(
                   'flex-1 p-4 rounded-xl transition-all',
-                  activeAmountField === 'target'
+                  activeField === 'target'
                     ? 'bg-primary/20 ring-2 ring-primary'
                     : 'bg-secondary/50'
                 )}
@@ -657,7 +657,7 @@ export function QuickTransactionModal({
                     inputMode="decimal"
                                         value={targetAmount}
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => setActiveAmountField('target')}
+                    onFocus={() => setActiveField('target')}
                                         onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
@@ -675,7 +675,7 @@ export function QuickTransactionModal({
               <div
                 className={cn(
                   'flex-1 p-3 rounded-xl transition-all',
-                  activeAmountField === 'source'
+                  activeField === 'source'
                     ? 'bg-primary/20 ring-2 ring-primary'
                     : 'bg-secondary/50'
                 )}
@@ -691,7 +691,7 @@ export function QuickTransactionModal({
                     inputMode="decimal"
                                         value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => setActiveAmountField('source')}
+                    onFocus={() => setActiveField('source')}
                                         onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
@@ -707,7 +707,7 @@ export function QuickTransactionModal({
                   <div
                     className={cn(
                       'flex-1 p-3 rounded-xl transition-all',
-                      activeAmountField === 'target'
+                      activeField === 'target'
                         ? 'bg-primary/20 ring-2 ring-primary'
                         : 'bg-secondary/50'
                     )}
@@ -720,7 +720,7 @@ export function QuickTransactionModal({
                                             step="0.01"
                         value={targetAmount}
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
-                        onFocus={() => setActiveAmountField('target')}
+                        onFocus={() => setActiveField('target')}
                                             onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
@@ -738,7 +738,7 @@ export function QuickTransactionModal({
                   <div
                     className={cn(
                       'flex-1 p-3 rounded-xl transition-all',
-                      activeAmountField === 'account'
+                      activeField === 'account'
                         ? 'bg-primary/20 ring-2 ring-primary'
                         : 'bg-secondary/50'
                     )}
@@ -751,7 +751,7 @@ export function QuickTransactionModal({
                                             step="0.01"
                         value={accountAmount}
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
-                        onFocus={() => setActiveAmountField('account')}
+                        onFocus={() => setActiveField('account')}
                                                 onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
@@ -766,7 +766,10 @@ export function QuickTransactionModal({
         ) : (
           // Single currency: show one amount
           <div className="p-4">
-            <div className="p-4 rounded-xl bg-secondary/50 transition-all focus-within:bg-primary/20 focus-within:ring-2 focus-within:ring-primary">
+            <div className={cn(
+              "p-4 rounded-xl transition-all",
+              activeField === 'amount' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
+            )}>
               <div className="flex items-baseline justify-center gap-2">
                 <input
                   ref={amountInputRef}
@@ -775,6 +778,7 @@ export function QuickTransactionModal({
                   inputMode="decimal"
                   value={amount}
                   onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                  onFocus={() => setActiveField('amount')}
                   onTouchStart={handleInputTouchStart}
                   placeholder="0"
                   className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
@@ -787,12 +791,16 @@ export function QuickTransactionModal({
 
         {/* Comment */}
         <div className="px-2 pb-3">
-          <div className="flex items-start gap-3 px-3 py-3 bg-secondary/50 rounded-lg transition-all focus-within:bg-primary/20 focus-within:ring-2 focus-within:ring-primary">
+          <div className={cn(
+            "flex items-start gap-3 px-3 py-3 rounded-lg transition-all",
+            activeField === 'comment' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
+          )}>
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
             <textarea
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              onFocus={() => setActiveField('comment')}
               onTouchStart={handleInputTouchStart}
               rows={2}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
@@ -802,7 +810,10 @@ export function QuickTransactionModal({
 
         {/* Date row */}
         <div className="px-2 pb-4 flex justify-end">
-          <label className="inline-flex items-center gap-2 px-3 py-2.5 bg-secondary/50 rounded-lg cursor-pointer relative transition-all focus-within:bg-primary/20 focus-within:ring-2 focus-within:ring-primary">
+          <label className={cn(
+            "inline-flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer relative transition-all",
+            activeField === 'date' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
+          )}>
             <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <span className="text-sm">{
               date === new Date().toISOString().split('T')[0]
@@ -814,6 +825,7 @@ export function QuickTransactionModal({
               lang={language}
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              onFocus={() => setActiveField('date')}
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
           </label>
