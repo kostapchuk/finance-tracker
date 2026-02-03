@@ -624,61 +624,40 @@ export function QuickTransactionModal({
           </div>
         </div>
 
-        {/* Submit Button - inline when no keyboard */}
-        {keyboardHeight === 0 && (
-          <div className="px-2 pb-4">
-            <button
-              onClick={handleSubmit}
-              disabled={
-                !amount ||
-                (isMultiCurrencyTransfer && !targetAmount) ||
-                (isMultiCurrencyIncomeExpense && !targetAmount) ||
-                (needsAccountConversion && !accountAmount) ||
-                (mode.type !== 'transfer' && !selectedAccountId) ||
-                isSubmitting
-              }
-              className={cn(
-                'w-full py-4 rounded-xl text-lg font-semibold transition-colors touch-target',
-                'bg-primary text-primary-foreground',
-                'hover:bg-primary/90 active:bg-primary/80',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            >
-              {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
-            </button>
-          </div>
-        )}
+        {/* Spacer for fixed button */}
+        <div className="h-20" />
       </div>
 
-      {/* Submit Button - fixed above keyboard when open */}
-      {keyboardHeight > 0 && (
-        <div
-          className="fixed left-0 right-0 px-2 pb-2 bg-background transition-[bottom] duration-100"
-          style={{ bottom: keyboardHeight }}
-        >
-          <div className="max-w-lg mx-auto">
-            <button
-              onClick={handleSubmit}
-              disabled={
-                !amount ||
-                (isMultiCurrencyTransfer && !targetAmount) ||
-                (isMultiCurrencyIncomeExpense && !targetAmount) ||
-                (needsAccountConversion && !accountAmount) ||
-                (mode.type !== 'transfer' && !selectedAccountId) ||
-                isSubmitting
-              }
-              className={cn(
-                'w-full py-4 rounded-xl text-lg font-semibold transition-colors touch-target',
-                'bg-primary text-primary-foreground',
-                'hover:bg-primary/90 active:bg-primary/80',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            >
-              {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
-            </button>
-          </div>
+      {/* Submit Button - always fixed at bottom */}
+      <div
+        className="fixed left-0 right-0 px-2 bg-background/95 backdrop-blur-sm transition-[bottom] duration-150"
+        style={{
+          bottom: keyboardHeight > 0 ? keyboardHeight : 0,
+          paddingBottom: keyboardHeight > 0 ? 8 : 'max(8px, env(safe-area-inset-bottom))'
+        }}
+      >
+        <div className="max-w-lg mx-auto">
+          <button
+            onClick={handleSubmit}
+            disabled={
+              !amount ||
+              (isMultiCurrencyTransfer && !targetAmount) ||
+              (isMultiCurrencyIncomeExpense && !targetAmount) ||
+              (needsAccountConversion && !accountAmount) ||
+              (mode.type !== 'transfer' && !selectedAccountId) ||
+              isSubmitting
+            }
+            className={cn(
+              'w-full py-4 rounded-xl text-lg font-semibold transition-colors touch-target',
+              'bg-primary text-primary-foreground',
+              'hover:bg-primary/90 active:bg-primary/80',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            )}
+          >
+            {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   )
 }
