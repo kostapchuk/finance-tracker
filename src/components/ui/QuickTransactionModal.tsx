@@ -50,9 +50,9 @@ export function QuickTransactionModal({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [viewportHeight, setViewportHeight] = useState(window.visualViewport?.height || window.innerHeight)
   const amountInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLDivElement>(null)
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -78,34 +78,32 @@ export function QuickTransactionModal({
     return () => document.removeEventListener('touchmove', preventTouch)
   }, [])
 
-  // Track visual viewport height for button positioning
+  // Position button at bottom of visual viewport - using DOM directly to avoid re-renders
   useEffect(() => {
     const viewport = window.visualViewport
     if (!viewport) return
 
-    const resetScroll = () => {
+    const updateButtonPosition = () => {
+      if (buttonRef.current) {
+        buttonRef.current.style.top = `${viewport.height - 72}px`
+      }
+      // Reset scroll
       window.scrollTo(0, 0)
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
     }
 
-    const handleViewportChange = () => {
-      // Directly use viewport height - no debounce, immediate update
-      setViewportHeight(viewport.height)
-      resetScroll()
-    }
+    // Set initial position
+    updateButtonPosition()
 
-    // Set initial value
-    setViewportHeight(viewport.height)
-
-    viewport.addEventListener('resize', handleViewportChange)
-    viewport.addEventListener('scroll', handleViewportChange)
-    window.addEventListener('scroll', resetScroll)
+    viewport.addEventListener('resize', updateButtonPosition)
+    viewport.addEventListener('scroll', updateButtonPosition)
+    window.addEventListener('scroll', updateButtonPosition)
 
     return () => {
-      viewport.removeEventListener('resize', handleViewportChange)
-      viewport.removeEventListener('scroll', handleViewportChange)
-      window.removeEventListener('scroll', resetScroll)
+      viewport.removeEventListener('resize', updateButtonPosition)
+      viewport.removeEventListener('scroll', updateButtonPosition)
+      window.removeEventListener('scroll', updateButtonPosition)
     }
   }, [])
 
@@ -617,10 +615,8 @@ export function QuickTransactionModal({
 
       {/* Submit Button - always fixed at bottom */}
       <div
+        ref={buttonRef}
         className="fixed left-0 right-0 px-2 pb-2 bg-background/95 backdrop-blur-sm"
-        style={{
-          top: viewportHeight - 72,
-        }}
       >
         <div className="max-w-lg mx-auto">
           <button
