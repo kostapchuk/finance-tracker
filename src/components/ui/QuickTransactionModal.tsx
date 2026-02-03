@@ -338,7 +338,7 @@ export function QuickTransactionModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-card overflow-hidden">
       {/* Full-page transaction form */}
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
@@ -641,7 +641,7 @@ export function QuickTransactionModal({
       {/* Submit Button - fixed above keyboard when open */}
       {keyboardHeight > 0 && (
         <div
-          className="fixed left-0 right-0 px-2 pb-2 bg-background/95 backdrop-blur-sm"
+          className="fixed left-0 right-0 px-2 pb-2"
           style={{ bottom: keyboardHeight }}
         >
           <div className="max-w-lg mx-auto">
