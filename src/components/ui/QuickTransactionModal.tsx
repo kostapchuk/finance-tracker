@@ -618,7 +618,10 @@ export function QuickTransactionModal({
 
       {/* Submit Button - fixed at bottom */}
       <div
-        className="fixed left-0 right-0 px-2 pb-2 bg-background/95 backdrop-blur-sm"
+        className={cn(
+          "fixed left-0 right-0 px-2 bg-background/95 backdrop-blur-sm",
+          keyboardHeight > 0 ? "pb-2" : "pb-safe"
+        )}
         style={{ bottom: keyboardHeight }}
       >
         <div className="max-w-lg mx-auto">
