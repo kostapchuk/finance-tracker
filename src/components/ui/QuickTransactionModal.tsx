@@ -50,7 +50,7 @@ export function QuickTransactionModal({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [viewportHeight, setViewportHeight] = useState(window.visualViewport?.height || window.innerHeight)
   const amountInputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -78,12 +78,10 @@ export function QuickTransactionModal({
     return () => document.removeEventListener('touchmove', preventTouch)
   }, [])
 
-  // Track keyboard visibility using visualViewport API
+  // Track visual viewport height for button positioning
   useEffect(() => {
     const viewport = window.visualViewport
     if (!viewport) return
-
-    let debounceTimer: ReturnType<typeof setTimeout>
 
     const resetScroll = () => {
       window.scrollTo(0, 0)
@@ -92,24 +90,19 @@ export function QuickTransactionModal({
     }
 
     const handleViewportChange = () => {
-      const heightDiff = window.innerHeight - viewport.height
-      const newHeight = heightDiff > 50 ? heightDiff : 0
-
-      // Debounce to prevent flicker during keyboard switch
-      clearTimeout(debounceTimer)
-      debounceTimer = setTimeout(() => {
-        setKeyboardHeight(newHeight)
-      }, 50)
-
+      // Directly use viewport height - no debounce, immediate update
+      setViewportHeight(viewport.height)
       resetScroll()
     }
+
+    // Set initial value
+    setViewportHeight(viewport.height)
 
     viewport.addEventListener('resize', handleViewportChange)
     viewport.addEventListener('scroll', handleViewportChange)
     window.addEventListener('scroll', resetScroll)
 
     return () => {
-      clearTimeout(debounceTimer)
       viewport.removeEventListener('resize', handleViewportChange)
       viewport.removeEventListener('scroll', handleViewportChange)
       window.removeEventListener('scroll', resetScroll)
@@ -630,10 +623,9 @@ export function QuickTransactionModal({
 
       {/* Submit Button - always fixed at bottom */}
       <div
-        className="fixed left-0 right-0 px-2 bg-background/95 backdrop-blur-sm transition-[bottom] duration-150"
+        className="fixed left-0 right-0 px-2 pb-2 bg-background/95 backdrop-blur-sm"
         style={{
-          bottom: keyboardHeight > 0 ? keyboardHeight : 0,
-          paddingBottom: keyboardHeight > 0 ? 8 : 'max(8px, env(safe-area-inset-bottom))'
+          top: viewportHeight - 72,
         }}
       >
         <div className="max-w-lg mx-auto">
