@@ -41,7 +41,7 @@ export function AccountCard({
     <button
       onClick={onClick}
       className={cn(
-        'flex-shrink-0 p-2 rounded-xl min-w-20',
+        'flex-shrink-0 p-2 rounded-xl min-w-20 max-w-24',
         'active:scale-95',
         'transition-all duration-150 touch-target',
         'flex flex-col items-center gap-1'
@@ -54,9 +54,9 @@ export function AccountCard({
       >
         <IconComponent className="h-6 w-6" style={{ color }} />
       </div>
-      <div className="text-center w-full">
-        <p className="text-sm text-muted-foreground truncate w-full">{name}</p>
-        <p className="text-xs font-semibold text-foreground truncate w-full">
+      <div className="text-center w-full min-w-0 overflow-hidden">
+        <p className="text-sm text-muted-foreground truncate">{name}</p>
+        <p className="text-xs font-semibold text-foreground truncate">
           {formatCurrency(balance, currency)}
         </p>
       </div>

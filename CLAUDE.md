@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-React/TypeScript PWA finance tracker for personal money management. Mobile-first design with drag-and-drop transaction entry. Supports EN/RU localization.
+React/TypeScript PWA finance tracker for personal money management. **Mobile-first PWA designed primarily for iOS.** Drag-and-drop transaction entry. Supports EN/RU localization.
 
 ## Tech Stack
 
