@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { version } from '../../../../package.json'
 import {
   Wallet, Tags, DollarSign, Download, Upload, Trash2, ChevronRight,
-  Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical, EyeOff
+  Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical, EyeOff, FileSpreadsheet
 } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -21,6 +21,7 @@ import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { CurrencyForm } from './CurrencyForm'
+import { BudgetOkImportWizard } from '@/features/import/components/BudgetOkImportWizard'
 import type { Account, Category, IncomeSource, CustomCurrency } from '@/database/types'
 import type { Language } from '@/utils/i18n'
 
@@ -51,6 +52,7 @@ export function SettingsPage() {
   const [editingIncome, setEditingIncome] = useState<IncomeSource | null>(null)
   const [currencyFormOpen, setCurrencyFormOpen] = useState(false)
   const [editingCurrency, setEditingCurrency] = useState<CustomCurrency | null>(null)
+  const [importWizardOpen, setImportWizardOpen] = useState(false)
 
   // Drag-to-reorder sensors
   const reorderSensors = useSensors(
@@ -486,6 +488,17 @@ export function SettingsPage() {
         </h3>
         <div className="space-y-2">
           <button
+            onClick={() => setImportWizardOpen(true)}
+            className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl"
+          >
+            <div className="flex items-center gap-3">
+              <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+              <span>{t('importFromBudgetOk')}</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+
+          <button
             onClick={handleExportJSON}
             disabled={isExporting}
             className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl disabled:opacity-50"
@@ -578,6 +591,12 @@ export function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* BudgetOk Import Wizard */}
+      <BudgetOkImportWizard
+        open={importWizardOpen}
+        onClose={() => setImportWizardOpen(false)}
+      />
     </div>
   )
 }
