@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BottomNav } from './BottomNav'
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
+import { UpdatePrompt } from '@/components/ui/UpdatePrompt'
 import { useAppStore } from '@/store/useAppStore'
 import { setCustomCurrencies } from '@/utils/currency'
 
@@ -27,6 +28,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
+      <UpdatePrompt />
       <main className="flex-1 overflow-auto pb-20 pt-safe">
         {children}
       </main>

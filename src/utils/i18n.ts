@@ -338,6 +338,10 @@ export const translations = {
     importPause: 'Pause',
     importResume: 'Resume Import',
     importPauseHint: 'You can pause to create missing items, then resume',
+
+    // PWA Update
+    updateAvailable: 'Update available',
+    updateNow: 'Update',
   },
   ru: {
     // Navigation
@@ -676,6 +680,10 @@ export const translations = {
     importPause: 'Приостановить',
     importResume: 'Продолжить импорт',
     importPauseHint: 'Вы можете приостановить, чтобы создать недостающие элементы',
+
+    // PWA Update
+    updateAvailable: 'Доступно обновление',
+    updateNow: 'Обновить',
   },
 } as const
 
