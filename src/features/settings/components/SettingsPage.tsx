@@ -21,7 +21,7 @@ import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { CurrencyForm } from './CurrencyForm'
-import { BudgetOkImportWizard } from '@/features/import/components/BudgetOkImportWizard'
+import { BudgetOkImportWizard, type SavedImportState } from '@/features/import/components/BudgetOkImportWizard'
 import type { Account, Category, IncomeSource, CustomCurrency } from '@/database/types'
 import type { Language } from '@/utils/i18n'
 
@@ -53,6 +53,7 @@ export function SettingsPage() {
   const [currencyFormOpen, setCurrencyFormOpen] = useState(false)
   const [editingCurrency, setEditingCurrency] = useState<CustomCurrency | null>(null)
   const [importWizardOpen, setImportWizardOpen] = useState(false)
+  const [savedImportState, setSavedImportState] = useState<SavedImportState | null>(null)
 
   // Drag-to-reorder sensors
   const reorderSensors = useSensors(
@@ -489,13 +490,22 @@ export function SettingsPage() {
         <div className="space-y-2">
           <button
             onClick={() => setImportWizardOpen(true)}
-            className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl"
+            className={`w-full flex items-center justify-between p-4 rounded-xl ${
+              savedImportState ? 'bg-primary/10 border border-primary/30' : 'bg-secondary/50'
+            }`}
           >
             <div className="flex items-center gap-3">
-              <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
-              <span>{t('importFromBudgetOk')}</span>
+              <FileSpreadsheet className={`h-5 w-5 ${savedImportState ? 'text-primary' : 'text-muted-foreground'}`} />
+              <div className="text-left">
+                <span className={savedImportState ? 'text-primary font-medium' : ''}>
+                  {savedImportState ? t('importResume') : t('importFromBudgetOk')}
+                </span>
+                {savedImportState && (
+                  <p className="text-xs text-muted-foreground">{savedImportState.fileName}</p>
+                )}
+              </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            <ChevronRight className={`h-5 w-5 ${savedImportState ? 'text-primary' : 'text-muted-foreground'}`} />
           </button>
 
           <button
@@ -596,6 +606,9 @@ export function SettingsPage() {
       <BudgetOkImportWizard
         open={importWizardOpen}
         onClose={() => setImportWizardOpen(false)}
+        onPause={() => setImportWizardOpen(false)}
+        savedState={savedImportState}
+        onStateChange={setSavedImportState}
       />
     </div>
   )

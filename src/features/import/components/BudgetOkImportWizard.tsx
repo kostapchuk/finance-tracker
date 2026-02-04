@@ -1,5 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { Pause } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
 import { parseBudgetOkCSV } from '../utils/csvParser'
@@ -15,27 +17,77 @@ import type { ImportWizardStep, ParsedImportData, ImportResult } from '../types'
 interface BudgetOkImportWizardProps {
   open: boolean
   onClose: () => void
+  onPause: () => void
+  // Persisted state from parent
+  savedState: SavedImportState | null
+  onStateChange: (state: SavedImportState | null) => void
 }
 
-export function BudgetOkImportWizard({ open, onClose }: BudgetOkImportWizardProps) {
+export interface SavedImportState {
+  step: ImportWizardStep
+  file: File | null
+  fileName: string
+  parsedData: ParsedImportData | null
+  accountMapping: Map<string, number>
+  categoryMapping: Map<string, number>
+  incomeSourceMapping: Map<string, number>
+}
+
+export function BudgetOkImportWizard({ open, onClose, onPause, savedState, onStateChange }: BudgetOkImportWizardProps) {
   const { t } = useLanguage()
   const { accounts, categories, incomeSources, loadAllData } = useAppStore()
 
-  // Wizard state
-  const [step, setStep] = useState<ImportWizardStep>(1)
-  const [file, setFile] = useState<File | null>(null)
+  // Wizard state - initialize from saved state if available
+  const [step, setStep] = useState<ImportWizardStep>(savedState?.step ?? 1)
+  const [file, setFile] = useState<File | null>(savedState?.file ?? null)
+  const [fileName, setFileName] = useState<string>(savedState?.fileName ?? '')
   const [fileError, setFileError] = useState<string | null>(null)
-  const [parsedData, setParsedData] = useState<ParsedImportData | null>(null)
-  const [accountMapping, setAccountMapping] = useState<Map<string, number>>(new Map())
-  const [categoryMapping, setCategoryMapping] = useState<Map<string, number>>(new Map())
-  const [incomeSourceMapping, setIncomeSourceMapping] = useState<Map<string, number>>(new Map())
+  const [parsedData, setParsedData] = useState<ParsedImportData | null>(savedState?.parsedData ?? null)
+  const [accountMapping, setAccountMapping] = useState<Map<string, number>>(savedState?.accountMapping ?? new Map())
+  const [categoryMapping, setCategoryMapping] = useState<Map<string, number>>(savedState?.categoryMapping ?? new Map())
+  const [incomeSourceMapping, setIncomeSourceMapping] = useState<Map<string, number>>(savedState?.incomeSourceMapping ?? new Map())
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
 
-  // Reset state when dialog closes
+  // Restore state when savedState changes (e.g., when resuming)
+  useEffect(() => {
+    if (savedState && open) {
+      setStep(savedState.step)
+      setFile(savedState.file)
+      setFileName(savedState.fileName)
+      setParsedData(savedState.parsedData)
+      setAccountMapping(savedState.accountMapping)
+      setCategoryMapping(savedState.categoryMapping)
+      setIncomeSourceMapping(savedState.incomeSourceMapping)
+    }
+  }, [open, savedState])
+
+  // Save state to parent when it changes (for pause/resume)
+  const saveCurrentState = useCallback(() => {
+    if (step > 1 && parsedData) {
+      onStateChange({
+        step,
+        file,
+        fileName,
+        parsedData,
+        accountMapping,
+        categoryMapping,
+        incomeSourceMapping,
+      })
+    }
+  }, [step, file, fileName, parsedData, accountMapping, categoryMapping, incomeSourceMapping, onStateChange])
+
+  // Handle pause - save state and close
+  const handlePause = useCallback(() => {
+    saveCurrentState()
+    onPause()
+  }, [saveCurrentState, onPause])
+
+  // Reset state completely when finishing or canceling
   const handleClose = useCallback(() => {
     setStep(1)
     setFile(null)
+    setFileName('')
     setFileError(null)
     setParsedData(null)
     setAccountMapping(new Map())
@@ -43,12 +95,14 @@ export function BudgetOkImportWizard({ open, onClose }: BudgetOkImportWizardProp
     setIncomeSourceMapping(new Map())
     setIsImporting(false)
     setImportResult(null)
+    onStateChange(null) // Clear saved state
     onClose()
-  }, [onClose])
+  }, [onClose, onStateChange])
 
   // Step 1: File selection
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setFile(selectedFile)
+    setFileName(selectedFile.name)
     setFileError(null)
 
     try {
@@ -194,8 +248,18 @@ export function BudgetOkImportWizard({ open, onClose }: BudgetOkImportWizardProp
       <DialogContent className="max-w-lg h-[85vh] flex flex-col p-0">
         {/* Header */}
         <div className="px-4 py-3 border-b">
-          <h2 className="font-semibold">{t('importFromBudgetOk')}</h2>
-          <p className="text-xs text-muted-foreground">{stepTitles[step]}</p>
+          <div className="flex items-center gap-3">
+            {step > 1 && step < 6 && !isImporting && (
+              <Button variant="outline" size="sm" onClick={handlePause} className="gap-1">
+                <Pause className="h-3 w-3" />
+                {t('importPause')}
+              </Button>
+            )}
+            <div>
+              <h2 className="font-semibold">{t('importFromBudgetOk')}</h2>
+              <p className="text-xs text-muted-foreground">{stepTitles[step]}</p>
+            </div>
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -222,10 +286,10 @@ export function BudgetOkImportWizard({ open, onClose }: BudgetOkImportWizardProp
             />
           )}
 
-          {step === 2 && parsedData && file && (
+          {step === 2 && parsedData && (
             <ImportDataPreview
               data={parsedData}
-              fileName={file.name}
+              fileName={fileName}
               onNext={() => setStep(3)}
               onBack={() => setStep(1)}
             />

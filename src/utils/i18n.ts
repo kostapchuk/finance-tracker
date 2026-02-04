@@ -335,6 +335,9 @@ export const translations = {
     importDone: 'Done',
     importFailed: 'Import Failed',
     importUnknownError: 'An unknown error occurred',
+    importPause: 'Pause',
+    importResume: 'Resume Import',
+    importPauseHint: 'You can pause to create missing items, then resume',
   },
   ru: {
     // Navigation
@@ -670,6 +673,9 @@ export const translations = {
     importDone: 'Готово',
     importFailed: 'Ошибка импорта',
     importUnknownError: 'Произошла неизвестная ошибка',
+    importPause: 'Приостановить',
+    importResume: 'Продолжить импорт',
+    importPauseHint: 'Вы можете приостановить, чтобы создать недостающие элементы',
   },
 } as const
 
