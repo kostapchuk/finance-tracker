@@ -3,14 +3,8 @@ import { QuickTransactionModal } from '../page-objects/components/quick-transact
 import { testAccounts, testCategories, testIncomeSources } from '../fixtures/test-data';
 
 test.describe('Transaction Edit/Delete', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should edit income transaction amount from history', async ({

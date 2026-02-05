@@ -13,17 +13,24 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
+    // Mobile - iOS (Priority)
     {
       name: 'Mobile Safari',
       use: { ...devices['iPhone 14 Pro'] },
     },
+    // Mobile - Android
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 7'] },
     },
+    // Desktop browsers
     {
       name: 'Desktop Chrome',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'Desktop Safari',
+      use: { ...devices['Desktop Safari'] },
     },
   ],
   webServer: {

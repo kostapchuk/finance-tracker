@@ -3,14 +3,8 @@ import { IncomeSourceForm } from '../page-objects/components/income-source-form'
 import { testIncomeSources } from '../fixtures/test-data';
 
 test.describe('Income Source Management', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should create an income source with USD currency', async ({ page, settingsPage }) => {

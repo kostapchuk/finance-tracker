@@ -3,14 +3,8 @@ import { QuickTransactionModal } from '../page-objects/components/quick-transact
 import { testAccounts, testIncomeSources } from '../fixtures/test-data';
 
 test.describe('Income Transactions', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should record income by dragging income source to account (same currency)', async ({

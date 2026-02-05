@@ -4,14 +4,8 @@ import { PaymentDialog } from '../page-objects/components/payment-dialog';
 import { testAccounts } from '../fixtures/test-data';
 
 test.describe('Loan Management', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should create a loan given (money lent out) - account balance decreases', async ({

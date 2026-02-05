@@ -4,14 +4,8 @@ import { PaymentDialog } from '../page-objects/components/payment-dialog';
 import { testAccounts } from '../fixtures/test-data';
 
 test.describe('Loan Payments', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should record partial payment on loan given - balance increases', async ({

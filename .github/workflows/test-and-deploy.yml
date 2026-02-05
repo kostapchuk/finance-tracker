@@ -26,13 +26,13 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Build application
         run: npm run build
 
       - name: Run E2E tests
-        run: npx playwright test --project='Desktop Chrome'
+        run: npx playwright test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

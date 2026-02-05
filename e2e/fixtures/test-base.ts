@@ -11,6 +11,7 @@ type TestFixtures = {
   historyPage: HistoryPage;
   loansPage: LoansPage;
   settingsPage: SettingsPage;
+  setupCleanState: () => Promise<void>;
 };
 
 export const test = base.extend<TestFixtures>({
@@ -37,6 +38,26 @@ export const test = base.extend<TestFixtures>({
   settingsPage: async ({ page }, use) => {
     const settingsPage = new SettingsPage(page);
     await use(settingsPage);
+  },
+
+  setupCleanState: async ({ page, dbHelper }, use) => {
+    const setup = async () => {
+      // 1. Navigate to app to initialize the database
+      await page.goto('/');
+      await page.waitForLoadState('networkidle');
+
+      // 2. Clear all data
+      await dbHelper.clearDatabase();
+
+      // 3. Set required settings (AFTER clearing)
+      await dbHelper.setMainCurrency('USD');
+      await dbHelper.setOnboardingComplete();
+
+      // 4. Reload to pick up clean state
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+    };
+    await use(setup);
   },
 });
 

@@ -3,14 +3,8 @@ import { QuickTransactionModal } from '../page-objects/components/quick-transact
 import { testAccounts } from '../fixtures/test-data';
 
 test.describe('Transfer Transactions', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should transfer between accounts with same currency (single input)', async ({

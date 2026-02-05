@@ -3,14 +3,8 @@ import { CategoryForm } from '../page-objects/components/category-form';
 import { testCategories } from '../fixtures/test-data';
 
 test.describe('Category Management', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should create a category without budget', async ({ page, settingsPage }) => {

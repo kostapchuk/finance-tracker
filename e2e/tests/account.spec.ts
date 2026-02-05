@@ -3,14 +3,8 @@ import { AccountForm } from '../page-objects/components/account-form';
 import { testAccounts } from '../fixtures/test-data';
 
 test.describe('Account Management', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('should create a cash account with USD currency', async ({ page, settingsPage }) => {

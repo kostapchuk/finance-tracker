@@ -5,14 +5,8 @@ import { PaymentDialog } from '../page-objects/components/payment-dialog';
 import { testAccounts, testCategories, testIncomeSources } from '../fixtures/test-data';
 
 test.describe('Multi-Currency Comprehensive Tests', () => {
-  test.beforeEach(async ({ page, dbHelper }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await dbHelper.setOnboardingComplete();
-    await dbHelper.clearDatabase();
-    await dbHelper.setMainCurrency('USD');
-    await dbHelper.refreshStoreData();
-    await page.reload();
+  test.beforeEach(async ({ setupCleanState }) => {
+    await setupCleanState();
   });
 
   test('full workflow: USD salary to EUR account to BTC category', async ({
