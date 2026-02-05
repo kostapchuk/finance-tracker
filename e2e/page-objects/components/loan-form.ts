@@ -4,7 +4,8 @@ export class LoanForm {
   constructor(private page: Page) {}
 
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]');
+    // Custom dialog uses fixed positioning with shadow-lg class
+    return this.page.locator('.fixed .shadow-lg.rounded-lg');
   }
 
   async isVisible(): Promise<boolean> {
@@ -17,9 +18,10 @@ export class LoanForm {
       given: 'Given|Одолжено',
       received: 'Received|Получено',
     };
-    const select = this.getDialog().locator('[role="combobox"]').first();
+    // First select in the form is type
+    const select = this.getDialog().locator('button.w-full.border').first();
     await select.click();
-    await this.page.locator('[role="option"]').filter({ hasText: new RegExp(typeLabels[type], 'i') }).click();
+    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(typeLabels[type], 'i') }).click();
   }
 
   // Person name
@@ -46,18 +48,18 @@ export class LoanForm {
     await input.fill(amount);
   }
 
-  // Currency selector
-  async selectCurrency(currency: string): Promise<void> {
-    const select = this.getDialog().locator('[role="combobox"]').nth(1);
+  // Account selector (second select, after Type)
+  async selectAccount(accountName: string): Promise<void> {
+    const select = this.getDialog().locator('button.w-full.border').nth(1);
     await select.click();
-    await this.page.locator('[role="option"]').filter({ hasText: currency }).click();
+    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: accountName }).click();
   }
 
-  // Account selector
-  async selectAccount(accountName: string): Promise<void> {
-    const select = this.getDialog().locator('[role="combobox"]').last();
+  // Currency selector (third select, after Account)
+  async selectCurrency(currency: string): Promise<void> {
+    const select = this.getDialog().locator('button.w-full.border').nth(2);
     await select.click();
-    await this.page.locator('[role="option"]').filter({ hasText: accountName }).click();
+    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(`${currency} -|${currency}$`, 'i') }).first().click();
   }
 
   // Due date
@@ -74,7 +76,7 @@ export class LoanForm {
 
   // Save/Cancel
   getSaveButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /save|add|create|сохранить|добавить|создать/i });
+    return this.getDialog().locator('button').filter({ hasText: /save|add|create|update|сохранить|добавить|создать|обновить/i });
   }
 
   getCancelButton(): Locator {

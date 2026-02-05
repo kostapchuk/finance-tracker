@@ -107,22 +107,16 @@ test.describe('Account Management', () => {
     await dbHelper.refreshStoreData();
     await page.reload();
 
-    const accountForm = new AccountForm(page);
-
     await settingsPage.navigateTo('settings');
     await settingsPage.openSection('accounts');
 
-    // Click edit on the account
-    await settingsPage.editItem(accountData.name);
+    // Set up dialog handler to accept the native confirm dialog
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
 
-    // Delete
-    await accountForm.delete();
-
-    // Handle confirmation if any
-    const confirmButton = page.locator('button').filter({ hasText: /confirm|yes|да|подтвердить/i });
-    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
+    // Click delete button on the account item (trash icon)
+    await settingsPage.deleteItem(accountData.name);
 
     await page.waitForTimeout(500);
 

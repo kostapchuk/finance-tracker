@@ -4,7 +4,8 @@ export class PaymentDialog {
   constructor(private page: Page) {}
 
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]');
+    // Custom dialog uses fixed positioning with shadow-lg class
+    return this.page.locator('.fixed .shadow-lg.rounded-lg');
   }
 
   async isVisible(): Promise<boolean> {
@@ -67,7 +68,9 @@ export class PaymentDialog {
 
   async payRemaining(): Promise<void> {
     await this.getPayRemainingButton().click();
-    await this.page.waitForTimeout(500);
+    await this.page.waitForTimeout(300);
+    // After filling amount, submit the form
+    await this.recordPayment();
   }
 
   async editLoan(): Promise<void> {

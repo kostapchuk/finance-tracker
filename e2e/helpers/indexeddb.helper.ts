@@ -4,6 +4,7 @@ import type {
   TestCategory,
   TestIncomeSource,
   TestLoan,
+  TestTransaction,
 } from '../fixtures/test-data';
 
 const DB_NAME = 'FinanceTrackerDB';
@@ -158,6 +159,77 @@ export class IndexedDBHelper {
     }, { dbName: DB_NAME, l: loanData });
   }
 
+  async seedTransaction(transaction: TestTransaction): Promise<number> {
+    const txData = {
+      ...transaction,
+      date: transaction.date?.toISOString() || new Date().toISOString(),
+    };
+    return this.page.evaluate(async ({ dbName, tx }) => {
+      return new Promise<number>((resolve, reject) => {
+        const request = indexedDB.open(dbName);
+        request.onsuccess = () => {
+          const db = request.result;
+          const dbTx = db.transaction('transactions', 'readwrite');
+          const store = dbTx.objectStore('transactions');
+          const now = new Date();
+          const addRequest = store.add({
+            ...tx,
+            date: new Date(tx.date),
+            createdAt: now,
+            updatedAt: now,
+          });
+          addRequest.onsuccess = () => {
+            db.close();
+            resolve(addRequest.result as number);
+          };
+          addRequest.onerror = () => {
+            db.close();
+            reject(addRequest.error);
+          };
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }, { dbName: DB_NAME, tx: txData });
+  }
+
+  async updateAccountBalance(accountId: number, newBalance: number): Promise<void> {
+    await this.page.evaluate(async ({ dbName, id, balance }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('accounts', 'readwrite');
+          const store = tx.objectStore('accounts');
+          const getRequest = store.get(id);
+          getRequest.onsuccess = () => {
+            const account = getRequest.result;
+            if (account) {
+              account.balance = balance;
+              account.updatedAt = new Date();
+              const putRequest = store.put(account);
+              putRequest.onsuccess = () => {
+                db.close();
+                resolve();
+              };
+              putRequest.onerror = () => {
+                db.close();
+                reject(putRequest.error);
+              };
+            } else {
+              db.close();
+              resolve();
+            }
+          };
+          getRequest.onerror = () => {
+            db.close();
+            reject(getRequest.error);
+          };
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }, { dbName: DB_NAME, id: accountId, balance: newBalance });
+  }
+
   async getAccountBalance(accountId: number): Promise<number> {
     return this.page.evaluate(async ({ dbName, id }) => {
       return new Promise<number>((resolve, reject) => {
@@ -242,14 +314,33 @@ export class IndexedDBHelper {
           const db = request.result;
           const tx = db.transaction('settings', 'readwrite');
           const store = tx.objectStore('settings');
-          const putRequest = store.put({ key: 'mainCurrency', value: curr });
-          putRequest.onsuccess = () => {
-            db.close();
-            resolve();
+          // First check if settings already exist
+          const getAllRequest = store.getAll();
+          getAllRequest.onsuccess = () => {
+            const existing = getAllRequest.result[0];
+            const now = new Date();
+            const settingsData = {
+              ...(existing || {}),
+              defaultCurrency: curr,
+              createdAt: existing?.createdAt || now,
+              updatedAt: now,
+            };
+            // Use put with id if exists, or add if new
+            const saveRequest = existing?.id
+              ? store.put({ ...settingsData, id: existing.id })
+              : store.add(settingsData);
+            saveRequest.onsuccess = () => {
+              db.close();
+              resolve();
+            };
+            saveRequest.onerror = () => {
+              db.close();
+              reject(saveRequest.error);
+            };
           };
-          putRequest.onerror = () => {
+          getAllRequest.onerror = () => {
             db.close();
-            reject(putRequest.error);
+            reject(getAllRequest.error);
           };
         };
         request.onerror = () => reject(request.error);
@@ -258,26 +349,10 @@ export class IndexedDBHelper {
   }
 
   async setOnboardingComplete(): Promise<void> {
-    await this.page.evaluate(async (dbName) => {
-      return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
-        request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('settings', 'readwrite');
-          const store = tx.objectStore('settings');
-          const putRequest = store.put({ key: 'onboardingComplete', value: true });
-          putRequest.onsuccess = () => {
-            db.close();
-            resolve();
-          };
-          putRequest.onerror = () => {
-            db.close();
-            reject(putRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, DB_NAME);
+    // Onboarding state is stored in localStorage, not IndexedDB
+    await this.page.evaluate(() => {
+      localStorage.setItem('finance-tracker-onboarding-completed', 'true');
+    });
   }
 
   async refreshStoreData(): Promise<void> {

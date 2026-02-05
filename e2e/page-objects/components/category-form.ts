@@ -4,7 +4,8 @@ export class CategoryForm {
   constructor(private page: Page) {}
 
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]');
+    // Custom dialog uses fixed positioning with shadow-lg class
+    return this.page.locator('.fixed .shadow-lg.rounded-lg');
   }
 
   async isVisible(): Promise<boolean> {
@@ -28,14 +29,16 @@ export class CategoryForm {
       monthly: 'Month|Месяц',
       yearly: 'Year|Год',
     };
-    const select = this.getDialog().locator('[role="combobox"]');
+    // Custom Select trigger - the one with w-full class (not Cancel button)
+    const select = this.getDialog().locator('button.w-full.border');
     await select.click();
-    await this.page.locator('[role="option"]').filter({ hasText: new RegExp(periodLabels[period], 'i') }).click();
+    // Custom Select items are divs with cursor-pointer class
+    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(periodLabels[period], 'i') }).click();
   }
 
   // Save/Cancel
   getSaveButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /save|add|сохранить|добавить/i });
+    return this.getDialog().locator('button').filter({ hasText: /save|create|update|add|сохранить|создать|обновить|добавить/i });
   }
 
   getCancelButton(): Locator {

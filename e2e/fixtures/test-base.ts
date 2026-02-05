@@ -4,6 +4,7 @@ import { DashboardPage } from '../page-objects/dashboard.page';
 import { HistoryPage } from '../page-objects/history.page';
 import { LoansPage } from '../page-objects/loans.page';
 import { SettingsPage } from '../page-objects/settings.page';
+import { ReportPage } from '../page-objects/report.page';
 
 type TestFixtures = {
   dbHelper: IndexedDBHelper;
@@ -11,6 +12,7 @@ type TestFixtures = {
   historyPage: HistoryPage;
   loansPage: LoansPage;
   settingsPage: SettingsPage;
+  reportPage: ReportPage;
   setupCleanState: () => Promise<void>;
 };
 
@@ -40,22 +42,39 @@ export const test = base.extend<TestFixtures>({
     await use(settingsPage);
   },
 
+  reportPage: async ({ page }, use) => {
+    const reportPage = new ReportPage(page);
+    await use(reportPage);
+  },
+
   setupCleanState: async ({ page, dbHelper }, use) => {
     const setup = async () => {
-      // 1. Navigate to app to initialize the database
+      // 1. Set language to English and onboarding complete in localStorage BEFORE navigating
+      await page.addInitScript(() => {
+        localStorage.setItem('finance-tracker-language', 'en');
+        localStorage.setItem('finance-tracker-onboarding-completed', 'true');
+      });
+
+      // 2. Navigate to app to initialize the database
       await page.goto('/');
       await page.waitForLoadState('networkidle');
 
-      // 2. Clear all data
+      // 3. Clear all data
       await dbHelper.clearDatabase();
 
-      // 3. Set required settings (AFTER clearing)
+      // 4. Set required settings (AFTER clearing)
       await dbHelper.setMainCurrency('USD');
-      await dbHelper.setOnboardingComplete();
 
-      // 4. Reload to pick up clean state
+      // 5. Reload to pick up clean state
       await page.reload();
       await page.waitForLoadState('networkidle');
+
+      // 6. Dismiss onboarding if still visible (click Skip button)
+      const skipButton = page.getByText('Skip');
+      if (await skipButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await skipButton.click();
+        await page.waitForTimeout(300);
+      }
     };
     await use(setup);
   },

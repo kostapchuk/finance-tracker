@@ -276,17 +276,16 @@ test.describe('Loan Payments', () => {
     await loanForm.selectAccount('USD Cash');
     await loanForm.save();
 
-    // Record payment
+    // Record payment (comment field not available for new payments)
     await loansPage.clickLoan('History Test');
     await paymentDialog.fillAmount('100');
-    await paymentDialog.fillComment('First payment');
     await paymentDialog.recordPayment();
 
     // Navigate to history and filter by loans
     await historyPage.navigateTo('history');
     await historyPage.filterByType('loans');
 
-    // Verify payment appears
-    await expect(page.locator('text=First payment')).toBeVisible();
+    // Verify payment appears (auto-generated comment includes "Payment received from")
+    await expect(page.locator('text=Payment received from History Test')).toBeVisible();
   });
 });

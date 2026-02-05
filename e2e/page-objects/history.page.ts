@@ -57,11 +57,12 @@ export class HistoryPage extends BasePage {
 
   // Search
   getSearchButton(): Locator {
-    return this.page.locator('button').filter({ has: this.page.locator('[class*="Search"]') });
+    // Search button has lucide-react Search icon (svg with class lucide-search)
+    return this.page.locator('button.p-2.rounded-full').filter({ has: this.page.locator('.lucide-search') });
   }
 
   getSearchInput(): Locator {
-    return this.page.locator('input[placeholder*="earch"]');
+    return this.page.locator('input[placeholder*="earch"], input[placeholder*="Поиск"]');
   }
 
   async search(query: string): Promise<void> {

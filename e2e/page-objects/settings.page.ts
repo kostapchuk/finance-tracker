@@ -44,9 +44,9 @@ export class SettingsPage extends BasePage {
     await this.page.waitForTimeout(200);
   }
 
-  // Add button (in management sections)
+  // Add button (in management sections) - it's the blue rounded + button in header
   getAddButton(): Locator {
-    return this.page.locator('button').filter({ hasText: /add|добавить/i });
+    return this.page.locator('button.rounded-full.bg-primary');
   }
 
   async clickAdd(): Promise<void> {
@@ -68,13 +68,25 @@ export class SettingsPage extends BasePage {
     await this.page.waitForTimeout(300);
   }
 
-  // Edit button for item
+  // Edit button for item - in the button group on the right (after drag handle)
   getEditButton(itemName: string): Locator {
-    return this.getItemByName(itemName).locator('button').filter({ has: this.page.locator('[class*="Pencil"]') });
+    // Item has: drag handle button, then edit/delete buttons in a flex container
+    // Edit button is the one with p-2 class that's not the drag handle (cursor-grab)
+    return this.getItemByName(itemName).locator('button.p-2').first();
+  }
+
+  // Delete button for item - second p-2 button (trash icon)
+  getDeleteButtonForItem(itemName: string): Locator {
+    return this.getItemByName(itemName).locator('button.p-2').nth(1);
   }
 
   async editItem(name: string): Promise<void> {
     await this.getEditButton(name).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  async deleteItem(name: string): Promise<void> {
+    await this.getDeleteButtonForItem(name).click();
     await this.page.waitForTimeout(300);
   }
 

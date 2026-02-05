@@ -1,4 +1,4 @@
-import type { AccountType, CategoryType, LoanType } from '../../src/database/types';
+import type { AccountType, CategoryType, LoanType, TransactionType } from '../../src/database/types';
 
 export interface TestAccount {
   name: string;
@@ -38,6 +38,21 @@ export interface TestLoan {
   status: 'active' | 'partially_paid' | 'fully_paid';
   accountId: number;
   dueDate?: Date;
+}
+
+export interface TestTransaction {
+  type: TransactionType;
+  amount: number;
+  currency: string;
+  date?: Date;
+  comment?: string;
+  incomeSourceId?: number;
+  categoryId?: number;
+  accountId?: number;
+  toAccountId?: number;
+  toAmount?: number;
+  loanId?: number;
+  mainCurrencyAmount?: number;
 }
 
 export const testAccounts = {

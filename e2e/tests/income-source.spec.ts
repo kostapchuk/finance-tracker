@@ -14,11 +14,11 @@ test.describe('Income Source Management', () => {
     await settingsPage.openSection('income');
     await settingsPage.clickAdd();
 
-    await incomeForm.fillName('Salary');
+    await incomeForm.fillName('Main Job');
     await incomeForm.selectCurrency('USD');
     await incomeForm.save();
 
-    await expect(page.locator('text=Salary')).toBeVisible();
+    await expect(page.locator('text=Main Job')).toBeVisible();
   });
 
   test('should create an income source with EUR currency (different from mainCurrency)', async ({ page, settingsPage }) => {
@@ -59,8 +59,8 @@ test.describe('Income Source Management', () => {
   });
 
   test('should edit income source name', async ({ page, settingsPage, dbHelper }) => {
-    // Seed an income source
-    const incomeData = testIncomeSources.salary();
+    // Seed an income source with unique name
+    const incomeData = { ...testIncomeSources.salary(), name: 'Test Income' };
     await dbHelper.seedIncomeSource(incomeData);
     await dbHelper.refreshStoreData();
     await page.reload();
@@ -71,11 +71,12 @@ test.describe('Income Source Management', () => {
     await settingsPage.openSection('income');
     await settingsPage.editItem(incomeData.name);
 
-    await incomeForm.fillName('Monthly Salary');
+    await incomeForm.fillName('Updated Income');
     await incomeForm.save();
 
-    await expect(page.locator('text=Monthly Salary')).toBeVisible();
-    await expect(page.locator('text=Salary').first()).not.toBeVisible();
+    await expect(page.locator('text=Updated Income')).toBeVisible();
+    // Original name should be gone
+    await expect(page.locator('p.font-medium:text-is("Test Income")')).not.toBeVisible();
   });
 
   test('should change income source currency', async ({ page, settingsPage, dbHelper }) => {
@@ -94,8 +95,10 @@ test.describe('Income Source Management', () => {
     await incomeForm.selectCurrency('GBP');
     await incomeForm.save();
 
-    // Verify the currency change (should show in list)
-    await expect(page.locator('text=GBP')).toBeVisible();
+    // Re-open the item to verify currency was saved
+    await settingsPage.editItem(incomeData.name);
+    // The select should show GBP
+    await expect(page.locator('.fixed .shadow-lg.rounded-lg button.w-full.border')).toContainText('GBP');
   });
 
   test('should delete an income source', async ({ page, settingsPage, dbHelper }) => {
@@ -105,18 +108,16 @@ test.describe('Income Source Management', () => {
     await dbHelper.refreshStoreData();
     await page.reload();
 
-    const incomeForm = new IncomeSourceForm(page);
-
     await settingsPage.navigateTo('settings');
     await settingsPage.openSection('income');
-    await settingsPage.editItem(incomeData.name);
-    await incomeForm.delete();
 
-    // Handle confirmation if any
-    const confirmButton = page.locator('button').filter({ hasText: /confirm|yes|да|подтвердить/i });
-    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
+    // Set up dialog handler to accept the native confirm dialog
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+
+    // Click delete button (trash icon) on the income source item
+    await settingsPage.deleteItem(incomeData.name);
 
     await page.waitForTimeout(500);
 

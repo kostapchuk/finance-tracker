@@ -4,7 +4,8 @@ export class AccountForm {
   constructor(private page: Page) {}
 
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]');
+    // Custom dialog uses fixed positioning with shadow-lg class
+    return this.page.locator('.fixed .shadow-lg.rounded-lg');
   }
 
   async isVisible(): Promise<boolean> {
@@ -17,11 +18,12 @@ export class AccountForm {
   }
 
   getTypeSelect(): Locator {
-    return this.page.locator('[role="combobox"]').first();
+    // Custom Select uses button with border and ChevronDown icon
+    return this.getDialog().locator('button.border').first();
   }
 
   getCurrencySelect(): Locator {
-    return this.page.locator('[role="combobox"]').nth(1);
+    return this.getDialog().locator('button.border').nth(1);
   }
 
   getBalanceInput(): Locator {
@@ -43,12 +45,14 @@ export class AccountForm {
       credit_card: 'Credit|Кредит',
     };
     await this.getTypeSelect().click();
-    await this.page.locator('[role="option"]').filter({ hasText: new RegExp(typeLabels[type], 'i') }).click();
+    // Custom Select items are divs with cursor-pointer class in dropdown
+    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(typeLabels[type], 'i') }).click();
   }
 
   async selectCurrency(currency: string): Promise<void> {
     await this.getCurrencySelect().click();
-    await this.page.locator('[role="option"]').filter({ hasText: currency }).click();
+    // Use exact match pattern to avoid USD matching USDT
+    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(`${currency} -|${currency}$`, 'i') }).first().click();
   }
 
   async fillBalance(balance: string): Promise<void> {
@@ -58,7 +62,7 @@ export class AccountForm {
 
   // Save/Cancel
   getSaveButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /save|add|сохранить|добавить/i });
+    return this.getDialog().locator('button').filter({ hasText: /save|create|update|add|сохранить|создать|обновить|добавить/i });
   }
 
   getCancelButton(): Locator {

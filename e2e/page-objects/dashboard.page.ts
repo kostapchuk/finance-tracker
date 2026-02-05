@@ -6,35 +6,52 @@ export class DashboardPage extends BasePage {
     super(page);
   }
 
-  // Income sources section
+  // Income sources section - dnd-kit doesn't render ids to DOM
+  getIncomeSection(): Locator {
+    return this.page.locator('section').filter({ hasText: /^INCOME/i });
+  }
+
   getIncomeSources(): Locator {
-    return this.page.locator('[id^="income-"]');
+    return this.getIncomeSection().locator('.flex.gap-2 > div');
   }
 
   getIncomeSourceByName(name: string): Locator {
-    return this.page.locator('[id^="income-"]').filter({ hasText: name });
+    const shortName = name.substring(0, 8);
+    return this.getIncomeSection().locator('div').filter({ hasText: new RegExp(shortName, 'i') }).first();
   }
 
-  // Accounts section
+  // Accounts section - dnd-kit doesn't render ids to DOM, use section-based locators
+  getAccountsSection(): Locator {
+    return this.page.locator('section').filter({ hasText: /^ACCOUNTS/i });
+  }
+
   getAccounts(): Locator {
-    return this.page.locator('[id^="account-"]').filter({ has: this.page.locator('[class*="rounded-xl"]') });
+    return this.getAccountsSection().locator('.flex.gap-2 > div');
   }
 
   getAccountByName(name: string): Locator {
-    return this.page.locator('[id^="account-drop-"]').filter({ hasText: name });
+    // Account names may be truncated in UI, so use regex to match start of name
+    const shortName = name.substring(0, 8); // Match first 8 chars to handle truncation
+    return this.getAccountsSection().locator('div').filter({ hasText: new RegExp(shortName, 'i') }).first();
   }
 
   getAccountDraggable(name: string): Locator {
-    return this.page.locator('[id^="account-"]:not([id^="account-drop-"])').filter({ hasText: name });
+    const shortName = name.substring(0, 8);
+    return this.getAccountsSection().locator('div').filter({ hasText: new RegExp(shortName, 'i') }).first();
   }
 
-  // Categories section
+  // Categories/Expenses section - dnd-kit doesn't render ids to DOM
+  getExpensesSection(): Locator {
+    return this.page.locator('section').filter({ hasText: /^EXPENSES/i });
+  }
+
   getCategories(): Locator {
-    return this.page.locator('[id^="category-"]');
+    return this.getExpensesSection().locator('.flex.gap-2 > div');
   }
 
   getCategoryByName(name: string): Locator {
-    return this.page.locator('[id^="category-"]').filter({ hasText: name });
+    const shortName = name.substring(0, 8);
+    return this.getExpensesSection().locator('div').filter({ hasText: new RegExp(shortName, 'i') }).first();
   }
 
   // Add buttons

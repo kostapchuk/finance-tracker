@@ -4,7 +4,8 @@ export class IncomeSourceForm {
   constructor(private page: Page) {}
 
   getDialog(): Locator {
-    return this.page.locator('[role="dialog"]');
+    // Custom dialog uses fixed positioning with shadow-lg class
+    return this.page.locator('.fixed .shadow-lg.rounded-lg');
   }
 
   async isVisible(): Promise<boolean> {
@@ -18,14 +19,17 @@ export class IncomeSourceForm {
   }
 
   async selectCurrency(currency: string): Promise<void> {
-    const select = this.getDialog().locator('[role="combobox"]');
+    // Custom Select uses button with border
+    const select = this.getDialog().locator('button.w-full.border');
     await select.click();
-    await this.page.locator('[role="option"]').filter({ hasText: currency }).click();
+    // Custom Select items are divs with cursor-pointer class
+    // Use pattern to match currency code followed by - to avoid partial matches
+    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(`${currency} -|${currency}$`, 'i') }).first().click();
   }
 
   // Save/Cancel
   getSaveButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /save|add|сохранить|добавить/i });
+    return this.getDialog().locator('button').filter({ hasText: /save|create|update|add|сохранить|создать|обновить|добавить/i });
   }
 
   getCancelButton(): Locator {

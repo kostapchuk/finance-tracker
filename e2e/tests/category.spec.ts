@@ -14,10 +14,10 @@ test.describe('Category Management', () => {
     await settingsPage.openSection('categories');
     await settingsPage.clickAdd();
 
-    await categoryForm.fillName('Groceries');
+    await categoryForm.fillName('Shopping');
     await categoryForm.save();
 
-    await expect(page.locator('text=Groceries')).toBeVisible();
+    await expect(page.locator('text=Shopping')).toBeVisible();
   });
 
   test('should create a category with monthly budget', async ({ page, settingsPage }) => {
@@ -83,7 +83,8 @@ test.describe('Category Management', () => {
     await categoryForm.save();
 
     await expect(page.locator('text=Food & Dining')).toBeVisible();
-    await expect(page.locator('text=Food')).not.toBeVisible();
+    // Original "Food" category should be renamed - check exact match
+    await expect(page.locator('p.font-medium:text-is("Food")')).not.toBeVisible();
   });
 
   test('should delete a category', async ({ page, settingsPage, dbHelper }) => {
@@ -93,18 +94,16 @@ test.describe('Category Management', () => {
     await dbHelper.refreshStoreData();
     await page.reload();
 
-    const categoryForm = new CategoryForm(page);
-
     await settingsPage.navigateTo('settings');
     await settingsPage.openSection('categories');
-    await settingsPage.editItem(categoryData.name);
-    await categoryForm.delete();
 
-    // Handle confirmation if any
-    const confirmButton = page.locator('button').filter({ hasText: /confirm|yes|да|подтвердить/i });
-    if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await confirmButton.click();
-    }
+    // Set up dialog handler to accept the native confirm dialog
+    page.on('dialog', async (dialog) => {
+      await dialog.accept();
+    });
+
+    // Click delete button (trash icon) on the category item
+    await settingsPage.deleteItem(categoryData.name);
 
     await page.waitForTimeout(500);
 
