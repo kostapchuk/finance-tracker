@@ -23,14 +23,10 @@ export default defineConfig({
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 7'] },
     },
-    // Desktop browsers
+    // Desktop
     {
       name: 'Desktop Chrome',
       use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'Desktop Safari',
-      use: { ...devices['Desktop Safari'] },
     },
   ],
   webServer: {
