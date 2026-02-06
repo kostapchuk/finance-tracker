@@ -232,3 +232,11 @@ When loan/transaction currency differs from account currency:
 - Always handle multi-currency scenarios in loans/transactions
 - Mobile-first: test on small screens, use responsive classes (sm:, etc.)
 - Path aliases: `@/` maps to `src/`
+
+## Development Workflow
+
+**After every code change:**
+1. Run linter: `npm run lint`
+2. Run tests: `npm test`
+3. Create or update tests for any new/modified functionality
+4. Ensure all tests pass before considering the change complete

@@ -1,10 +1,13 @@
+import { lazy, Suspense } from 'react'
 import { useAppStore } from '@/store/useAppStore'
 import { AppShell } from '@/components/layout/AppShell'
-import { Dashboard } from '@/features/dashboard/components/Dashboard'
-import { HistoryPage } from '@/features/transactions/components/HistoryPage'
-import { LoansPage } from '@/features/loans/components/LoansPage'
-import { ReportPage } from '@/features/reports/components/ReportPage'
-import { SettingsPage } from '@/features/settings/components/SettingsPage'
+import { ServiceWorkerProvider } from '@/contexts/ServiceWorkerContext'
+
+const Dashboard = lazy(() => import('@/features/dashboard/components/Dashboard').then(m => ({ default: m.Dashboard })))
+const HistoryPage = lazy(() => import('@/features/transactions/components/HistoryPage').then(m => ({ default: m.HistoryPage })))
+const LoansPage = lazy(() => import('@/features/loans/components/LoansPage').then(m => ({ default: m.LoansPage })))
+const ReportPage = lazy(() => import('@/features/reports/components/ReportPage').then(m => ({ default: m.ReportPage })))
+const SettingsPage = lazy(() => import('@/features/settings/components/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
 function MainContent() {
   const activeView = useAppStore((state) => state.activeView)
@@ -27,8 +30,12 @@ function MainContent() {
 
 export function App() {
   return (
-    <AppShell>
-      <MainContent />
-    </AppShell>
+    <ServiceWorkerProvider>
+      <AppShell>
+        <Suspense fallback={null}>
+          <MainContent />
+        </Suspense>
+      </AppShell>
+    </ServiceWorkerProvider>
   )
 }

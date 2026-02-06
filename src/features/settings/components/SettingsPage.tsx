@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { version } from '../../../../package.json'
 import {
   Wallet, Tags, DollarSign, Download, Upload, Trash2, ChevronRight,
-  Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical, EyeOff, FileSpreadsheet
+  Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical, EyeOff, FileSpreadsheet, RefreshCw
 } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -22,6 +22,7 @@ import { CategoryForm } from '@/features/categories/components/CategoryForm'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { CurrencyForm } from './CurrencyForm'
 import { BudgetOkImportWizard, type SavedImportState } from '@/features/import/components/BudgetOkImportWizard'
+import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
 import type { Account, Category, IncomeSource, CustomCurrency } from '@/database/types'
 import type { Language } from '@/utils/i18n'
 
@@ -35,6 +36,7 @@ export function SettingsPage() {
     loadAllData, refreshAccounts, refreshCategories, refreshIncomeSources, refreshCustomCurrencies
   } = useAppStore()
   const { language, setLanguage, t } = useLanguage()
+  const { needRefresh, updateServiceWorker } = useServiceWorker()
 
   const [activeSection, setActiveSection] = useState<ManagementSection>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -398,6 +400,22 @@ export function SettingsPage() {
       <div className="px-4 py-3">
         <h1 className="text-xl font-bold">{t('settings')}</h1>
       </div>
+
+      {/* Update Card */}
+      {needRefresh && (
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/30 rounded-xl">
+            <RefreshCw className="h-5 w-5 text-primary flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">{t('updateAvailable')}</p>
+              <p className="text-xs text-muted-foreground">{t('updateDescription')}</p>
+            </div>
+            <Button size="sm" onClick={updateServiceWorker}>
+              {t('updateNow')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Management Sections */}
       <div className="px-4 py-2">

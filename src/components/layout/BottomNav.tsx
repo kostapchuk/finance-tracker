@@ -2,6 +2,7 @@ import { LayoutDashboard, Clock, HandCoins, PieChart, Settings } from 'lucide-re
 import { cn } from '@/utils/cn'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
 import type { TranslationKey } from '@/utils/i18n'
 
 const navItems: { id: 'dashboard' | 'history' | 'loans' | 'report' | 'settings', labelKey: TranslationKey, icon: typeof LayoutDashboard }[] = [
@@ -16,6 +17,7 @@ export function BottomNav() {
   const activeView = useAppStore((state) => state.activeView)
   const setActiveView = useAppStore((state) => state.setActiveView)
   const { t } = useLanguage()
+  const { needRefresh } = useServiceWorker()
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border pb-safe z-50">
@@ -23,6 +25,7 @@ export function BottomNav() {
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activeView === item.id
+          const showBadge = item.id === 'settings' && needRefresh
           return (
             <button
               key={item.id}
@@ -34,7 +37,12 @@ export function BottomNav() {
                   : 'text-muted-foreground active:text-foreground'
               )}
             >
-              <Icon className={cn('h-5 w-5', isActive && 'scale-110')} />
+              <span className="relative">
+                <Icon className={cn('h-5 w-5', isActive && 'scale-110')} />
+                {showBadge && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary border-2 border-card" />
+                )}
+              </span>
               <span className="text-xs font-medium">{t(item.labelKey)}</span>
             </button>
           )

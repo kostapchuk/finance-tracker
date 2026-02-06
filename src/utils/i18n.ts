@@ -341,6 +341,7 @@ export const translations = {
 
     // PWA Update
     updateAvailable: 'Update available',
+    updateDescription: 'A new version of the app is ready to install',
     updateNow: 'Update',
 
     // Infinite scroll
@@ -687,6 +688,7 @@ export const translations = {
 
     // PWA Update
     updateAvailable: 'Доступно обновление',
+    updateDescription: 'Новая версия приложения готова к установке',
     updateNow: 'Обновить',
 
     // Infinite scroll

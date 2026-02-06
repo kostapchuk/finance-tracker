@@ -113,6 +113,7 @@ This document lists use cases and features that are **not currently covered** by
 
 - [ ] App works offline (IndexedDB persistence)
 - [ ] Install PWA prompt
+- [x] PWA update notification (dot badge + settings card) *(update-notification.spec.ts)*
 - [ ] Safe area handling on iOS
 - [ ] Keyboard handling on mobile forms
 - [ ] Pull-to-refresh behavior
