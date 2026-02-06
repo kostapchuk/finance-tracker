@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar, Wallet } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
@@ -44,6 +45,10 @@ export function HistoryPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
 
+  // Infinite scroll state
+  const [displayCount, setDisplayCount] = useState(50)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+
   // Edit state
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment' | null>(null)
@@ -67,6 +72,11 @@ export function HistoryPage() {
       useAppStore.setState({ historyAccountFilter: null })
     }
   }, [historyAccountFilter])
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(50)
+  }, [typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery])
 
   const typeConfig: Record<TransactionType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
     income: { label: t('income'), icon: ArrowUpCircle, color: 'text-success' },
@@ -186,15 +196,36 @@ export function HistoryPage() {
       })
   }, [transactions, typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery, accounts, categories, incomeSources])
 
+  // Paginated transactions for display
+  const displayedTransactions = useMemo(() => {
+    return filteredTransactions.slice(0, displayCount)
+  }, [filteredTransactions, displayCount])
+
+  const hasMore = displayCount < filteredTransactions.length
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return
+    setIsLoadingMore(true)
+    await new Promise(r => setTimeout(r, 50)) // small delay for smooth UX
+    setDisplayCount(prev => prev + 50)
+    setIsLoadingMore(false)
+  }, [isLoadingMore, hasMore])
+
+  const { sentinelRef } = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore,
+    isLoading: isLoadingMore,
+  })
+
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, Transaction[]> = {}
-    filteredTransactions.forEach((t) => {
+    displayedTransactions.forEach((t) => {
       const group = getDateGroup(new Date(t.date))
       if (!groups[group]) groups[group] = []
       groups[group].push(t)
     })
     return groups
-  }, [filteredTransactions])
+  }, [displayedTransactions])
 
   const handleDelete = async (transaction: Transaction) => {
     if (!transaction.id) return
@@ -590,6 +621,21 @@ export function HistoryPage() {
               </div>
             </div>
           ))
+        )}
+
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="h-1" />
+
+        {isLoadingMore && (
+          <div className="flex justify-center py-4">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        )}
+
+        {!hasMore && filteredTransactions.length > 50 && (
+          <p className="text-center text-sm text-muted-foreground py-4">
+            {t('showingAllTransactions').replace('{count}', String(filteredTransactions.length))}
+          </p>
         )}
       </div>
 

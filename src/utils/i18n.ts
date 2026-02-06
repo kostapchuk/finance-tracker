@@ -342,6 +342,10 @@ export const translations = {
     // PWA Update
     updateAvailable: 'Update available',
     updateNow: 'Update',
+
+    // Infinite scroll
+    loadingMore: 'Loading...',
+    showingAllTransactions: 'Showing all {count} transactions',
   },
   ru: {
     // Navigation
@@ -684,6 +688,10 @@ export const translations = {
     // PWA Update
     updateAvailable: 'Доступно обновление',
     updateNow: 'Обновить',
+
+    // Infinite scroll
+    loadingMore: 'Загрузка...',
+    showingAllTransactions: 'Показаны все {count} транзакций',
   },
 } as const
 

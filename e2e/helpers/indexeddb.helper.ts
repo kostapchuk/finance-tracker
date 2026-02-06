@@ -361,4 +361,47 @@ export class IndexedDBHelper {
     await this.page.reload();
     await this.page.waitForLoadState('networkidle');
   }
+
+  async seedTransactions(count: number, accountId: number, categoryId: number): Promise<void> {
+    await this.page.evaluate(async ({ dbName, count, accountId, categoryId }) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open(dbName);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('transactions', 'readwrite');
+          const store = tx.objectStore('transactions');
+          const now = new Date();
+          let completed = 0;
+
+          for (let i = 0; i < count; i++) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i); // Spread across days
+            const addRequest = store.add({
+              type: 'expense',
+              amount: 10 + i,
+              currency: 'USD',
+              date,
+              accountId,
+              categoryId,
+              comment: `Transaction ${i + 1}`,
+              createdAt: now,
+              updatedAt: now,
+            });
+            addRequest.onsuccess = () => {
+              completed++;
+              if (completed === count) {
+                db.close();
+                resolve();
+              }
+            };
+            addRequest.onerror = () => {
+              db.close();
+              reject(addRequest.error);
+            };
+          }
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }, { dbName: DB_NAME, count, accountId, categoryId });
+  }
 }

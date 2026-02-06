@@ -101,4 +101,27 @@ export class HistoryPage extends BasePage {
     const emptyState = this.page.locator('text=/no.*transactions|транзакций.*нет/i');
     return emptyState.isVisible();
   }
+
+  // Infinite scroll
+  getLoadingSpinner(): Locator {
+    return this.page.locator('.animate-spin');
+  }
+
+  async scrollToBottom(): Promise<void> {
+    await this.page.evaluate(() => {
+      const scrollContainer = document.querySelector('.overflow-auto');
+      if (scrollContainer) {
+        scrollContainer.scrollTo(0, scrollContainer.scrollHeight);
+      }
+    });
+    await this.page.waitForTimeout(200);
+  }
+
+  async waitForMoreTransactions(initialCount: number): Promise<void> {
+    await this.page.waitForFunction(
+      (count) => document.querySelectorAll('.bg-secondary\\/50.rounded-xl').length > count,
+      initialCount,
+      { timeout: 5000 }
+    );
+  }
 }
