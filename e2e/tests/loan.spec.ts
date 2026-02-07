@@ -1,6 +1,5 @@
 import { test, expect } from '../fixtures/test-base';
 import { LoanForm } from '../page-objects/components/loan-form';
-import { PaymentDialog } from '../page-objects/components/payment-dialog';
 import { testAccounts } from '../fixtures/test-data';
 
 test.describe('Loan Management', () => {

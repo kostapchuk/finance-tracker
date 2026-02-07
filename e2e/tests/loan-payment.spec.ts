@@ -97,7 +97,7 @@ test.describe('Loan Payments', () => {
     dbHelper,
   }) => {
     // Seed account and create loan
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    await dbHelper.seedAccount(testAccounts.usdCash());
     await dbHelper.refreshStoreData();
     await page.reload();
 

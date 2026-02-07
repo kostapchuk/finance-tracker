@@ -41,15 +41,22 @@ export function TransactionList() {
   const getIncomeSourceName = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
   const filteredTransactions = useMemo(() => {
+    const matchAccount = (id?: number) => {
+      const account = accounts.find((a) => a.id === id)
+      return account ? `${account.name} (${account.currency})` : 'Unknown'
+    }
+    const matchCategory = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
+    const matchIncomeSource = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+
     return transactions.filter((t) => {
       if (typeFilter !== 'all' && t.type !== typeFilter) return false
       if (accountFilter !== 'all' && t.accountId?.toString() !== accountFilter && t.toAccountId?.toString() !== accountFilter) return false
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
         const comment = t.comment?.toLowerCase() || ''
-        const accountName = getAccountName(t.accountId).toLowerCase()
-        const categoryName = getCategoryName(t.categoryId).toLowerCase()
-        const sourceName = getIncomeSourceName(t.incomeSourceId).toLowerCase()
+        const accountName = matchAccount(t.accountId).toLowerCase()
+        const categoryName = matchCategory(t.categoryId).toLowerCase()
+        const sourceName = matchIncomeSource(t.incomeSourceId).toLowerCase()
         if (!comment.includes(query) && !accountName.includes(query) && !categoryName.includes(query) && !sourceName.includes(query)) {
           return false
         }

@@ -57,6 +57,7 @@ export function HistoryPage() {
 
   useEffect(() => {
     if (historyCategoryFilter !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync from store navigation action
       setCategoryFilter(String(historyCategoryFilter))
       setTypeFilter('expense')
       setDateFilter('month')
@@ -67,6 +68,7 @@ export function HistoryPage() {
 
   useEffect(() => {
     if (historyAccountFilter !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync from store navigation action
       setAccountFilter(String(historyAccountFilter))
       setShowFilters(true)
       useAppStore.setState({ historyAccountFilter: null })
@@ -75,6 +77,7 @@ export function HistoryPage() {
 
   // Reset display count when filters change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting pagination on filter change
     setDisplayCount(50)
   }, [typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery])
 
@@ -87,26 +90,6 @@ export function HistoryPage() {
     loan_given: { label: t('moneyGiven'), icon: ArrowDownCircle, color: 'text-loan' },
     loan_received: { label: t('moneyReceived'), icon: ArrowUpCircle, color: 'text-loan' },
     loan_payment: { label: t('paid'), icon: ArrowLeftRight, color: 'text-loan' },
-  }
-
-  function getDateGroup(date: Date): string {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    const weekAgo = new Date(today)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const monthAgo = new Date(today)
-    monthAgo.setMonth(monthAgo.getMonth() - 1)
-
-    const txDate = new Date(date)
-    const txDateOnly = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate())
-
-    if (txDateOnly.getTime() === today.getTime()) return t('today')
-    if (txDateOnly.getTime() === yesterday.getTime()) return t('yesterday')
-    if (txDateOnly >= weekAgo) return t('thisWeek')
-    if (txDateOnly >= monthAgo) return t('thisMonth')
-    return txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { month: 'long', year: 'numeric' })
   }
 
   const getAccountName = (id?: number) => {
@@ -126,6 +109,13 @@ export function HistoryPage() {
     monthAgo.setMonth(monthAgo.getMonth() - 1)
     const yearAgo = new Date(today)
     yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+
+    const matchAccount = (id?: number) => {
+      const account = accounts.find((a) => a.id === id)
+      return account ? `${account.name} (${account.currency})` : 'Unknown'
+    }
+    const matchCategory = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
+    const matchIncomeSource = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
     return transactions
       .filter((tx) => {
@@ -177,9 +167,9 @@ export function HistoryPage() {
         if (searchQuery) {
           const query = searchQuery.toLowerCase()
           const comment = tx.comment?.toLowerCase() || ''
-          const accountName = getAccountName(tx.accountId).toLowerCase()
-          const categoryName = getCategoryName(tx.categoryId).toLowerCase()
-          const sourceName = getIncomeSourceName(tx.incomeSourceId).toLowerCase()
+          const accountName = matchAccount(tx.accountId).toLowerCase()
+          const categoryName = matchCategory(tx.categoryId).toLowerCase()
+          const sourceName = matchIncomeSource(tx.incomeSourceId).toLowerCase()
           if (!comment.includes(query) && !accountName.includes(query) && !categoryName.includes(query) && !sourceName.includes(query)) {
             return false
           }
@@ -218,14 +208,34 @@ export function HistoryPage() {
   })
 
   const groupedTransactions = useMemo(() => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const weekAgo = new Date(today)
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    const monthAgo = new Date(today)
+    monthAgo.setMonth(monthAgo.getMonth() - 1)
+
+    const getDateGroup = (date: Date): string => {
+      const txDate = new Date(date)
+      const txDateOnly = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate())
+
+      if (txDateOnly.getTime() === today.getTime()) return t('today')
+      if (txDateOnly.getTime() === yesterday.getTime()) return t('yesterday')
+      if (txDateOnly >= weekAgo) return t('thisWeek')
+      if (txDateOnly >= monthAgo) return t('thisMonth')
+      return txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { month: 'long', year: 'numeric' })
+    }
+
     const groups: Record<string, Transaction[]> = {}
-    displayedTransactions.forEach((t) => {
-      const group = getDateGroup(new Date(t.date))
+    displayedTransactions.forEach((tx) => {
+      const group = getDateGroup(new Date(tx.date))
       if (!groups[group]) groups[group] = []
-      groups[group].push(t)
+      groups[group].push(tx)
     })
     return groups
-  }, [displayedTransactions])
+  }, [displayedTransactions, t, language])
 
   const handleDelete = async (transaction: Transaction) => {
     if (!transaction.id) return

@@ -42,7 +42,7 @@ export function ReportPage() {
     const netFlow = monthlyIncome - monthlyExpenses
 
     return { totalBalance, monthlyIncome, monthlyExpenses, netFlow }
-  }, [accounts, transactions, selectedMonth])
+  }, [accounts, transactions, selectedMonth, mainCurrency])
 
   // Calculate loan totals
   const loanStats = useMemo(() => {

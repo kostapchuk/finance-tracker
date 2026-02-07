@@ -20,7 +20,6 @@ export function CategoryTile({
   currency = 'USD',
   color,
   icon,
-  type: _type = 'expense',
   onClick,
   dragHandleProps,
 }: CategoryTileProps) {

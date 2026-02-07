@@ -95,7 +95,7 @@ function SelectValue({ placeholder, children }: { placeholder?: string; children
   return <span className="truncate">{children ?? displayLabel ?? value ?? placeholder}</span>
 }
 
-interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+type SelectContentProps = React.HTMLAttributes<HTMLDivElement>
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {

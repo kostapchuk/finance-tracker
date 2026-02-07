@@ -72,13 +72,14 @@ export function parseBudgetOkCSV(csvContent: string): ParsedImportData {
         expenseCount++
         uniqueCategories.add(row.category)
         break
-      case 'transfer':
+      case 'transfer': {
         transferCount++
         uniqueTransferDestinations.add(row.category) // Category is destination account for transfers
         // For transfers, use currencyDop for destination account if available
         const destCurrency = row.currencyDop || row.currency
         addAccountCurrency(row.category, destCurrency)
         break
+      }
     }
   }
 

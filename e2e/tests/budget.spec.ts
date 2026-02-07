@@ -1,6 +1,5 @@
 import { test, expect } from '../fixtures/test-base';
 import { CategoryForm } from '../page-objects/components/category-form';
-import { QuickTransactionModal } from '../page-objects/components/quick-transaction-modal';
 import { testAccounts } from '../fixtures/test-data';
 
 test.describe('Budget Tracking', () => {
