@@ -558,10 +558,10 @@ export function HistoryPage() {
                         <p className="font-medium truncate">
                           {getTransactionTitle(transaction)}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {getAccountNameWithCurrency(transaction.accountId)}
-                          {group !== t('today') && group !== t('yesterday') && ` • ${formatShortDate(new Date(transaction.date), language)}`}
-                          {transaction.comment && ` • ${transaction.comment}`}
+                        <p className="text-xs text-muted-foreground truncate">
+                          <span>{getAccountNameWithCurrency(transaction.accountId)}</span>
+                          {group !== t('today') && group !== t('yesterday') && <span> • {formatShortDate(new Date(transaction.date), language)}</span>}
+                          {transaction.comment && <span className="truncate max-w-[100px] inline-block align-bottom"> • {transaction.comment}</span>}
                         </p>
                       </div>
                       <div className="text-right">
