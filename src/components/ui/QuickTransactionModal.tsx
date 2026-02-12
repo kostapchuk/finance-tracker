@@ -68,12 +68,21 @@ export function QuickTransactionModal({
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [buttonCovered, setButtonCovered] = useState(false)
   const amountInputRef = useRef<HTMLInputElement>(null)
+  const commentRef = useRef<HTMLTextAreaElement>(null)
   const buttonContainerRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef(0)
   const currentSwipeY = useRef(0)
 
-  // Lock body scroll and prevent touchmove
+  // Auto-resize comment textarea based on content
+  useEffect(() => {
+    const textarea = commentRef.current
+    if (!textarea) return
+    
+    textarea.style.height = 'auto'
+    const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 150)
+    textarea.style.height = `${newHeight}px`
+  }, [comment])
   useEffect(() => {
     const originalStyle = document.body.style.cssText
     document.body.style.cssText = `
@@ -818,13 +827,13 @@ export function QuickTransactionModal({
           )}>
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
             <textarea
+              ref={commentRef}
               placeholder={t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onFocus={() => setActiveField('comment')}
               onTouchStart={handleInputTouchStart}
-              rows={2}
-              className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground resize-none"
+              className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground min-h-[48px] max-h-[150px] overflow-y-auto"
             />
           </div>
         </div>
