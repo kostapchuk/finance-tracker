@@ -13,6 +13,9 @@ test.describe('History Infinite Scroll', () => {
     await dbHelper.refreshStoreData();
 
     await historyPage.navigateTo('history');
+    await historyPage.toggleFilters();
+    await page.locator('button.w-full.border').filter({ hasText: /this.*month|этот.*месяц/i }).click();
+    await page.locator('.z-50 .cursor-pointer').filter({ hasText: /all.*time|всё.*время/i }).click();
     await page.waitForTimeout(500);
 
     const count = await historyPage.getTransactionCount();
@@ -26,12 +29,14 @@ test.describe('History Infinite Scroll', () => {
     await dbHelper.refreshStoreData();
 
     await historyPage.navigateTo('history');
+    await historyPage.toggleFilters();
+    await page.locator('button.w-full.border').filter({ hasText: /this.*month|этот.*месяц/i }).click();
+    await page.locator('.z-50 .cursor-pointer').filter({ hasText: /all.*time|всё.*время/i }).click();
     await page.waitForTimeout(500);
 
     const initialCount = await historyPage.getTransactionCount();
     expect(initialCount).toBe(50);
 
-    // Scroll to bottom to trigger load more
     await historyPage.scrollToBottom();
     await historyPage.waitForMoreTransactions(initialCount);
 
@@ -46,14 +51,15 @@ test.describe('History Infinite Scroll', () => {
     await dbHelper.refreshStoreData();
 
     await historyPage.navigateTo('history');
+    await historyPage.toggleFilters();
+    await page.locator('button.w-full.border').filter({ hasText: /this.*month|этот.*месяц/i }).click();
+    await page.locator('.z-50 .cursor-pointer').filter({ hasText: /all.*time|всё.*время/i }).click();
     await historyPage.scrollToBottom();
     await page.waitForTimeout(500);
 
-    // All 100 should be loaded
     let count = await historyPage.getTransactionCount();
     expect(count).toBe(100);
 
-    // Change filter - should reset to 50
     await historyPage.filterByType('expense');
     await page.waitForTimeout(300);
 
@@ -68,10 +74,12 @@ test.describe('History Infinite Scroll', () => {
     await dbHelper.refreshStoreData();
 
     await historyPage.navigateTo('history');
+    await historyPage.toggleFilters();
+    await page.locator('button.w-full.border').filter({ hasText: /this.*month|этот.*месяц/i }).click();
+    await page.locator('.z-50 .cursor-pointer').filter({ hasText: /all.*time|всё.*время/i }).click();
     await historyPage.scrollToBottom();
     await page.waitForTimeout(500);
 
-    // Should show "Showing all X transactions" message
     await expect(page.locator('text=/showing all|показаны все/i')).toBeVisible();
   });
 });

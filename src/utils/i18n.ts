@@ -52,6 +52,13 @@ export const translations = {
     sixMonthTrend: '6-Month Trend',
     noTransactionDataYet: 'No transaction data yet',
 
+    // History summary
+    inflows: 'Inflows',
+    outflows: 'Outflows',
+    net: 'Net',
+    last3Months: 'Last 3 Months',
+    last6Months: 'Last 6 Months',
+
     // Settings
     manage: 'Manage',
     categories: 'Categories',
@@ -399,6 +406,13 @@ export const translations = {
     noExpenseDataThisMonth: 'Нет данных о расходах за этот месяц',
     sixMonthTrend: 'Тренд за 6 месяцев',
     noTransactionDataYet: 'Пока нет данных о транзакциях',
+
+    // History summary
+    inflows: 'Поступления',
+    outflows: 'Расходы',
+    net: 'Чистый',
+    last3Months: 'Последние 3 месяца',
+    last6Months: 'Последние 6 месяцев',
 
     // Settings
     manage: 'Управление',

@@ -134,7 +134,7 @@ test.describe('History Page - Advanced Filters', () => {
 
     // Open filters and select "Today"
     await historyPage.toggleFilters();
-    await page.locator('button.w-full.border').filter({ hasText: /all.*time|всё.*время/i }).click();
+    await page.locator('button.w-full.border').filter({ hasText: /this.*month|этот.*месяц/i }).click();
     await page.locator('.z-50 .cursor-pointer').filter({ hasText: /today|сегодня/i }).click();
 
     // Should see today's transaction
@@ -162,15 +162,10 @@ test.describe('History Page - Advanced Filters', () => {
     });
     await dbHelper.refreshStoreData();
 
-    // Navigate to history
+    // Navigate to history - default filter is "This Month"
     await historyPage.navigateTo('history');
 
-    // Open filters and select "This Month"
-    await historyPage.toggleFilters();
-    await page.locator('button.w-full.border').filter({ hasText: /all.*time|всё.*время/i }).click();
-    await page.locator('.z-50 .cursor-pointer').filter({ hasText: /this.*month|этот.*месяц/i }).click();
-
-    // Should see this month's transaction
+    // Should see this month's transaction (default filter)
     await expect(page.locator('text=Monthly expense')).toBeVisible();
   });
 
@@ -200,7 +195,7 @@ test.describe('History Page - Advanced Filters', () => {
 
     // Open filters and select "Custom Range"
     await historyPage.toggleFilters();
-    await page.locator('button.w-full.border').filter({ hasText: /all.*time|всё.*время/i }).click();
+    await page.locator('button.w-full.border').filter({ hasText: /this.*month|этот.*месяц/i }).click();
     await page.locator('.z-50 .cursor-pointer').filter({ hasText: /custom|произвольн/i }).click();
 
     // Set date range to include today

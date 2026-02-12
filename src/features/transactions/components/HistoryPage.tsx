@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar, Wallet } from 'lucide-react'
+import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar, Wallet, TrendingUp, TrendingDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAppStore } from '@/store/useAppStore'
@@ -14,11 +14,6 @@ import { QuickTransactionModal, type TransactionMode } from '@/components/ui/Qui
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
 import type { Transaction, TransactionType, Loan } from '@/database/types'
-
-function formatShortDate(date: Date, language: string): string {
-  const d = new Date(date)
-  return d.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'short', day: 'numeric' })
-}
 
 export function HistoryPage() {
   const transactions = useAppStore((state) => state.transactions)
@@ -39,7 +34,7 @@ export function HistoryPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType | 'transfers' | 'loans'>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [accountFilter, setAccountFilter] = useState<string>('all')
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year' | 'custom'>('all')
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'last3months' | 'last6months' | 'year' | 'custom'>('month')
   const [customDateFrom, setCustomDateFrom] = useState('')
   const [customDateTo, setCustomDateTo] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -107,8 +102,11 @@ export function HistoryPage() {
     weekAgo.setDate(weekAgo.getDate() - 7)
     const monthAgo = new Date(today)
     monthAgo.setMonth(monthAgo.getMonth() - 1)
-    const yearAgo = new Date(today)
-    yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+    const threeMonthsAgo = new Date(today)
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    const sixMonthsAgo = new Date(today)
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    const yearStart = new Date(now.getFullYear(), 0, 1)
 
     const matchAccount = (id?: number) => {
       const account = accounts.find((a) => a.id === id)
@@ -148,7 +146,9 @@ export function HistoryPage() {
           if (dateFilter === 'today' && txDate < today) return false
           if (dateFilter === 'week' && txDate < weekAgo) return false
           if (dateFilter === 'month' && txDate < monthAgo) return false
-          if (dateFilter === 'year' && txDate < yearAgo) return false
+          if (dateFilter === 'last3months' && txDate < threeMonthsAgo) return false
+          if (dateFilter === 'last6months' && txDate < sixMonthsAgo) return false
+          if (dateFilter === 'year' && txDate < yearStart) return false
           if (dateFilter === 'custom') {
             if (customDateFrom) {
               const fromDate = new Date(customDateFrom)
@@ -193,6 +193,24 @@ export function HistoryPage() {
       })
   }, [transactions, typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery, accounts, categories, incomeSources])
 
+  // Period summary for header
+  const periodSummary = useMemo(() => {
+    let inflows = 0
+    let outflows = 0
+    
+    filteredTransactions.forEach(tx => {
+      const amount = tx.mainCurrencyAmount ?? tx.amount
+      
+      if (tx.type === 'income' || tx.type === 'loan_received') {
+        inflows += amount
+      } else if (tx.type === 'expense' || tx.type === 'loan_given') {
+        outflows += amount
+      }
+    })
+    
+    return { inflows, outflows, net: inflows - outflows }
+  }, [filteredTransactions])
+
   // Paginated transactions for display
   const displayedTransactions = useMemo(() => {
     return filteredTransactions.slice(0, displayCount)
@@ -219,20 +237,25 @@ export function HistoryPage() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
-    const weekAgo = new Date(today)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const monthAgo = new Date(today)
-    monthAgo.setMonth(monthAgo.getMonth() - 1)
 
     const getDateGroup = (date: Date): string => {
       const txDate = new Date(date)
       const txDateOnly = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate())
 
-      if (txDateOnly.getTime() === today.getTime()) return t('today')
-      if (txDateOnly.getTime() === yesterday.getTime()) return t('yesterday')
-      if (txDateOnly >= weekAgo) return t('thisWeek')
-      if (txDateOnly >= monthAgo) return t('thisMonth')
-      return txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { month: 'long', year: 'numeric' })
+      if (txDateOnly.getTime() === today.getTime()) {
+        const weekday = txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'long' })
+        return `${t('today')}, ${weekday}`
+      }
+      if (txDateOnly.getTime() === yesterday.getTime()) {
+        const weekday = txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'long' })
+        return `${t('yesterday')}, ${weekday}`
+      }
+      return txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long',
+        year: txDate.getFullYear() === now.getFullYear() ? undefined : 'numeric'
+      })
     }
 
     const groups: Record<string, Transaction[]> = {}
@@ -448,21 +471,25 @@ export function HistoryPage() {
               <SelectTrigger className="h-9">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span className="truncate">
-                  {dateFilter === 'all' ? t('allTime') :
-                   dateFilter === 'today' ? t('today') :
+                  {dateFilter === 'today' ? t('today') :
                    dateFilter === 'week' ? t('thisWeek') :
                    dateFilter === 'month' ? t('thisMonth') :
+                   dateFilter === 'last3months' ? t('last3Months') :
+                   dateFilter === 'last6months' ? t('last6Months') :
                    dateFilter === 'year' ? t('thisYear') :
-                   t('customRange')}
+                   dateFilter === 'custom' ? t('customRange') :
+                   t('allTime')}
                 </span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('allTime')}</SelectItem>
                 <SelectItem value="today">{t('today')}</SelectItem>
                 <SelectItem value="week">{t('thisWeek')}</SelectItem>
                 <SelectItem value="month">{t('thisMonth')}</SelectItem>
+                <SelectItem value="last3months">{t('last3Months')}</SelectItem>
+                <SelectItem value="last6months">{t('last6Months')}</SelectItem>
                 <SelectItem value="year">{t('thisYear')}</SelectItem>
                 <SelectItem value="custom">{t('customRange')}</SelectItem>
+                <SelectItem value="all">{t('allTime')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -536,6 +563,43 @@ export function HistoryPage() {
         </div>
       )}
 
+      {/* Period Summary Header */}
+      {filteredTransactions.length > 0 && (
+        <div className="px-4 py-2 grid grid-cols-3 gap-2">
+          <div className="p-3 bg-secondary/50 rounded-2xl text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <TrendingUp className="h-3.5 w-3.5 text-success" />
+              <span className="text-xs text-muted-foreground">{t('inflows')}</span>
+            </div>
+            <BlurredAmount className="text-base font-bold text-success block">
+              +{formatCurrency(periodSummary.inflows, mainCurrency)}
+            </BlurredAmount>
+          </div>
+          <div className="p-3 bg-secondary/50 rounded-2xl text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              {periodSummary.net >= 0 ? (
+                <TrendingUp className="h-3.5 w-3.5 text-foreground" />
+              ) : (
+                <TrendingDown className="h-3.5 w-3.5 text-foreground" />
+              )}
+              <span className="text-xs text-muted-foreground">{t('net')}</span>
+            </div>
+            <BlurredAmount className="text-base font-bold text-foreground block">
+              {periodSummary.net >= 0 ? '+' : '-'}{formatCurrency(Math.abs(periodSummary.net), mainCurrency)}
+            </BlurredAmount>
+          </div>
+          <div className="p-3 bg-secondary/50 rounded-2xl text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+              <span className="text-xs text-muted-foreground">{t('outflows')}</span>
+            </div>
+            <BlurredAmount className="text-base font-bold text-destructive block">
+              -{formatCurrency(periodSummary.outflows, mainCurrency)}
+            </BlurredAmount>
+          </div>
+        </div>
+      )}
+
       {/* Transaction List */}
       <div className="flex-1 overflow-auto px-4">
         {Object.keys(groupedTransactions).length === 0 ? (
@@ -543,12 +607,22 @@ export function HistoryPage() {
             <p>{t('noTransactionsFound')}</p>
           </div>
         ) : (
-          Object.entries(groupedTransactions).map(([group, txs]) => (
-            <div key={group} className="mb-6">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2 sticky top-0 bg-background py-2">
-                {group}
-              </h3>
-              <div className="space-y-2">
+          Object.entries(groupedTransactions).map(([group, txs]) => {
+            const groupExpenseTotal = txs
+              .filter(tx => tx.type === 'expense')
+              .reduce((sum, tx) => sum + (tx.mainCurrencyAmount ?? tx.amount), 0)
+            
+            return (
+              <div key={group} className="mb-6">
+                <h3 className="flex justify-between items-center text-sm font-semibold text-muted-foreground mb-2 sticky top-0 bg-background py-2">
+                  <span>{group}</span>
+                  {groupExpenseTotal > 0 && (
+                    <BlurredAmount className="font-mono text-destructive">
+                      -{formatCurrency(groupExpenseTotal, mainCurrency)}
+                    </BlurredAmount>
+                  )}
+                </h3>
+                <div className="space-y-2">
                 {txs.map((transaction) => {
                   const config = typeConfig[transaction.type]
                   const Icon = config.icon
@@ -567,7 +641,6 @@ export function HistoryPage() {
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
                           <span>{getAccountNameWithCurrency(transaction.accountId)}</span>
-                          {group !== t('today') && group !== t('yesterday') && <span> • {formatShortDate(new Date(transaction.date), language)}</span>}
                           {transaction.comment && <span className="truncate max-w-[100px] inline-block align-bottom"> • {transaction.comment}</span>}
                         </p>
                       </div>
@@ -637,7 +710,8 @@ export function HistoryPage() {
                 })}
               </div>
             </div>
-          ))
+            )
+          })
         )}
 
         {/* Sentinel for infinite scroll */}
