@@ -137,6 +137,7 @@ export const translations = {
     total: 'total',
     alreadyPaid: 'Already Paid',
     payFullRemaining: 'Pay Full Remaining',
+    paymentAccount: 'Payment Account',
     recording: 'Recording...',
 
     // Loan form
@@ -484,6 +485,7 @@ export const translations = {
     total: 'всего',
     alreadyPaid: 'Уже оплачено',
     payFullRemaining: 'Оплатить остаток',
+    paymentAccount: 'Счёт для платежа',
     recording: 'Запись...',
 
     // Loan form

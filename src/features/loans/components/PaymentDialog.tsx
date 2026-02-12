@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { loanRepo, transactionRepo, accountRepo } from '@/database/repositories'
 import { useAppStore } from '@/store/useAppStore'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -27,11 +28,12 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
   const [amount, setAmount] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
   const [comment, setComment] = useState('')
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
 
   const isEditMode = !!editTransaction
-  const account = loan?.accountId ? accounts.find(a => a.id === loan.accountId) : null
-  const isMultiCurrency = loan && account && loan.currency !== account.currency
+  const selectedAccount = selectedAccountId ? accounts.find(a => a.id === parseInt(selectedAccountId)) : null
+  const isMultiCurrency = loan && selectedAccount && loan.currency !== selectedAccount.currency
 
   const sanitizeAmount = (value: string) => {
     let v = value.replace(/,/g, '.').replace(/[^0-9.]/g, '')
@@ -47,24 +49,29 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
   useEffect(() => {
     if (open) {
       if (editTransaction) {
-        // Pre-populate from existing transaction
         setAmount(editTransaction.mainCurrencyAmount?.toString() || editTransaction.amount.toString())
         setAccountAmount(editTransaction.amount.toString())
         setComment(editTransaction.comment || '')
+        setSelectedAccountId(editTransaction.accountId?.toString() || loan?.accountId?.toString() || '')
       } else {
         setAmount('')
         setAccountAmount('')
         setComment('')
+        setSelectedAccountId(loan?.accountId?.toString() || '')
       }
     }
-  }, [open, editTransaction])
+  }, [open, editTransaction, loan])
 
-  // Calculate the "effective remaining" that includes the old payment when editing
+  useEffect(() => {
+    if (selectedAccount && !isMultiCurrency) {
+      setAccountAmount('')
+    }
+  }, [selectedAccountId, selectedAccount, isMultiCurrency])
+
   const getEffectiveRemaining = () => {
     if (!loan) return 0
     const baseRemaining = loan.amount - loan.paidAmount
     if (isEditMode && editTransaction) {
-      // Add back the old payment amount to get the "available" amount
       const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
       return baseRemaining + oldPaymentAmount
     }
@@ -75,79 +82,67 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!loan?.id || !amount) return
+    if (!loan?.id || !amount || !selectedAccountId) return
 
     const paymentAmount = parseFloat(amount)
     if (isNaN(paymentAmount) || paymentAmount <= 0 || paymentAmount > effectiveRemaining) return
 
-    // For multi-currency, also need account amount
     if (isMultiCurrency && !accountAmount) return
     const acctAmount = isMultiCurrency ? parseFloat(accountAmount) : paymentAmount
     if (isMultiCurrency && (isNaN(acctAmount) || acctAmount <= 0)) return
 
+    const acctId = parseInt(selectedAccountId)
+
     setIsLoading(true)
     try {
       if (isEditMode && editTransaction?.id) {
-        // EDIT MODE: Reverse old payment, apply new payment
         const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
         const oldAccountAmount = editTransaction.amount
+        const oldAccountId = editTransaction.accountId
 
-        // Reverse the old payment from loan
         await loanRepo.reversePayment(loan.id, oldPaymentAmount)
 
-        // Reverse old account balance change
-        if (loan.accountId) {
+        if (oldAccountId) {
           if (loan.type === 'given') {
-            await accountRepo.updateBalance(loan.accountId, -oldAccountAmount)
+            await accountRepo.updateBalance(oldAccountId, -oldAccountAmount)
           } else {
-            await accountRepo.updateBalance(loan.accountId, oldAccountAmount)
+            await accountRepo.updateBalance(oldAccountId, oldAccountAmount)
           }
         }
 
-        // Apply new payment to loan
         await loanRepo.recordPayment(loan.id, paymentAmount)
 
-        // Update the transaction record
         await transactionRepo.update(editTransaction.id, {
           amount: acctAmount,
-          currency: account?.currency || loan.currency,
+          currency: selectedAccount?.currency || loan.currency,
+          accountId: acctId,
           mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
           comment: comment || `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
         })
 
-        // Apply new account balance change
-        if (loan.accountId) {
-          if (loan.type === 'given') {
-            await accountRepo.updateBalance(loan.accountId, acctAmount)
-          } else {
-            await accountRepo.updateBalance(loan.accountId, -acctAmount)
-          }
+        if (loan.type === 'given') {
+          await accountRepo.updateBalance(acctId, acctAmount)
+        } else {
+          await accountRepo.updateBalance(acctId, -acctAmount)
         }
       } else {
-        // CREATE MODE: Normal payment creation
         await loanRepo.recordPayment(loan.id, paymentAmount)
 
-        // Create a transaction record
         await transactionRepo.create({
           type: 'loan_payment',
           amount: acctAmount,
-          currency: account?.currency || loan.currency,
+          currency: selectedAccount?.currency || loan.currency,
           date: new Date(),
           loanId: loan.id,
-          accountId: loan.accountId,
+          accountId: acctId,
           mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
           comment: comment || `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
         })
 
-        // Update account balance if linked
-        if (loan.accountId) {
-          if (loan.type === 'given') {
-            // Money coming back to us
-            await accountRepo.updateBalance(loan.accountId, acctAmount)
-          } else {
-            // Money going out from us
-            await accountRepo.updateBalance(loan.accountId, -acctAmount)
-          }
+        if (loan.type === 'given') {
+          await accountRepo.updateBalance(acctId, acctAmount)
+        } else {
+          await accountRepo.updateBalance(acctId, -acctAmount)
         }
       }
 
@@ -166,6 +161,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     setAmount('')
     setAccountAmount('')
     setComment('')
+    setSelectedAccountId('')
     onClose()
   }
 
@@ -183,7 +179,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Progress summary */}
           <div className="space-y-3">
             <div className="flex justify-between items-baseline">
               <span className="text-2xl font-bold">{formatCurrency(displayRemaining, loan.currency)}</span>
@@ -201,7 +196,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </div>
           </div>
 
-          {/* Amount input */}
           {isMultiCurrency ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -228,11 +222,11 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
                 <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
                 <div className="flex-1 space-y-1">
                   <label className="text-xs text-muted-foreground">
-                    {account?.currency}
+                    {selectedAccount?.currency}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {getCurrencySymbol(account?.currency || 'USD')}
+                      {getCurrencySymbol(selectedAccount?.currency || 'USD')}
                     </span>
                     <Input
                       type="text"
@@ -268,7 +262,24 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </div>
           )}
 
-          {/* Quick action - pay full */}
+          <div className="space-y-2">
+            <Label>{t('paymentAccount')}</Label>
+            <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('selectAccount')}>
+                  {selectedAccount ? `${selectedAccount.name} (${selectedAccount.currency})` : undefined}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id!.toString()}>
+                    {a.name} ({a.currency})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {!isEditMode && displayRemaining > 0 && (
             <button
               type="button"
@@ -279,7 +290,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </button>
           )}
 
-          {/* Comment field for edit mode */}
           {isEditMode && (
             <div className="space-y-2">
               <Label htmlFor="comment">{t('comment')}</Label>
@@ -299,7 +309,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !amount || (!!isMultiCurrency && !accountAmount) || parseFloat(amount) > effectiveRemaining}
+              disabled={isLoading || !amount || !selectedAccountId || (!!isMultiCurrency && !accountAmount) || parseFloat(amount) > effectiveRemaining}
               className="flex-1 sm:flex-none"
             >
               {isLoading ? t('recording') : isEditMode ? t('update') : t('recordPayment')}

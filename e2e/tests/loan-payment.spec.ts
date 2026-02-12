@@ -288,4 +288,116 @@ test.describe('Loan Payments', () => {
     // Verify payment appears (auto-generated comment includes "Payment received from")
     await expect(page.locator('text=Payment received from History Test')).toBeVisible();
   });
+
+  test('should record payment to different account than loan account', async ({
+    page,
+    loansPage,
+    dbHelper,
+  }) => {
+    // Seed two accounts: USD Cash and EUR Bank
+    const usdAccountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    const eurAccountId = await dbHelper.seedAccount(testAccounts.eurBank());
+    await dbHelper.refreshStoreData();
+    await page.reload();
+
+    const initialUsdBalance = await dbHelper.getAccountBalance(usdAccountId);
+    const initialEurBalance = await dbHelper.getAccountBalance(eurAccountId);
+    const loanForm = new LoanForm(page);
+    const paymentDialog = new PaymentDialog(page);
+
+    // Create loan given from USD Cash account
+    await loansPage.navigateTo('loans');
+    await loansPage.clickAdd();
+    await loanForm.selectType('given');
+    await loanForm.fillPersonName('Different Account Test');
+    await loanForm.fillAmount('500');
+    await loanForm.selectAccount('USD Cash');
+    await loanForm.save();
+
+    // USD balance should have decreased
+    let usdBalance = await dbHelper.getAccountBalance(usdAccountId);
+    expect(usdBalance).toBe(initialUsdBalance - 500);
+
+    // EUR balance should be unchanged
+    let eurBalance = await dbHelper.getAccountBalance(eurAccountId);
+    expect(eurBalance).toBe(initialEurBalance);
+
+    // Click loan to open payment dialog
+    await loansPage.clickLoan('Different Account Test');
+
+    // Select EUR Bank as payment account (multi-currency)
+    await paymentDialog.selectAccount('EUR Bank');
+
+    // Fill amounts (loan currency USD -> account currency EUR)
+    await paymentDialog.fillAmount('200'); // USD
+    await paymentDialog.fillAccountAmount('180'); // EUR
+
+    await paymentDialog.recordPayment();
+
+    // USD balance should remain unchanged (payment went to EUR account)
+    usdBalance = await dbHelper.getAccountBalance(usdAccountId);
+    expect(usdBalance).toBe(initialUsdBalance - 500);
+
+    // EUR balance should increase (payment received in EUR account)
+    eurBalance = await dbHelper.getAccountBalance(eurAccountId);
+    expect(eurBalance).toBe(initialEurBalance + 180);
+
+    // Verify loan status
+    const loanStatus = await dbHelper.getLoanStatus(1);
+    expect(loanStatus?.paidAmount).toBe(200);
+    expect(loanStatus?.status).toBe('partially_paid');
+  });
+
+  test('should record payment to different account with same currency', async ({
+    page,
+    loansPage,
+    dbHelper,
+  }) => {
+    // Seed two USD accounts
+    const cashAccountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    const creditAccountId = await dbHelper.seedAccount(testAccounts.creditCard());
+    await dbHelper.refreshStoreData();
+    await page.reload();
+
+    const initialCashBalance = await dbHelper.getAccountBalance(cashAccountId);
+    const initialCreditBalance = await dbHelper.getAccountBalance(creditAccountId);
+    const loanForm = new LoanForm(page);
+    const paymentDialog = new PaymentDialog(page);
+
+    // Create loan given from USD Cash
+    await loansPage.navigateTo('loans');
+    await loansPage.clickAdd();
+    await loanForm.selectType('given');
+    await loanForm.fillPersonName('Same Currency Different Account');
+    await loanForm.fillAmount('300');
+    await loanForm.selectAccount('USD Cash');
+    await loanForm.save();
+
+    // Cash balance decreased
+    let cashBalance = await dbHelper.getAccountBalance(cashAccountId);
+    expect(cashBalance).toBe(initialCashBalance - 300);
+
+    // Click loan
+    await loansPage.clickLoan('Same Currency Different Account');
+
+    // Select Credit Card as payment account
+    await paymentDialog.selectAccount('Credit Card');
+
+    // Fill amount (same currency, no dual input needed)
+    await paymentDialog.fillAmount('150');
+
+    await paymentDialog.recordPayment();
+
+    // Cash balance unchanged
+    cashBalance = await dbHelper.getAccountBalance(cashAccountId);
+    expect(cashBalance).toBe(initialCashBalance - 300);
+
+    // Credit Card balance increased (money returned to this account)
+    const creditBalance = await dbHelper.getAccountBalance(creditAccountId);
+    expect(creditBalance).toBe(initialCreditBalance + 150);
+
+    // Verify loan status
+    const loanStatus = await dbHelper.getLoanStatus(1);
+    expect(loanStatus?.paidAmount).toBe(150);
+  });
 });

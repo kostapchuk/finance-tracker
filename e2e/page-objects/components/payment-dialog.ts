@@ -87,4 +87,16 @@ export class PaymentDialog {
     await this.getCancelButton().click();
     await this.page.waitForTimeout(300);
   }
+
+  async selectAccount(accountName: string): Promise<void> {
+    const accountSelect = this.getDialog().locator('button').filter({ hasText: /\(/ }).first();
+    await accountSelect.click();
+    await this.page.waitForTimeout(200);
+    await this.page.locator(`div.cursor-pointer:has-text("${accountName}")`).click();
+    await this.page.waitForTimeout(200);
+  }
+
+  getAccountSelect(): Locator {
+    return this.getDialog().locator('button').filter({ hasText: /\(/ }).first();
+  }
 }
