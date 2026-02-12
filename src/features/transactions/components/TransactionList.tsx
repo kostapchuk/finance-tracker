@@ -62,6 +62,20 @@ export function TransactionList() {
         }
       }
       return true
+    }).sort((a, b) => {
+      const dateA = new Date(a.date)
+      const dateB = new Date(b.date)
+      const dateOnlyA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate()).getTime()
+      const dateOnlyB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate()).getTime()
+      if (dateOnlyA !== dateOnlyB) {
+        return dateOnlyB - dateOnlyA
+      }
+      const createdAtA = new Date(a.createdAt).getTime()
+      const createdAtB = new Date(b.createdAt).getTime()
+      if (createdAtA !== createdAtB) {
+        return createdAtB - createdAtA
+      }
+      return (b.id || 0) - (a.id || 0)
     })
   }, [transactions, typeFilter, accountFilter, searchQuery, accounts, categories, incomeSources])
 

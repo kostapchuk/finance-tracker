@@ -177,10 +177,17 @@ export function HistoryPage() {
         return true
       })
       .sort((a, b) => {
-        const dateA = new Date(a.date).getTime()
-        const dateB = new Date(b.date).getTime()
-        if (dateA !== dateB) {
-          return dateB - dateA
+        const dateA = new Date(a.date)
+        const dateB = new Date(b.date)
+        const dateOnlyA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate()).getTime()
+        const dateOnlyB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate()).getTime()
+        if (dateOnlyA !== dateOnlyB) {
+          return dateOnlyB - dateOnlyA
+        }
+        const createdAtA = new Date(a.createdAt).getTime()
+        const createdAtB = new Date(b.createdAt).getTime()
+        if (createdAtA !== createdAtB) {
+          return createdAtB - createdAtA
         }
         return (b.id || 0) - (a.id || 0)
       })
