@@ -1,73 +1,126 @@
-# React + TypeScript + Vite
+# Finance Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A mobile-first Progressive Web App for personal money management with drag-and-drop transaction entry.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Mobile-first PWA** - Designed for iOS Safari, works on any modern browser
+- **Drag-and-drop transactions** - Quick income/expense entry by dragging items
+- **Multi-currency support** - Track accounts in different currencies with conversion
+- **Loans & debts tracking** - Monitor money lent/borrowed with payment history
+- **Monthly reports** - Spending by category, 6-month trends
+- **Budget tracking** - Set and monitor category budgets
+- **EN/RU localization** - Full bilingual support
+- **Offline-first** - All data stored locally in IndexedDB
+- **Installable** - Add to home screen as a native app
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js 20+
+- npm 10+
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Installation
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Commands
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server at localhost:5173 |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview production build locally |
+| `npm run test:e2e` | Run Playwright E2E tests |
+| `npm run test:e2e:mobile` | Run E2E tests with mobile viewport |
+| `npm run test:e2e:ui` | Run E2E tests with Playwright UI |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | React 19 + TypeScript 5.9 |
+| Build | Vite 7 |
+| State | Zustand 5 |
+| Database | Dexie.js (IndexedDB wrapper) |
+| Styling | Tailwind CSS 4 |
+| Drag & Drop | @dnd-kit |
+| Icons | lucide-react |
+| Testing | Playwright |
+
+### Architecture
+
 ```
+src/
+├── app/App.tsx              # Root component, view routing
+├── main.tsx                 # Entry point
+├── components/
+│   ├── ui/                  # Custom UI primitives (Button, Input, Select, etc.)
+│   ├── layout/              # AppShell, BottomNav
+│   ├── drag-drop/           # DraggableItem, DroppableZone
+│   └── onboarding/          # OnboardingOverlay
+├── database/
+│   ├── db.ts                # Dexie database schema
+│   ├── types.ts             # TypeScript interfaces
+│   └── repositories.ts      # CRUD operations
+├── features/
+│   ├── dashboard/           # Main drag-drop dashboard
+│   ├── transactions/        # History page with filters
+│   ├── accounts/            # Account management
+│   ├── categories/          # Category management
+│   ├── income/              # Income sources
+│   ├── loans/               # Loans/debts tracking
+│   ├── investments/         # Investment tracking
+│   ├── reports/             # Monthly reports
+│   └── settings/            # App settings
+├── hooks/                   # Custom React hooks
+├── store/                   # Zustand state management
+└── utils/                   # Helpers (i18n, currency, date)
+```
+
+For detailed architecture, data types, and code conventions, see [CLAUDE.md](./CLAUDE.md).
+
+## Deployment
+
+### CI/CD Pipeline
+
+GitHub Actions automatically runs on every push to `main`:
+
+1. **Lint** - ESLint checks
+2. **Build** - TypeScript compilation + Vite build
+3. **E2E Tests** - Playwright tests on mobile viewport
+4. **Deploy** - Automatic deployment to Vercel
+
+Pull requests run lint, build, and tests without deploying.
+
+### Manual Deployment
+
+```bash
+npm run build
+vercel --prod
+```
+
+### PWA Installation
+
+The app is installable as a Progressive Web App:
+
+1. Open the app in Safari (iOS) or Chrome (Android/Desktop)
+2. Tap the share/menu button
+3. Select "Add to Home Screen"
+
+Once installed, the app works offline and launches like a native application.
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make changes following code conventions in [CLAUDE.md](./CLAUDE.md)
+3. Run `npm run lint` and `npm run test:e2e` before committing
+4. Submit a pull request
+
+## License
+
+MIT
