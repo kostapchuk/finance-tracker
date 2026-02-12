@@ -294,18 +294,12 @@ export function QuickTransactionModal({
     setShowCategoryPicker(false)
   }
 
-  // Determine title and color based on mode type
-  const getTitle = () => {
-    if (mode.type === 'income') return selectedSource?.name || mode.source.name
-    if (mode.type === 'expense') return selectedCategory?.name || mode.category.name
-    return `${mode.fromAccount.name} → ${mode.toAccount.name}`
-  }
+  // Determine color based on mode type
   const getColor = () => {
     if (mode.type === 'income') return selectedSource?.color || mode.source.color
     if (mode.type === 'expense') return selectedCategory?.color || mode.category.color
     return '#6366f1' // Indigo for transfers
   }
-  const title = getTitle()
   const color = getColor()
   const currentSourceCurrency = selectedSource?.currency || (mode.type === 'income' ? mode.source.currency : '')
 
@@ -502,34 +496,44 @@ export function QuickTransactionModal({
         <div className="flex items-center gap-2 p-4 border-b border-border">
           <div className="flex items-center flex-1 min-w-0">
             {mode.type === 'transfer' ? (
-              // Transfer: fromAccount → toAccount
-              <>
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: (mode.fromAccount.color || '#6366f1') + '20' }}
-                >
+              // Transfer: fromAccount + balance → toAccount + balance
+              <div className="flex items-center justify-between flex-1 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 max-w-[45%]">
                   <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: mode.fromAccount.color || '#6366f1' }}
-                  />
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: (mode.fromAccount.color || '#6366f1') + '20' }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: mode.fromAccount.color || '#6366f1' }}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{mode.fromAccount.name}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(mode.fromAccount.balance, mode.fromAccount.currency)}
+                    </BlurredAmount>
+                  </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: (mode.toAccount.color || '#6366f1') + '20' }}
-                >
+                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+                <div className="flex items-center gap-2 min-w-0 max-w-[45%]">
                   <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: mode.toAccount.color || '#6366f1' }}
-                  />
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: (mode.toAccount.color || '#6366f1') + '20' }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: mode.toAccount.color || '#6366f1' }}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{mode.toAccount.name}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(mode.toAccount.balance, mode.toAccount.currency)}
+                    </BlurredAmount>
+                  </div>
                 </div>
-                <div className="ml-1 min-w-0">
-                  <p className="font-semibold truncate">{title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {isEditMode ? t('editTransfer') : t('transfer')}
-                  </p>
-                </div>
-              </>
+              </div>
             ) : mode.type === 'income' ? (
               // Income: source → account
               <div className="flex items-center justify-between flex-1 min-w-0">

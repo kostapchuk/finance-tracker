@@ -646,7 +646,7 @@ export function HistoryPage() {
                       </div>
                       <div className="text-right">
                         {transaction.type === 'transfer' ? (
-                          // Transfer: show both amounts
+                          // Transfer: show amounts like other transaction types
                           (() => {
                             const fromAmount = transaction.amount
                             const fromCurrency = transaction.currency
@@ -656,30 +656,51 @@ export function HistoryPage() {
                             
                             const isMultiCurrency = toAmount != null && fromCurrency !== toCurrency
                             
-                            // If target is main currency but source is not, swap them to show main currency as primary
-                            if (isMultiCurrency && toCurrency === mainCurrency && fromCurrency !== mainCurrency) {
+                            // For same currency, show single amount
+                            if (!isMultiCurrency) {
+                              return (
+                                <BlurredAmount className="font-mono font-semibold text-foreground">
+                                  {formatCurrency(fromAmount, fromCurrency)}
+                                </BlurredAmount>
+                              )
+                            }
+                            
+                            // For multi-currency, show main currency as primary
+                            if (toCurrency === mainCurrency) {
                               return (
                                 <>
                                   <BlurredAmount className="font-mono font-semibold text-foreground">
-                                    {formatCurrency(toAmount, toCurrency)}
+                                    {formatCurrency(toAmount!, toCurrency)}
                                   </BlurredAmount>
                                   <p className="text-xs text-muted-foreground">
-                                    ← <BlurredAmount>{formatCurrency(fromAmount, fromCurrency)}</BlurredAmount>
+                                    <BlurredAmount>{formatCurrency(fromAmount, fromCurrency)}</BlurredAmount>
                                   </p>
                                 </>
                               )
                             }
-
+                            
+                            if (fromCurrency === mainCurrency) {
+                              return (
+                                <>
+                                  <BlurredAmount className="font-mono font-semibold text-foreground">
+                                    {formatCurrency(fromAmount, fromCurrency)}
+                                  </BlurredAmount>
+                                  <p className="text-xs text-muted-foreground">
+                                    <BlurredAmount>{formatCurrency(toAmount!, toCurrency)}</BlurredAmount>
+                                  </p>
+                                </>
+                              )
+                            }
+                            
+                            // Neither is main currency, show from as primary
                             return (
                               <>
                                 <BlurredAmount className="font-mono font-semibold text-foreground">
                                   {formatCurrency(fromAmount, fromCurrency)}
                                 </BlurredAmount>
-                                {toAmount != null && (
-                                  <p className="text-xs text-muted-foreground">
-                                    → <BlurredAmount>{formatCurrency(toAmount, toCurrency)}</BlurredAmount>
-                                  </p>
-                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  <BlurredAmount>{formatCurrency(toAmount!, toCurrency)}</BlurredAmount>
+                                </p>
                               </>
                             )
                           })()
