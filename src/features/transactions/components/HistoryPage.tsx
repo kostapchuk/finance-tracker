@@ -7,6 +7,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
+import { getStartOfMonth, getStartOfWeek } from '@/utils/date'
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { cn } from '@/utils/cn'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
@@ -98,10 +99,8 @@ export function HistoryPage() {
   const filteredTransactions = useMemo(() => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const weekAgo = new Date(today)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const monthAgo = new Date(today)
-    monthAgo.setMonth(monthAgo.getMonth() - 1)
+    const weekStart = getStartOfWeek()
+    const monthStart = getStartOfMonth()
     const threeMonthsAgo = new Date(today)
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
     const sixMonthsAgo = new Date(today)
@@ -144,8 +143,8 @@ export function HistoryPage() {
         if (dateFilter !== 'all') {
           const txDate = new Date(tx.date)
           if (dateFilter === 'today' && txDate < today) return false
-          if (dateFilter === 'week' && txDate < weekAgo) return false
-          if (dateFilter === 'month' && txDate < monthAgo) return false
+          if (dateFilter === 'week' && txDate < weekStart) return false
+          if (dateFilter === 'month' && txDate < monthStart) return false
           if (dateFilter === 'last3months' && txDate < threeMonthsAgo) return false
           if (dateFilter === 'last6months' && txDate < sixMonthsAgo) return false
           if (dateFilter === 'year' && txDate < yearStart) return false

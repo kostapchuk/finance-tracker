@@ -35,3 +35,10 @@ export function getStartOfYear(date: Date = new Date()): Date {
 export function getEndOfYear(date: Date = new Date()): Date {
   return new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999)
 }
+
+export function getStartOfWeek(date: Date = new Date()): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  return new Date(d.setDate(diff))
+}
