@@ -1,18 +1,21 @@
-import { useState, useCallback, useEffect } from 'react'
 import { Pause } from 'lucide-react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
+import { useState, useCallback, useEffect } from 'react'
+
+import type { ImportWizardStep, ParsedImportData, ImportResult } from '../types'
 import { parseBudgetOkCSV } from '../utils/csvParser'
 import { executeImport } from '../utils/importExecutor'
-import { ImportFileUpload } from './ImportFileUpload'
-import { ImportDataPreview } from './ImportDataPreview'
+
 import { ImportAccountMapping } from './ImportAccountMapping'
 import { ImportCategoryMapping } from './ImportCategoryMapping'
-import { ImportIncomeSourceMapping } from './ImportIncomeSourceMapping'
 import { ImportConfirmation } from './ImportConfirmation'
-import type { ImportWizardStep, ParsedImportData, ImportResult } from '../types'
+import { ImportDataPreview } from './ImportDataPreview'
+import { ImportFileUpload } from './ImportFileUpload'
+import { ImportIncomeSourceMapping } from './ImportIncomeSourceMapping'
+
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 
 interface BudgetOkImportWizardProps {
   open: boolean
@@ -33,7 +36,13 @@ export interface SavedImportState {
   incomeSourceMapping: Map<string, number>
 }
 
-export function BudgetOkImportWizard({ open, onClose, onPause, savedState, onStateChange }: BudgetOkImportWizardProps) {
+export function BudgetOkImportWizard({
+  open,
+  onClose,
+  onPause,
+  savedState,
+  onStateChange,
+}: BudgetOkImportWizardProps) {
   const { t } = useLanguage()
   const { accounts, categories, incomeSources, loadAllData } = useAppStore()
 
@@ -42,10 +51,18 @@ export function BudgetOkImportWizard({ open, onClose, onPause, savedState, onSta
   const [file, setFile] = useState<File | null>(savedState?.file ?? null)
   const [fileName, setFileName] = useState<string>(savedState?.fileName ?? '')
   const [fileError, setFileError] = useState<string | null>(null)
-  const [parsedData, setParsedData] = useState<ParsedImportData | null>(savedState?.parsedData ?? null)
-  const [accountMapping, setAccountMapping] = useState<Map<string, number>>(savedState?.accountMapping ?? new Map())
-  const [categoryMapping, setCategoryMapping] = useState<Map<string, number>>(savedState?.categoryMapping ?? new Map())
-  const [incomeSourceMapping, setIncomeSourceMapping] = useState<Map<string, number>>(savedState?.incomeSourceMapping ?? new Map())
+  const [parsedData, setParsedData] = useState<ParsedImportData | null>(
+    savedState?.parsedData ?? null
+  )
+  const [accountMapping, setAccountMapping] = useState<Map<string, number>>(
+    savedState?.accountMapping ?? new Map()
+  )
+  const [categoryMapping, setCategoryMapping] = useState<Map<string, number>>(
+    savedState?.categoryMapping ?? new Map()
+  )
+  const [incomeSourceMapping, setIncomeSourceMapping] = useState<Map<string, number>>(
+    savedState?.incomeSourceMapping ?? new Map()
+  )
   const [isImporting, setIsImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
 
@@ -75,7 +92,16 @@ export function BudgetOkImportWizard({ open, onClose, onPause, savedState, onSta
         incomeSourceMapping,
       })
     }
-  }, [step, file, fileName, parsedData, accountMapping, categoryMapping, incomeSourceMapping, onStateChange])
+  }, [
+    step,
+    file,
+    fileName,
+    parsedData,
+    accountMapping,
+    categoryMapping,
+    incomeSourceMapping,
+    onStateChange,
+  ])
 
   // Handle pause - save state and close
   const handlePause = useCallback(() => {
@@ -100,57 +126,60 @@ export function BudgetOkImportWizard({ open, onClose, onPause, savedState, onSta
   }, [onClose, onStateChange])
 
   // Step 1: File selection
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
-    setFile(selectedFile)
-    setFileName(selectedFile.name)
-    setFileError(null)
+  const handleFileSelect = useCallback(
+    async (selectedFile: File) => {
+      setFile(selectedFile)
+      setFileName(selectedFile.name)
+      setFileError(null)
 
-    try {
-      const content = await selectedFile.text()
-      const parsed = parseBudgetOkCSV(content)
-      setParsedData(parsed)
+      try {
+        const content = await selectedFile.text()
+        const parsed = parseBudgetOkCSV(content)
+        setParsedData(parsed)
 
-      // Auto-map accounts with exact name matches
-      const autoAccountMap = new Map<string, number>()
-      for (const sourceAccount of parsed.uniqueAccounts) {
-        const matchingAccount = accounts.find(
-          (a) => a.name.toLowerCase() === sourceAccount.name.toLowerCase()
-        )
-        if (matchingAccount?.id) {
-          autoAccountMap.set(sourceAccount.name, matchingAccount.id)
+        // Auto-map accounts with exact name matches
+        const autoAccountMap = new Map<string, number>()
+        for (const sourceAccount of parsed.uniqueAccounts) {
+          const matchingAccount = accounts.find(
+            (a) => a.name.toLowerCase() === sourceAccount.name.toLowerCase()
+          )
+          if (matchingAccount?.id) {
+            autoAccountMap.set(sourceAccount.name, matchingAccount.id)
+          }
         }
-      }
-      setAccountMapping(autoAccountMap)
+        setAccountMapping(autoAccountMap)
 
-      // Auto-map categories with exact name matches
-      const autoCategoryMap = new Map<string, number>()
-      for (const budgetOkName of parsed.uniqueCategories) {
-        const matchingCategory = categories.find(
-          (c) => c.name.toLowerCase() === budgetOkName.toLowerCase()
-        )
-        if (matchingCategory?.id) {
-          autoCategoryMap.set(budgetOkName, matchingCategory.id)
+        // Auto-map categories with exact name matches
+        const autoCategoryMap = new Map<string, number>()
+        for (const budgetOkName of parsed.uniqueCategories) {
+          const matchingCategory = categories.find(
+            (c) => c.name.toLowerCase() === budgetOkName.toLowerCase()
+          )
+          if (matchingCategory?.id) {
+            autoCategoryMap.set(budgetOkName, matchingCategory.id)
+          }
         }
-      }
-      setCategoryMapping(autoCategoryMap)
+        setCategoryMapping(autoCategoryMap)
 
-      // Auto-map income sources with exact name matches
-      const autoIncomeMap = new Map<string, number>()
-      for (const budgetOkName of parsed.uniqueIncomeSources) {
-        const matchingSource = incomeSources.find(
-          (s) => s.name.toLowerCase() === budgetOkName.toLowerCase()
-        )
-        if (matchingSource?.id) {
-          autoIncomeMap.set(budgetOkName, matchingSource.id)
+        // Auto-map income sources with exact name matches
+        const autoIncomeMap = new Map<string, number>()
+        for (const budgetOkName of parsed.uniqueIncomeSources) {
+          const matchingSource = incomeSources.find(
+            (s) => s.name.toLowerCase() === budgetOkName.toLowerCase()
+          )
+          if (matchingSource?.id) {
+            autoIncomeMap.set(budgetOkName, matchingSource.id)
+          }
         }
-      }
-      setIncomeSourceMapping(autoIncomeMap)
+        setIncomeSourceMapping(autoIncomeMap)
 
-      setStep(2)
-    } catch (error) {
-      setFileError(error instanceof Error ? error.message : 'Failed to parse file')
-    }
-  }, [accounts, categories, incomeSources])
+        setStep(2)
+      } catch (error) {
+        setFileError(error instanceof Error ? error.message : 'Failed to parse file')
+      }
+    },
+    [accounts, categories, incomeSources]
+  )
 
   // Account mapping change
   const handleAccountMappingChange = useCallback(

@@ -1,11 +1,23 @@
-import { db, type Account, type IncomeSource, type Category, type Transaction, type Investment, type Loan, type AppSettings, type CustomCurrency } from './db'
+import {
+  db,
+  type Account,
+  type IncomeSource,
+  type Category,
+  type Transaction,
+  type Investment,
+  type Loan,
+  type AppSettings,
+  type CustomCurrency,
+} from './db'
 import type { LoanStatus } from './types'
 
 // Account Repository
 export const accountRepo = {
   async getAll() {
     const items = await db.accounts.toArray()
-    return items.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name))
+    return items.sort(
+      (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+    )
   },
 
   async getById(id: number) {
@@ -46,7 +58,9 @@ export const accountRepo = {
 export const incomeSourceRepo = {
   async getAll() {
     const items = await db.incomeSources.toArray()
-    return items.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name))
+    return items.sort(
+      (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+    )
   },
 
   async getById(id: number) {
@@ -78,7 +92,9 @@ export const incomeSourceRepo = {
 export const categoryRepo = {
   async getAll() {
     const items = await db.categories.toArray()
-    return items.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name))
+    return items.sort(
+      (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+    )
   },
 
   async getById(id: number) {
@@ -117,30 +133,18 @@ export const transactionRepo = {
   },
 
   async getByDateRange(startDate: Date, endDate: Date) {
-    return db.transactions
-      .where('date')
-      .between(startDate, endDate)
-      .reverse()
-      .toArray()
+    return db.transactions.where('date').between(startDate, endDate).reverse().toArray()
   },
 
   async getByAccount(accountId: number) {
-    return db.transactions
-      .where('accountId')
-      .equals(accountId)
-      .reverse()
-      .toArray()
+    return db.transactions.where('accountId').equals(accountId).reverse().toArray()
   },
 
   async getByCategory(categoryId: number) {
-    return db.transactions
-      .where('categoryId')
-      .equals(categoryId)
-      .reverse()
-      .toArray()
+    return db.transactions.where('categoryId').equals(categoryId).reverse().toArray()
   },
 
-  async getRecent(limit: number = 10) {
+  async getRecent(limit = 10) {
     return db.transactions.orderBy('date').reverse().limit(limit).toArray()
   },
 
@@ -309,6 +313,7 @@ export const settingsRepo = {
         updatedAt: new Date(),
       })
     }
+    return undefined
   },
 }
 

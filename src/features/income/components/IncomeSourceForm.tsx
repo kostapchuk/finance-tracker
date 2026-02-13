@@ -1,17 +1,30 @@
 import { useState, useEffect } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { ColorPicker } from '@/components/ui/color-picker'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ColorPicker } from '@/components/ui/color-picker'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Toggle } from '@/components/ui/toggle'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { incomeSourceRepo } from '@/database/repositories'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
 import type { IncomeSource } from '@/database/types'
-import { getAllCurrencies } from '@/utils/currency'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
+import { getAllCurrencies } from '@/utils/currency'
 
 interface IncomeSourceFormProps {
   source?: IncomeSource | null
@@ -97,7 +110,7 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger>
                 <SelectValue placeholder={t('selectCurrency')}>
-                  {getAllCurrencies().find(c => c.code === currency)?.symbol} {currency}
+                  {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>

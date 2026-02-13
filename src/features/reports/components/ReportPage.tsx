@@ -1,12 +1,13 @@
-import { useMemo } from 'react'
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
-import { MonthSelector } from '@/components/ui/MonthSelector'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
-import { formatCurrency, formatCurrencyWithSign, getAmountColorClass } from '@/utils/currency'
+import { useMemo } from 'react'
+
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
-import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
+import { MonthSelector } from '@/components/ui/MonthSelector'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
+import { formatCurrency, formatCurrencyWithSign, getAmountColorClass } from '@/utils/currency'
+import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 
 export function ReportPage() {
   const accounts = useAppStore((state) => state.accounts)
@@ -46,12 +47,12 @@ export function ReportPage() {
 
   // Calculate loan totals
   const loanStats = useMemo(() => {
-    const activeLoans = loans.filter(l => l.status !== 'fully_paid')
+    const activeLoans = loans.filter((l) => l.status !== 'fully_paid')
     const givenTotal = activeLoans
-      .filter(l => l.type === 'given')
+      .filter((l) => l.type === 'given')
       .reduce((sum, l) => sum + (l.amount - l.paidAmount), 0)
     const receivedTotal = activeLoans
-      .filter(l => l.type === 'received')
+      .filter((l) => l.type === 'received')
       .reduce((sum, l) => sum + (l.amount - l.paidAmount), 0)
     const netLoan = givenTotal - receivedTotal // Positive means more owed to you
     return { givenTotal, receivedTotal, netLoan }
@@ -63,19 +64,20 @@ export function ReportPage() {
 
     const monthlyExpenses = transactions.filter(
       (t) =>
-        t.type === 'expense' &&
-        new Date(t.date) >= startOfMonth &&
-        new Date(t.date) <= endOfMonth
+        t.type === 'expense' && new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    const byCategory = monthlyExpenses.reduce((acc, t) => {
-      const categoryId = t.categoryId || 0
-      if (!acc[categoryId]) {
-        acc[categoryId] = 0
-      }
-      acc[categoryId] += t.mainCurrencyAmount ?? t.amount
-      return acc
-    }, {} as Record<number, number>)
+    const byCategory = monthlyExpenses.reduce(
+      (acc, t) => {
+        const categoryId = t.categoryId || 0
+        if (!acc[categoryId]) {
+          acc[categoryId] = 0
+        }
+        acc[categoryId] += t.mainCurrencyAmount ?? t.amount
+        return acc
+      },
+      {} as Record<number, number>
+    )
 
     return Object.entries(byCategory)
       .map(([categoryId, amount]) => {
@@ -118,7 +120,9 @@ export function ReportPage() {
     return Object.entries(months)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => ({
-        month: new Date(month + '-01').toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { month: 'short' }),
+        month: new Date(month + '-01').toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
+          month: 'short',
+        }),
         income: data.income,
         expenses: data.expenses,
       }))
@@ -144,7 +148,9 @@ export function ReportPage() {
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">{t('totalBalance')}</p>
-              <BlurredAmount className={cn('text-2xl font-bold block', getAmountColorClass(stats.totalBalance))}>
+              <BlurredAmount
+                className={cn('text-2xl font-bold block', getAmountColorClass(stats.totalBalance))}
+              >
                 {formatCurrency(stats.totalBalance, mainCurrency)}
               </BlurredAmount>
             </div>
@@ -158,17 +164,28 @@ export function ReportPage() {
               <TrendingUp className={`h-4 w-4 ${getAmountColorClass(stats.monthlyIncome)}`} />
               <span className="text-sm text-muted-foreground">{t('income')}</span>
             </div>
-            <BlurredAmount className={cn('text-xl font-bold block', getAmountColorClass(stats.monthlyIncome))}>
+            <BlurredAmount
+              className={cn('text-xl font-bold block', getAmountColorClass(stats.monthlyIncome))}
+            >
               {formatCurrencyWithSign(stats.monthlyIncome, mainCurrency)}
             </BlurredAmount>
           </div>
           <div className="p-4 bg-secondary/50 rounded-2xl">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className={`h-4 w-4 ${stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive'}`} />
+              <TrendingDown
+                className={`h-4 w-4 ${stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive'}`}
+              />
               <span className="text-sm text-muted-foreground">{t('expenses')}</span>
             </div>
-            <BlurredAmount className={cn('text-xl font-bold block', stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive')}>
-              {stats.monthlyExpenses === 0 ? formatCurrency(0, mainCurrency) : `- ${formatCurrency(stats.monthlyExpenses, mainCurrency)}`}
+            <BlurredAmount
+              className={cn(
+                'text-xl font-bold block',
+                stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive'
+              )}
+            >
+              {stats.monthlyExpenses === 0
+                ? formatCurrency(0, mainCurrency)
+                : `- ${formatCurrency(stats.monthlyExpenses, mainCurrency)}`}
             </BlurredAmount>
           </div>
         </div>
@@ -182,7 +199,6 @@ export function ReportPage() {
             </BlurredAmount>
           </div>
         </div>
-
       </div>
 
       {/* Current Loans Status - separate from monthly data */}
@@ -195,19 +211,33 @@ export function ReportPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="p-4 bg-secondary/50 rounded-2xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <ArrowUpRight className={`h-4 w-4 ${getAmountColorClass(loanStats.givenTotal)}`} />
+                  <ArrowUpRight
+                    className={`h-4 w-4 ${getAmountColorClass(loanStats.givenTotal)}`}
+                  />
                   <span className="text-sm text-muted-foreground">{t('owedToYou')}</span>
                 </div>
-                <BlurredAmount className={cn('text-xl font-bold block', getAmountColorClass(loanStats.givenTotal))}>
+                <BlurredAmount
+                  className={cn(
+                    'text-xl font-bold block',
+                    getAmountColorClass(loanStats.givenTotal)
+                  )}
+                >
                   {formatCurrency(loanStats.givenTotal, mainCurrency)}
                 </BlurredAmount>
               </div>
               <div className="p-4 bg-secondary/50 rounded-2xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <ArrowDownLeft className={`h-4 w-4 ${loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'}`} />
+                  <ArrowDownLeft
+                    className={`h-4 w-4 ${loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'}`}
+                  />
                   <span className="text-sm text-muted-foreground">{t('youOwe')}</span>
                 </div>
-                <BlurredAmount className={cn('text-xl font-bold block', loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive')}>
+                <BlurredAmount
+                  className={cn(
+                    'text-xl font-bold block',
+                    loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'
+                  )}
+                >
                   {formatCurrency(loanStats.receivedTotal, mainCurrency)}
                 </BlurredAmount>
               </div>
@@ -241,7 +271,8 @@ export function ReportPage() {
                     })
                     return `conic-gradient(${stops.join(', ')})`
                   })(),
-                  WebkitMask: 'radial-gradient(circle 40px at center, transparent 100%, black 100%)',
+                  WebkitMask:
+                    'radial-gradient(circle 40px at center, transparent 100%, black 100%)',
                   mask: 'radial-gradient(circle 40px at center, transparent 100%, black 100%)',
                 }}
               />
@@ -279,7 +310,10 @@ export function ReportPage() {
           <div>
             <div className="h-[170px] flex items-end gap-1 justify-between">
               {(() => {
-                const maxVal = Math.max(...monthlyTrend.map((m) => Math.max(m.income, m.expenses)), 1)
+                const maxVal = Math.max(
+                  ...monthlyTrend.map((m) => Math.max(m.income, m.expenses)),
+                  1
+                )
                 return monthlyTrend.map((m) => (
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-0.5">
                     <div className="flex items-end gap-0.5 w-full h-[145px]">

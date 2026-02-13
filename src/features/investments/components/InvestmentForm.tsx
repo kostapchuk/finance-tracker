@@ -1,13 +1,26 @@
 import { useState, useEffect } from 'react'
+
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { investmentRepo } from '@/database/repositories'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
 import type { Investment } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 import { getAllCurrencies } from '@/utils/currency'
 
 interface InvestmentFormProps {
@@ -101,10 +114,11 @@ export function InvestmentForm({ investment, open, onClose }: InvestmentFormProp
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger>
                 <SelectValue placeholder={t('selectAccount')}>
-                  {accountId && (() => {
-                    const a = investmentAccounts.find(acc => acc.id?.toString() === accountId)
-                    return a ? `${a.name} (${a.currency})` : undefined
-                  })()}
+                  {accountId &&
+                    (() => {
+                      const a = investmentAccounts.find((acc) => acc.id?.toString() === accountId)
+                      return a ? `${a.name} (${a.currency})` : undefined
+                    })()}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -116,9 +130,7 @@ export function InvestmentForm({ investment, open, onClose }: InvestmentFormProp
               </SelectContent>
             </Select>
             {investmentAccounts.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                {t('noInvestmentAccounts')}
-              </p>
+              <p className="text-sm text-muted-foreground">{t('noInvestmentAccounts')}</p>
             )}
           </div>
 
@@ -150,7 +162,7 @@ export function InvestmentForm({ investment, open, onClose }: InvestmentFormProp
             <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger>
                 <SelectValue placeholder={t('selectCurrency')}>
-                  {getAllCurrencies().find(c => c.code === currency)?.symbol} {currency}
+                  {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>

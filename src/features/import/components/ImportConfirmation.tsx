@@ -1,7 +1,16 @@
-import { AlertCircle, CheckCircle2, Loader2, ArrowDown, ArrowUp, ArrowLeftRight } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  ArrowDown,
+  ArrowUp,
+  ArrowLeftRight,
+} from 'lucide-react'
+
+import type { ParsedImportData, ImportResult } from '../types'
+
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/hooks/useLanguage'
-import type { ParsedImportData, ImportResult } from '../types'
 
 interface ImportConfirmationProps {
   data: ParsedImportData

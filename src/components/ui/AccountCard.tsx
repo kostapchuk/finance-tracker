@@ -1,8 +1,9 @@
 import { icons, type LucideIcon } from 'lucide-react'
-import { cn } from '@/utils/cn'
-import { formatCurrency } from '@/utils/currency'
+
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import type { AccountType } from '@/database/types'
+import { cn } from '@/utils/cn'
+import { formatCurrency } from '@/utils/currency'
 
 interface AccountCardProps {
   name: string
@@ -34,9 +35,8 @@ export function AccountCard({
   dragHandleProps,
 }: AccountCardProps) {
   const iconName = icon || defaultIcons[type] || 'Wallet'
-  const IconComponent: LucideIcon = iconName in icons
-    ? icons[iconName as keyof typeof icons]
-    : icons.Wallet
+  const IconComponent: LucideIcon =
+    iconName in icons ? icons[iconName as keyof typeof icons] : icons.Wallet
 
   return (
     <button
@@ -49,7 +49,10 @@ export function AccountCard({
       )}
     >
       <div
-        className={cn("w-12 h-12 rounded-full flex items-center justify-center", dragHandleProps && "touch-none cursor-grab")}
+        className={cn(
+          'w-12 h-12 rounded-full flex items-center justify-center',
+          dragHandleProps && 'touch-none cursor-grab'
+        )}
         style={{ backgroundColor: color + '20' }}
         {...dragHandleProps}
       >

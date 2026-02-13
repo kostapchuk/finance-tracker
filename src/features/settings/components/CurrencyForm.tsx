@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react'
+
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { customCurrencyRepo } from '@/database/repositories'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
 import type { CustomCurrency } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 
 interface CurrencyFormProps {
   currency?: CustomCurrency | null
@@ -80,9 +87,7 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
               maxLength={5}
               required
             />
-            <p className="text-xs text-muted-foreground">
-              {t('currencyCodeHint')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('currencyCodeHint')}</p>
           </div>
 
           <div className="space-y-2">
@@ -105,9 +110,7 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
               placeholder={t('egSymbolBr')}
               maxLength={5}
             />
-            <p className="text-xs text-muted-foreground">
-              {t('symbolHint')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t('symbolHint')}</p>
           </div>
 
           <DialogFooter>

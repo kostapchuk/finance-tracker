@@ -233,10 +233,12 @@ export const translations = {
     buy: 'Buy',
     sell: 'Sell',
     deleteTransaction: 'Delete this transaction?',
-    deleteLoan: 'Delete this loan? All related transactions will be removed and account balances will be reverted.',
+    deleteLoan:
+      'Delete this loan? All related transactions will be removed and account balances will be reverted.',
 
     // Delete confirmation
-    deleteConfirmationMessage: 'This will permanently delete ALL your data including accounts, transactions, categories, and loans. This action cannot be undone.',
+    deleteConfirmationMessage:
+      'This will permanently delete ALL your data including accounts, transactions, categories, and loans. This action cannot be undone.',
 
     // Investments
     addInvestment: 'Add Investment',
@@ -304,7 +306,8 @@ export const translations = {
     importMapIncomeSources: 'Map Income Sources',
     importConfirm: 'Confirm Import',
     importFileHint: 'Select a CSV file exported from BudgetOk app',
-    importCommaWarning: 'Names with commas (e.g., "Такси, машина") may not import correctly. Replace commas with spaces in BudgetOk before exporting.',
+    importCommaWarning:
+      'Names with commas (e.g., "Такси, машина") may not import correctly. Replace commas with spaces in BudgetOk before exporting.',
     importDropOrClick: 'Drop file here or click to browse',
     importChooseFile: 'Choose File',
     importOperations: 'operations',
@@ -333,9 +336,11 @@ export const translations = {
     importOperationsInFile: 'Operations in file',
     importOperationsToImport: 'Operations to import',
     importCountMismatch: 'Count Mismatch',
-    importCountMismatchHint: 'The number of operations to import doesn\'t match the file. Go back and check mappings.',
+    importCountMismatchHint:
+      "The number of operations to import doesn't match the file. Go back and check mappings.",
     importReadyToImport: 'Ready to Import',
-    importReadyToImportHint: 'All operations will be imported. Account balances will be updated accordingly.',
+    importReadyToImportHint:
+      'All operations will be imported. Account balances will be updated accordingly.',
     importImporting: 'Importing...',
     importConfirmButton: 'Import Transactions',
     importSuccess: 'Import Successful!',
@@ -588,10 +593,12 @@ export const translations = {
     buy: 'Покупка',
     sell: 'Продажа',
     deleteTransaction: 'Удалить эту транзакцию?',
-    deleteLoan: 'Удалить этот долг? Все связанные транзакции будут удалены, а балансы счетов возвращены.',
+    deleteLoan:
+      'Удалить этот долг? Все связанные транзакции будут удалены, а балансы счетов возвращены.',
 
     // Delete confirmation
-    deleteConfirmationMessage: 'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и долги. Это действие нельзя отменить.',
+    deleteConfirmationMessage:
+      'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и долги. Это действие нельзя отменить.',
 
     // Investments
     addInvestment: 'Добавить инвестицию',
@@ -639,7 +646,8 @@ export const translations = {
     onboardingIncomeTitle: 'Запись дохода',
     onboardingIncomeText: 'Перетащите "Зарплата" на "Банковский счёт" чтобы записать доход',
     onboardingExpenseTitle: 'Запись расхода',
-    onboardingExpenseText: 'Теперь перетащите "Банковский счёт" на "Продукты" чтобы записать расход',
+    onboardingExpenseText:
+      'Теперь перетащите "Банковский счёт" на "Продукты" чтобы записать расход',
     onboardingCurrencyTitle: 'Настройки',
     onboardingCurrencyText: 'Здесь вы можете изменить основную валюту и другие настройки',
     onboardingNext: 'Далее',
@@ -659,7 +667,8 @@ export const translations = {
     importMapIncomeSources: 'Сопоставление доходов',
     importConfirm: 'Подтверждение',
     importFileHint: 'Выберите CSV файл, экспортированный из приложения БюджетОк',
-    importCommaWarning: 'Названия с запятыми (напр. "Такси, машина") могут импортироваться некорректно. Замените запятые на пробелы в БюджетОк перед экспортом.',
+    importCommaWarning:
+      'Названия с запятыми (напр. "Такси, машина") могут импортироваться некорректно. Замените запятые на пробелы в БюджетОк перед экспортом.',
     importDropOrClick: 'Перетащите файл сюда или нажмите для выбора',
     importChooseFile: 'Выбрать файл',
     importOperations: 'операций',
@@ -672,8 +681,10 @@ export const translations = {
     importNext: 'Далее',
     importMapped: 'сопоставлено',
     importMapAccountsHint: 'Сопоставьте каждый счёт из БюджетОк со счётом в приложении',
-    importMapCategoriesHint: 'Сопоставьте каждую категорию расходов из БюджетОк с категорией в приложении',
-    importMapIncomeSourcesHint: 'Сопоставьте каждый источник дохода из БюджетОк с источником в приложении',
+    importMapCategoriesHint:
+      'Сопоставьте каждую категорию расходов из БюджетОк с категорией в приложении',
+    importMapIncomeSourcesHint:
+      'Сопоставьте каждый источник дохода из БюджетОк с источником в приложении',
     importSelectCategory: 'Выберите категорию',
     importSelectIncomeSource: 'Выберите источник дохода',
     importAllAccountsMustBeMapped: 'Все счета должны быть сопоставлены',
@@ -688,7 +699,8 @@ export const translations = {
     importOperationsInFile: 'Операций в файле',
     importOperationsToImport: 'Будет импортировано',
     importCountMismatch: 'Несоответствие количества',
-    importCountMismatchHint: 'Количество операций для импорта не совпадает с файлом. Вернитесь и проверьте сопоставления.',
+    importCountMismatchHint:
+      'Количество операций для импорта не совпадает с файлом. Вернитесь и проверьте сопоставления.',
     importReadyToImport: 'Готово к импорту',
     importReadyToImportHint: 'Все операции будут импортированы. Балансы счетов будут обновлены.',
     importImporting: 'Импорт...',
@@ -719,7 +731,7 @@ export type TranslationKey = keyof typeof translations.en
 const LANGUAGE_KEY = 'finance-tracker-language'
 
 export function getStoredLanguage(): Language {
-  if (typeof window === 'undefined') return 'ru'
+  if (globalThis.window === undefined) return 'ru'
   return (localStorage.getItem(LANGUAGE_KEY) as Language) || 'ru'
 }
 
@@ -744,6 +756,6 @@ export function t(key: TranslationKey): string {
 }
 
 // Initialize language from localStorage
-if (typeof window !== 'undefined') {
+if (globalThis.window !== undefined) {
   currentLanguage = getStoredLanguage()
 }

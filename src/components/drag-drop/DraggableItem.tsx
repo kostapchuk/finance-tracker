@@ -1,5 +1,6 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
+
 import { cn } from '@/utils/cn'
 
 export interface DragHandleProps {
@@ -29,14 +30,13 @@ export function DraggableItem({ id, data, children, className }: DraggableItemPr
   // Render prop mode: only the icon gets drag listeners, tile stays in place
   if (typeof children === 'function') {
     return (
-      <div
-        ref={setNodeRef}
-        className={cn(
-          isDragging && 'opacity-50',
-          className
-        )}
-      >
-        {children({ ref: setNodeRef, listeners: listeners ?? {}, attributes: { ...attributes }, isDragging })}
+      <div ref={setNodeRef} className={cn(isDragging && 'opacity-50', className)}>
+        {children({
+          ref: setNodeRef,
+          listeners: listeners ?? {},
+          attributes: { ...attributes },
+          isDragging,
+        })}
       </div>
     )
   }
@@ -48,11 +48,7 @@ export function DraggableItem({ id, data, children, className }: DraggableItemPr
       style={style}
       {...listeners}
       {...attributes}
-      className={cn(
-        'touch-none',
-        isDragging && 'opacity-50 z-50 scale-105',
-        className
-      )}
+      className={cn('touch-none', isDragging && 'opacity-50 z-50 scale-105', className)}
     >
       {children}
     </div>

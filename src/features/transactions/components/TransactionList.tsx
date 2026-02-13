@@ -1,27 +1,69 @@
-import { useState, useMemo } from 'react'
 import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Filter } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useMemo } from 'react'
+
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAppStore } from '@/store/useAppStore'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { Transaction, TransactionType } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
-import type { Transaction, TransactionType } from '@/database/types'
 
 export function TransactionList() {
   const { t } = useLanguage()
 
-  const typeConfig: Record<TransactionType, { label: string; icon: React.ReactNode; color: string }> = {
-    income: { label: t('income'), icon: <ArrowUpCircle className="h-4 w-4" />, color: 'text-green-600' },
-    expense: { label: t('expense'), icon: <ArrowDownCircle className="h-4 w-4" />, color: 'text-red-600' },
-    transfer: { label: t('transfer'), icon: <ArrowLeftRight className="h-4 w-4" />, color: 'text-blue-600' },
-    investment_buy: { label: t('buy'), icon: <ArrowDownCircle className="h-4 w-4" />, color: 'text-purple-600' },
-    investment_sell: { label: t('sell'), icon: <ArrowUpCircle className="h-4 w-4" />, color: 'text-purple-600' },
-    loan_given: { label: t('loanGiven'), icon: <ArrowDownCircle className="h-4 w-4" />, color: 'text-orange-600' },
-    loan_received: { label: t('loanReceived'), icon: <ArrowUpCircle className="h-4 w-4" />, color: 'text-orange-600' },
-    loan_payment: { label: t('payment'), icon: <ArrowLeftRight className="h-4 w-4" />, color: 'text-orange-600' },
+  const typeConfig: Record<
+    TransactionType,
+    { label: string; icon: React.ReactNode; color: string }
+  > = {
+    income: {
+      label: t('income'),
+      icon: <ArrowUpCircle className="h-4 w-4" />,
+      color: 'text-green-600',
+    },
+    expense: {
+      label: t('expense'),
+      icon: <ArrowDownCircle className="h-4 w-4" />,
+      color: 'text-red-600',
+    },
+    transfer: {
+      label: t('transfer'),
+      icon: <ArrowLeftRight className="h-4 w-4" />,
+      color: 'text-blue-600',
+    },
+    investment_buy: {
+      label: t('buy'),
+      icon: <ArrowDownCircle className="h-4 w-4" />,
+      color: 'text-purple-600',
+    },
+    investment_sell: {
+      label: t('sell'),
+      icon: <ArrowUpCircle className="h-4 w-4" />,
+      color: 'text-purple-600',
+    },
+    loan_given: {
+      label: t('loanGiven'),
+      icon: <ArrowDownCircle className="h-4 w-4" />,
+      color: 'text-orange-600',
+    },
+    loan_received: {
+      label: t('loanReceived'),
+      icon: <ArrowUpCircle className="h-4 w-4" />,
+      color: 'text-orange-600',
+    },
+    loan_payment: {
+      label: t('payment'),
+      icon: <ArrowLeftRight className="h-4 w-4" />,
+      color: 'text-orange-600',
+    },
   }
   const transactions = useAppStore((state) => state.transactions)
   const accounts = useAppStore((state) => state.accounts)
@@ -38,7 +80,8 @@ export function TransactionList() {
     return account ? `${account.name} (${account.currency})` : 'Unknown'
   }
   const getCategoryName = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-  const getIncomeSourceName = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+  const getIncomeSourceName = (id?: number) =>
+    incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
   const filteredTransactions = useMemo(() => {
     const matchAccount = (id?: number) => {
@@ -46,37 +89,50 @@ export function TransactionList() {
       return account ? `${account.name} (${account.currency})` : 'Unknown'
     }
     const matchCategory = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-    const matchIncomeSource = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+    const matchIncomeSource = (id?: number) =>
+      incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
-    return transactions.filter((t) => {
-      if (typeFilter !== 'all' && t.type !== typeFilter) return false
-      if (accountFilter !== 'all' && t.accountId?.toString() !== accountFilter && t.toAccountId?.toString() !== accountFilter) return false
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        const comment = t.comment?.toLowerCase() || ''
-        const accountName = matchAccount(t.accountId).toLowerCase()
-        const categoryName = matchCategory(t.categoryId).toLowerCase()
-        const sourceName = matchIncomeSource(t.incomeSourceId).toLowerCase()
-        if (!comment.includes(query) && !accountName.includes(query) && !categoryName.includes(query) && !sourceName.includes(query)) {
+    return transactions
+      .filter((t) => {
+        if (typeFilter !== 'all' && t.type !== typeFilter) return false
+        if (
+          accountFilter !== 'all' &&
+          t.accountId?.toString() !== accountFilter &&
+          t.toAccountId?.toString() !== accountFilter
+        )
           return false
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase()
+          const comment = t.comment?.toLowerCase() || ''
+          const accountName = matchAccount(t.accountId).toLowerCase()
+          const categoryName = matchCategory(t.categoryId).toLowerCase()
+          const sourceName = matchIncomeSource(t.incomeSourceId).toLowerCase()
+          if (
+            !comment.includes(query) &&
+            !accountName.includes(query) &&
+            !categoryName.includes(query) &&
+            !sourceName.includes(query)
+          ) {
+            return false
+          }
         }
-      }
-      return true
-    }).sort((a, b) => {
-      const dateA = new Date(a.date)
-      const dateB = new Date(b.date)
-      const dateOnlyA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate()).getTime()
-      const dateOnlyB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate()).getTime()
-      if (dateOnlyA !== dateOnlyB) {
-        return dateOnlyB - dateOnlyA
-      }
-      const createdAtA = new Date(a.createdAt).getTime()
-      const createdAtB = new Date(b.createdAt).getTime()
-      if (createdAtA !== createdAtB) {
-        return createdAtB - createdAtA
-      }
-      return (b.id || 0) - (a.id || 0)
-    })
+        return true
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.date)
+        const dateB = new Date(b.date)
+        const dateOnlyA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate()).getTime()
+        const dateOnlyB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate()).getTime()
+        if (dateOnlyA !== dateOnlyB) {
+          return dateOnlyB - dateOnlyA
+        }
+        const createdAtA = new Date(a.createdAt).getTime()
+        const createdAtB = new Date(b.createdAt).getTime()
+        if (createdAtA !== createdAtB) {
+          return createdAtB - createdAtA
+        }
+        return (b.id || 0) - (a.id || 0)
+      })
   }, [transactions, typeFilter, accountFilter, searchQuery, accounts, categories, incomeSources])
 
   const getTransactionDescription = (t: Transaction): string => {
@@ -97,7 +153,9 @@ export function TransactionList() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>{t('transactionHistory')}</span>
-          <Badge variant="secondary">{filteredTransactions.length} {t('transactions')}</Badge>
+          <Badge variant="secondary">
+            {filteredTransactions.length} {t('transactions')}
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -108,10 +166,13 @@ export function TransactionList() {
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder={t('type')}>
-                {typeFilter === 'all' ? t('allTypes') :
-                 typeFilter === 'income' ? t('income') :
-                 typeFilter === 'expense' ? t('expense') :
-                 t('transfer')}
+                {typeFilter === 'all'
+                  ? t('allTypes')
+                  : typeFilter === 'income'
+                    ? t('income')
+                    : typeFilter === 'expense'
+                      ? t('expense')
+                      : t('transfer')}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -171,9 +232,7 @@ export function TransactionList() {
                         </Badge>
                         <span>{formatDate(new Date(transaction.date))}</span>
                         {transaction.comment && (
-                          <span className="truncate max-w-[200px]">
-                            - {transaction.comment}
-                          </span>
+                          <span className="truncate max-w-[200px]">- {transaction.comment}</span>
                         )}
                       </div>
                     </div>
@@ -181,8 +240,11 @@ export function TransactionList() {
                   <div className="text-right flex flex-col items-end">
                     <span
                       className={`font-mono font-medium ${
-                        transaction.type === 'income' ? 'text-foreground' :
-                        transaction.type === 'expense' ? 'text-red-600' : ''
+                        transaction.type === 'income'
+                          ? 'text-foreground'
+                          : transaction.type === 'expense'
+                            ? 'text-red-600'
+                            : ''
                       }`}
                     >
                       {transaction.type === 'expense' ? '- ' : ''}
@@ -190,15 +252,21 @@ export function TransactionList() {
                         ? formatCurrency(transaction.mainCurrencyAmount, mainCurrency)
                         : formatCurrency(transaction.amount, transaction.currency)}
                     </span>
-                    {transaction.mainCurrencyAmount != null && transaction.currency !== mainCurrency && (
-                      <span className="text-xs text-muted-foreground font-mono">
-                        {transaction.type === 'expense' ? '- ' : ''}
-                        {formatCurrency(transaction.amount, transaction.currency)}
-                      </span>
-                    )}
+                    {transaction.mainCurrencyAmount != null &&
+                      transaction.currency !== mainCurrency && (
+                        <span className="text-xs text-muted-foreground font-mono">
+                          {transaction.type === 'expense' ? '- ' : ''}
+                          {formatCurrency(transaction.amount, transaction.currency)}
+                        </span>
+                      )}
                     {transaction.type === 'transfer' && transaction.toAmount != null && (
                       <span className="text-xs text-muted-foreground font-mono">
-                        → {formatCurrency(transaction.toAmount, accounts.find(a => a.id === transaction.toAccountId)?.currency || transaction.currency)}
+                        →{' '}
+                        {formatCurrency(
+                          transaction.toAmount,
+                          accounts.find((a) => a.id === transaction.toAccountId)?.currency ||
+                            transaction.currency
+                        )}
                       </span>
                     )}
                   </div>

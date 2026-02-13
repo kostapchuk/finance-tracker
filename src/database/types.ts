@@ -1,6 +1,14 @@
 export type AccountType = 'cash' | 'bank' | 'crypto' | 'investment' | 'credit_card'
 
-export type TransactionType = 'income' | 'expense' | 'transfer' | 'investment_buy' | 'investment_sell' | 'loan_given' | 'loan_received' | 'loan_payment'
+export type TransactionType =
+  | 'income'
+  | 'expense'
+  | 'transfer'
+  | 'investment_buy'
+  | 'investment_sell'
+  | 'loan_given'
+  | 'loan_received'
+  | 'loan_payment'
 
 export type LoanType = 'given' | 'received'
 export type LoanStatus = 'active' | 'partially_paid' | 'fully_paid'
@@ -67,7 +75,7 @@ export interface Transaction {
 
   // For transfers
   toAccountId?: number
-  toAmount?: number  // Amount in target account currency (for multi-currency transfers)
+  toAmount?: number // Amount in target account currency (for multi-currency transfers)
 
   // For investment transactions
   investmentId?: number

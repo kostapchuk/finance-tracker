@@ -1,22 +1,48 @@
+import {
+  ArrowUpCircle,
+  ArrowDownCircle,
+  ArrowLeftRight,
+  Search,
+  X,
+  Filter,
+  Calendar,
+  Wallet,
+  TrendingUp,
+  TrendingDown,
+} from 'lucide-react'
 import { useState, useMemo, useEffect, useCallback, useRef, useReducer } from 'react'
-import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar, Wallet, TrendingUp, TrendingDown } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
-import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
-import { formatCurrency } from '@/utils/currency'
-import { getStartOfMonth, getStartOfWeek, getEndOfMonth, formatDateForInput } from '@/utils/date'
+
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
-import { cn } from '@/utils/cn'
-import { reverseTransactionBalance } from '@/utils/transactionBalance'
 import { QuickTransactionModal, type TransactionMode } from '@/components/ui/QuickTransactionModal'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
+import type { Transaction, TransactionType, Loan } from '@/database/types'
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
-import type { Transaction, TransactionType, Loan } from '@/database/types'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { cn } from '@/utils/cn'
+import { formatCurrency } from '@/utils/currency'
+import { getStartOfMonth, getStartOfWeek, getEndOfMonth, formatDateForInput } from '@/utils/date'
+import { reverseTransactionBalance } from '@/utils/transactionBalance'
 
-type DateFilterType = 'all' | 'today' | 'week' | 'month' | 'last3months' | 'last6months' | 'year' | 'custom'
+type DateFilterType =
+  | 'all'
+  | 'today'
+  | 'week'
+  | 'month'
+  | 'last3months'
+  | 'last6months'
+  | 'year'
+  | 'custom'
 
 interface FilterState {
   typeFilter: 'all' | TransactionType | 'transfers' | 'loans'
@@ -46,7 +72,8 @@ type FilterAction =
 function getInitialFilterState(): FilterState {
   const selectedMonth = useAppStore.getState().selectedMonth
   const now = new Date()
-  const isCurrentMonth = selectedMonth.getMonth() === now.getMonth() && selectedMonth.getFullYear() === now.getFullYear()
+  const isCurrentMonth =
+    selectedMonth.getMonth() === now.getMonth() && selectedMonth.getFullYear() === now.getFullYear()
 
   return {
     typeFilter: 'all',
@@ -57,7 +84,7 @@ function getInitialFilterState(): FilterState {
     customDateTo: isCurrentMonth ? '' : formatDateForInput(getEndOfMonth(selectedMonth)),
     searchQuery: '',
     displayCount: 50,
-    showFilters: !isCurrentMonth
+    showFilters: !isCurrentMonth,
   }
 }
 
@@ -88,14 +115,14 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
         typeFilter: 'expense',
         dateFilter: 'month',
         showFilters: true,
-        displayCount: 50
+        displayCount: 50,
       }
     case 'APPLY_ACCOUNT_NAV':
       return {
         ...state,
         accountFilter: String(action.payload),
         showFilters: true,
-        displayCount: 50
+        displayCount: 50,
       }
     default:
       return state
@@ -127,7 +154,7 @@ export function HistoryPage() {
     customDateTo,
     searchQuery,
     displayCount,
-    showFilters
+    showFilters,
   } = filterState
 
   const [showSearch, setShowSearch] = useState(false)
@@ -156,7 +183,10 @@ export function HistoryPage() {
     }
   }, [historyAccountFilter])
 
-  const typeConfig: Record<TransactionType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  const typeConfig: Record<
+    TransactionType,
+    { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
+  > = {
     income: { label: t('income'), icon: ArrowUpCircle, color: 'text-success' },
     expense: { label: t('expense'), icon: ArrowDownCircle, color: 'text-destructive' },
     transfer: { label: t('transfer'), icon: ArrowLeftRight, color: 'text-primary' },
@@ -173,7 +203,8 @@ export function HistoryPage() {
   }
   const getAccountNameWithCurrency = getAccountName
   const getCategoryName = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-  const getIncomeSourceName = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+  const getIncomeSourceName = (id?: number) =>
+    incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
   const filteredTransactions = useMemo(() => {
     const now = new Date()
@@ -191,7 +222,8 @@ export function HistoryPage() {
       return account ? `${account.name} (${account.currency})` : 'Unknown'
     }
     const matchCategory = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-    const matchIncomeSource = (id?: number) => incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+    const matchIncomeSource = (id?: number) =>
+      incomeSources.find((s) => s.id === id)?.name || 'Unknown'
 
     return transactions
       .filter((tx) => {
@@ -200,7 +232,12 @@ export function HistoryPage() {
           if (typeFilter === 'transfers') {
             if (tx.type !== 'transfer') return false
           } else if (typeFilter === 'loans') {
-            if (tx.type !== 'loan_given' && tx.type !== 'loan_received' && tx.type !== 'loan_payment') return false
+            if (
+              tx.type !== 'loan_given' &&
+              tx.type !== 'loan_received' &&
+              tx.type !== 'loan_payment'
+            )
+              return false
           } else if (tx.type !== typeFilter) {
             return false
           }
@@ -215,7 +252,8 @@ export function HistoryPage() {
         // Account filter
         if (accountFilter !== 'all') {
           const accountId = accountFilter
-          if (tx.accountId?.toString() !== accountId && tx.toAccountId?.toString() !== accountId) return false
+          if (tx.accountId?.toString() !== accountId && tx.toAccountId?.toString() !== accountId)
+            return false
         }
 
         // Date filter
@@ -248,7 +286,12 @@ export function HistoryPage() {
           const accountName = matchAccount(tx.accountId).toLowerCase()
           const categoryName = matchCategory(tx.categoryId).toLowerCase()
           const sourceName = matchIncomeSource(tx.incomeSourceId).toLowerCase()
-          if (!comment.includes(query) && !accountName.includes(query) && !categoryName.includes(query) && !sourceName.includes(query)) {
+          if (
+            !comment.includes(query) &&
+            !accountName.includes(query) &&
+            !categoryName.includes(query) &&
+            !sourceName.includes(query)
+          ) {
             return false
           }
         }
@@ -269,23 +312,35 @@ export function HistoryPage() {
         }
         return (b.id || 0) - (a.id || 0)
       })
-  }, [transactions, typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery, accounts, categories, incomeSources])
+  }, [
+    transactions,
+    typeFilter,
+    categoryFilter,
+    accountFilter,
+    dateFilter,
+    customDateFrom,
+    customDateTo,
+    searchQuery,
+    accounts,
+    categories,
+    incomeSources,
+  ])
 
   // Period summary for header
   const periodSummary = useMemo(() => {
     let inflows = 0
     let outflows = 0
-    
-    filteredTransactions.forEach(tx => {
+
+    filteredTransactions.forEach((tx) => {
       const amount = tx.mainCurrencyAmount ?? tx.amount
-      
+
       if (tx.type === 'income' || tx.type === 'loan_received') {
         inflows += amount
       } else if (tx.type === 'expense' || tx.type === 'loan_given') {
         outflows += amount
       }
     })
-    
+
     return { inflows, outflows, net: inflows - outflows }
   }, [filteredTransactions])
 
@@ -299,7 +354,7 @@ export function HistoryPage() {
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return
     setIsLoadingMore(true)
-    await new Promise(r => setTimeout(r, 50))
+    await new Promise((r) => setTimeout(r, 50))
     dispatch({ type: 'LOAD_MORE' })
     setIsLoadingMore(false)
   }, [isLoadingMore, hasMore])
@@ -321,18 +376,22 @@ export function HistoryPage() {
       const txDateOnly = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate())
 
       if (txDateOnly.getTime() === today.getTime()) {
-        const weekday = txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'long' })
+        const weekday = txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
+          weekday: 'long',
+        })
         return `${t('today')}, ${weekday}`
       }
       if (txDateOnly.getTime() === yesterday.getTime()) {
-        const weekday = txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { weekday: 'long' })
+        const weekday = txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
+          weekday: 'long',
+        })
         return `${t('yesterday')}, ${weekday}`
       }
-      return txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { 
-        weekday: 'long', 
-        day: 'numeric', 
+      return txDate.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
+        weekday: 'long',
+        day: 'numeric',
         month: 'long',
-        year: txDate.getFullYear() === now.getFullYear() ? undefined : 'numeric'
+        year: txDate.getFullYear() === now.getFullYear() ? undefined : 'numeric',
       })
     }
 
@@ -363,42 +422,67 @@ export function HistoryPage() {
     setEditingTransaction(transaction)
 
     // Determine the modal type based on transaction type
-    if (transaction.type === 'income' || transaction.type === 'expense' || transaction.type === 'transfer') {
-      // Build the TransactionMode for QuickTransactionModal
-      if (transaction.type === 'income') {
-        const source = incomeSources.find(s => s.id === transaction.incomeSourceId)
-        if (source) {
-          setEditTransactionMode({ type: 'income', source })
-          setEditModalType('quick')
+    switch (transaction.type) {
+      case 'income':
+      case 'expense':
+      case 'transfer': {
+        // Build the TransactionMode for QuickTransactionModal
+        switch (transaction.type) {
+          case 'income': {
+            const source = incomeSources.find((s) => s.id === transaction.incomeSourceId)
+            if (source) {
+              setEditTransactionMode({ type: 'income', source })
+              setEditModalType('quick')
+            }
+
+            break
+          }
+          case 'expense': {
+            const category = categories.find((c) => c.id === transaction.categoryId)
+            if (category) {
+              setEditTransactionMode({ type: 'expense', category })
+              setEditModalType('quick')
+            }
+
+            break
+          }
+          case 'transfer': {
+            const fromAccount = accounts.find((a) => a.id === transaction.accountId)
+            const toAccount = accounts.find((a) => a.id === transaction.toAccountId)
+            if (fromAccount && toAccount) {
+              setEditTransactionMode({ type: 'transfer', fromAccount, toAccount })
+              setEditModalType('quick')
+            }
+
+            break
+          }
+          // No default
         }
-      } else if (transaction.type === 'expense') {
-        const category = categories.find(c => c.id === transaction.categoryId)
-        if (category) {
-          setEditTransactionMode({ type: 'expense', category })
-          setEditModalType('quick')
+
+        break
+      }
+      case 'loan_given':
+      case 'loan_received': {
+        // Find the associated loan
+        const loan = loans.find((l) => l.id === transaction.loanId)
+        if (loan) {
+          setEditingLoan(loan)
+          setEditModalType('loan')
         }
-      } else if (transaction.type === 'transfer') {
-        const fromAccount = accounts.find(a => a.id === transaction.accountId)
-        const toAccount = accounts.find(a => a.id === transaction.toAccountId)
-        if (fromAccount && toAccount) {
-          setEditTransactionMode({ type: 'transfer', fromAccount, toAccount })
-          setEditModalType('quick')
+
+        break
+      }
+      case 'loan_payment': {
+        // Find the associated loan for payment editing
+        const loan = loans.find((l) => l.id === transaction.loanId)
+        if (loan) {
+          setEditingLoan(loan)
+          setEditModalType('payment')
         }
+
+        break
       }
-    } else if (transaction.type === 'loan_given' || transaction.type === 'loan_received') {
-      // Find the associated loan
-      const loan = loans.find(l => l.id === transaction.loanId)
-      if (loan) {
-        setEditingLoan(loan)
-        setEditModalType('loan')
-      }
-    } else if (transaction.type === 'loan_payment') {
-      // Find the associated loan for payment editing
-      const loan = loans.find(l => l.id === transaction.loanId)
-      if (loan) {
-        setEditingLoan(loan)
-        setEditModalType('payment')
-      }
+      // No default
     }
   }
 
@@ -431,7 +515,7 @@ export function HistoryPage() {
 
     // 3. Calculate new balance amount
     const newBalanceAmount = data.accountAmount ?? data.amount
-    const account = accounts.find(a => a.id === data.accountId)
+    const account = accounts.find((a) => a.id === data.accountId)
 
     // 4. Update the transaction record
     await transactionRepo.update(oldTransaction.id!, {
@@ -469,9 +553,9 @@ export function HistoryPage() {
   // Get unique categories/sources for filter
   const filterOptions = useMemo(() => {
     if (typeFilter === 'expense') {
-      return categories.map(c => ({ id: c.id!.toString(), name: c.name }))
+      return categories.map((c) => ({ id: c.id!.toString(), name: c.name }))
     } else if (typeFilter === 'income') {
-      return incomeSources.map(s => ({ id: s.id!.toString(), name: s.name }))
+      return incomeSources.map((s) => ({ id: s.id!.toString(), name: s.name }))
     }
     return []
   }, [typeFilter, categories, incomeSources])
@@ -491,7 +575,12 @@ export function HistoryPage() {
               className="flex-1 bg-transparent outline-none text-base"
               autoFocus
             />
-            <button onClick={() => { setShowSearch(false); dispatch({ type: 'SET_SEARCH_QUERY', payload: '' }) }}>
+            <button
+              onClick={() => {
+                setShowSearch(false)
+                dispatch({ type: 'SET_SEARCH_QUERY', payload: '' })
+              }}
+            >
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
@@ -502,8 +591,8 @@ export function HistoryPage() {
               <button
                 onClick={() => dispatch({ type: 'SET_SHOW_FILTERS', payload: !showFilters })}
                 className={cn(
-                  "p-2 rounded-full hover:bg-secondary touch-target",
-                  showFilters && "bg-primary/20"
+                  'p-2 rounded-full hover:bg-secondary touch-target',
+                  showFilters && 'bg-primary/20'
                 )}
               >
                 <Filter className="h-5 w-5" />
@@ -532,10 +621,13 @@ export function HistoryPage() {
                 : 'bg-secondary text-secondary-foreground'
             )}
           >
-            {filter === 'all' ? t('all') :
-             filter === 'transfers' ? t('transfers') :
-             filter === 'loans' ? t('loansFilter') :
-             t(filter)}
+            {filter === 'all'
+              ? t('all')
+              : filter === 'transfers'
+                ? t('transfers')
+                : filter === 'loans'
+                  ? t('loansFilter')
+                  : t(filter)}
           </button>
         ))}
       </div>
@@ -545,18 +637,30 @@ export function HistoryPage() {
         <div className="px-4 pb-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             {/* Date Filter */}
-            <Select value={dateFilter} onValueChange={(v) => dispatch({ type: 'SET_DATE_FILTER', payload: v as DateFilterType })}>
+            <Select
+              value={dateFilter}
+              onValueChange={(v) =>
+                dispatch({ type: 'SET_DATE_FILTER', payload: v as DateFilterType })
+              }
+            >
               <SelectTrigger className="h-9">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span className="truncate">
-                  {dateFilter === 'today' ? t('today') :
-                   dateFilter === 'week' ? t('thisWeek') :
-                   dateFilter === 'month' ? t('thisMonth') :
-                   dateFilter === 'last3months' ? t('last3Months') :
-                   dateFilter === 'last6months' ? t('last6Months') :
-                   dateFilter === 'year' ? t('thisYear') :
-                   dateFilter === 'custom' ? t('customRange') :
-                   t('allTime')}
+                  {dateFilter === 'today'
+                    ? t('today')
+                    : dateFilter === 'week'
+                      ? t('thisWeek')
+                      : dateFilter === 'month'
+                        ? t('thisMonth')
+                        : dateFilter === 'last3months'
+                          ? t('last3Months')
+                          : dateFilter === 'last6months'
+                            ? t('last6Months')
+                            : dateFilter === 'year'
+                              ? t('thisYear')
+                              : dateFilter === 'custom'
+                                ? t('customRange')
+                                : t('allTime')}
                 </span>
               </SelectTrigger>
               <SelectContent>
@@ -572,7 +676,10 @@ export function HistoryPage() {
             </Select>
 
             {/* Account Filter */}
-            <Select value={accountFilter} onValueChange={(v) => dispatch({ type: 'SET_ACCOUNT_FILTER', payload: v })}>
+            <Select
+              value={accountFilter}
+              onValueChange={(v) => dispatch({ type: 'SET_ACCOUNT_FILTER', payload: v })}
+            >
               <SelectTrigger className="h-9">
                 <Wallet className="h-4 w-4 mr-2" />
                 <span className="truncate">
@@ -594,12 +701,17 @@ export function HistoryPage() {
 
           {/* Category/Source Filter */}
           {filterOptions.length > 0 && (
-            <Select value={categoryFilter} onValueChange={(v) => dispatch({ type: 'SET_CATEGORY_FILTER', payload: v })}>
+            <Select
+              value={categoryFilter}
+              onValueChange={(v) => dispatch({ type: 'SET_CATEGORY_FILTER', payload: v })}
+            >
               <SelectTrigger className="h-9">
-                <SelectValue placeholder={typeFilter === 'income' ? t('incomeSources') : t('categories')}>
+                <SelectValue
+                  placeholder={typeFilter === 'income' ? t('incomeSources') : t('categories')}
+                >
                   {categoryFilter === 'all'
                     ? t('all')
-                    : filterOptions.find(opt => opt.id === categoryFilter)?.name || t('all')}
+                    : filterOptions.find((opt) => opt.id === categoryFilter)?.name || t('all')}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -622,7 +734,9 @@ export function HistoryPage() {
                   type="date"
                   lang={language}
                   value={customDateFrom}
-                  onChange={(e) => dispatch({ type: 'SET_CUSTOM_DATE_FROM', payload: e.target.value })}
+                  onChange={(e) =>
+                    dispatch({ type: 'SET_CUSTOM_DATE_FROM', payload: e.target.value })
+                  }
                   className="h-9"
                 />
               </div>
@@ -632,7 +746,9 @@ export function HistoryPage() {
                   type="date"
                   lang={language}
                   value={customDateTo}
-                  onChange={(e) => dispatch({ type: 'SET_CUSTOM_DATE_TO', payload: e.target.value })}
+                  onChange={(e) =>
+                    dispatch({ type: 'SET_CUSTOM_DATE_TO', payload: e.target.value })
+                  }
                   className="h-9"
                 />
               </div>
@@ -663,7 +779,8 @@ export function HistoryPage() {
               <span className="text-xs text-muted-foreground">{t('net')}</span>
             </div>
             <BlurredAmount className="text-base font-bold text-foreground block">
-              {periodSummary.net >= 0 ? '+' : '-'}{formatCurrency(Math.abs(periodSummary.net), mainCurrency)}
+              {periodSummary.net >= 0 ? '+' : '-'}
+              {formatCurrency(Math.abs(periodSummary.net), mainCurrency)}
             </BlurredAmount>
           </div>
           <div className="p-3 bg-secondary/50 rounded-2xl text-center">
@@ -687,9 +804,9 @@ export function HistoryPage() {
         ) : (
           Object.entries(groupedTransactions).map(([group, txs]) => {
             const groupExpenseTotal = txs
-              .filter(tx => tx.type === 'expense')
+              .filter((tx) => tx.type === 'expense')
               .reduce((sum, tx) => sum + (tx.mainCurrencyAmount ?? tx.amount), 0)
-            
+
             return (
               <div key={group} className="mb-6">
                 <h3 className="flex justify-between items-center text-sm font-semibold text-muted-foreground mb-2 sticky top-0 bg-background py-2">
@@ -701,114 +818,129 @@ export function HistoryPage() {
                   )}
                 </h3>
                 <div className="space-y-2">
-                {txs.map((transaction) => {
-                  const config = typeConfig[transaction.type]
-                  const Icon = config.icon
-                  return (
-                    <div
-                      key={transaction.id}
-                      onClick={() => handleEdit(transaction)}
-                      className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl cursor-pointer active:bg-secondary/70 transition-colors"
-                    >
-                      <div className={cn('p-2 rounded-full bg-secondary', config.color)}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
-                          {getTransactionTitle(transaction)}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          <span>{getAccountNameWithCurrency(transaction.accountId)}</span>
-                          {transaction.comment && <span className="truncate max-w-[100px] inline-block align-bottom"> • {transaction.comment}</span>}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        {transaction.type === 'transfer' ? (
-                          // Transfer: show amounts like other transaction types
-                          (() => {
-                            const fromAmount = transaction.amount
-                            const fromCurrency = transaction.currency
-                            const toAmount = transaction.toAmount
-                            const toAccount = accounts.find(a => a.id === transaction.toAccountId)
-                            const toCurrency = toAccount?.currency || fromCurrency
-                            
-                            const isMultiCurrency = toAmount != null && fromCurrency !== toCurrency
-                            
-                            // For same currency, show single amount
-                            if (!isMultiCurrency) {
-                              return (
-                                <BlurredAmount className="font-mono font-semibold text-foreground">
-                                  {formatCurrency(fromAmount, fromCurrency)}
-                                </BlurredAmount>
+                  {txs.map((transaction) => {
+                    const config = typeConfig[transaction.type]
+                    const Icon = config.icon
+                    return (
+                      <button
+                        type="button"
+                        key={transaction.id}
+                        onClick={() => handleEdit(transaction)}
+                        className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl cursor-pointer active:bg-secondary/70 transition-colors w-full text-left"
+                      >
+                        <div className={cn('p-2 rounded-full bg-secondary', config.color)}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{getTransactionTitle(transaction)}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            <span>{getAccountNameWithCurrency(transaction.accountId)}</span>
+                            {transaction.comment && (
+                              <span className="truncate max-w-[100px] inline-block align-bottom">
+                                {' '}
+                                • {transaction.comment}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          {transaction.type === 'transfer' ? (
+                            // Transfer: show amounts like other transaction types
+                            (() => {
+                              const fromAmount = transaction.amount
+                              const fromCurrency = transaction.currency
+                              const toAmount = transaction.toAmount
+                              const toAccount = accounts.find(
+                                (a) => a.id === transaction.toAccountId
                               )
-                            }
-                            
-                            // For multi-currency, show main currency as primary
-                            if (toCurrency === mainCurrency) {
-                              return (
-                                <>
+                              const toCurrency = toAccount?.currency || fromCurrency
+
+                              const isMultiCurrency =
+                                toAmount != null && fromCurrency !== toCurrency
+
+                              // For same currency, show single amount
+                              if (!isMultiCurrency) {
+                                return (
                                   <BlurredAmount className="font-mono font-semibold text-foreground">
-                                    {formatCurrency(toAmount!, toCurrency)}
+                                    {formatCurrency(fromAmount, fromCurrency)}
                                   </BlurredAmount>
-                                  <p className="text-xs text-muted-foreground">
-                                    <BlurredAmount>{formatCurrency(fromAmount, fromCurrency)}</BlurredAmount>
-                                  </p>
-                                </>
-                              )
-                            }
-                            
-                            if (fromCurrency === mainCurrency) {
+                                )
+                              }
+
+                              // For multi-currency, show main currency as primary
+                              if (toCurrency === mainCurrency) {
+                                return (
+                                  <>
+                                    <BlurredAmount className="font-mono font-semibold text-foreground">
+                                      {formatCurrency(toAmount!, toCurrency)}
+                                    </BlurredAmount>
+                                    <p className="text-xs text-muted-foreground">
+                                      <BlurredAmount>
+                                        {formatCurrency(fromAmount, fromCurrency)}
+                                      </BlurredAmount>
+                                    </p>
+                                  </>
+                                )
+                              }
+
+                              if (fromCurrency === mainCurrency) {
+                                return (
+                                  <>
+                                    <BlurredAmount className="font-mono font-semibold text-foreground">
+                                      {formatCurrency(fromAmount, fromCurrency)}
+                                    </BlurredAmount>
+                                    <p className="text-xs text-muted-foreground">
+                                      <BlurredAmount>
+                                        {formatCurrency(toAmount!, toCurrency)}
+                                      </BlurredAmount>
+                                    </p>
+                                  </>
+                                )
+                              }
+
+                              // Neither is main currency, show from as primary
                               return (
                                 <>
                                   <BlurredAmount className="font-mono font-semibold text-foreground">
                                     {formatCurrency(fromAmount, fromCurrency)}
                                   </BlurredAmount>
                                   <p className="text-xs text-muted-foreground">
-                                    <BlurredAmount>{formatCurrency(toAmount!, toCurrency)}</BlurredAmount>
+                                    <BlurredAmount>
+                                      {formatCurrency(toAmount!, toCurrency)}
+                                    </BlurredAmount>
                                   </p>
                                 </>
                               )
-                            }
-                            
-                            // Neither is main currency, show from as primary
-                            return (
-                              <>
-                                <BlurredAmount className="font-mono font-semibold text-foreground">
-                                  {formatCurrency(fromAmount, fromCurrency)}
-                                </BlurredAmount>
-                                <p className="text-xs text-muted-foreground">
-                                  <BlurredAmount>{formatCurrency(toAmount!, toCurrency)}</BlurredAmount>
-                                </p>
-                              </>
-                            )
-                          })()
-                        ) : (
-                          // Income/Expense/Loans/Investments
-                          <>
-                            <BlurredAmount
-                              className={cn(
-                                'font-mono font-semibold',
-                                transaction.type === 'income' ? 'text-success' : 'text-foreground'
-                              )}
-                            >
-                              {transaction.mainCurrencyAmount != null
-                                ? formatCurrency(transaction.mainCurrencyAmount, mainCurrency)
-                                : formatCurrency(transaction.amount, transaction.currency)}
-                            </BlurredAmount>
-                            {transaction.mainCurrencyAmount != null &&
-                             transaction.currency !== mainCurrency && (
-                              <p className="text-xs text-muted-foreground">
-                                <BlurredAmount>{formatCurrency(transaction.amount, transaction.currency)}</BlurredAmount>
-                              </p>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                            })()
+                          ) : (
+                            // Income/Expense/Loans/Investments
+                            <>
+                              <BlurredAmount
+                                className={cn(
+                                  'font-mono font-semibold',
+                                  transaction.type === 'income' ? 'text-success' : 'text-foreground'
+                                )}
+                              >
+                                {transaction.mainCurrencyAmount != null
+                                  ? formatCurrency(transaction.mainCurrencyAmount, mainCurrency)
+                                  : formatCurrency(transaction.amount, transaction.currency)}
+                              </BlurredAmount>
+                              {transaction.mainCurrencyAmount != null &&
+                                transaction.currency !== mainCurrency && (
+                                  <p className="text-xs text-muted-foreground">
+                                    <BlurredAmount>
+                                      {formatCurrency(transaction.amount, transaction.currency)}
+                                    </BlurredAmount>
+                                  </p>
+                                )}
+                            </>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
             )
           })
         )}

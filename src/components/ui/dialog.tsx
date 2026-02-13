@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { X } from 'lucide-react'
+import * as React from 'react'
+
 import { cn } from '@/utils/cn'
 
 interface DialogContextValue {
@@ -38,11 +39,7 @@ function Dialog({ open = false, onOpenChange, children }: DialogProps) {
     [isControlled, open, internalOpen, handleOpenChange]
   )
 
-  return (
-    <DialogContext.Provider value={contextValue}>
-      {children}
-    </DialogContext.Provider>
-  )
+  return <DialogContext.Provider value={contextValue}>{children}</DialogContext.Provider>
 }
 
 function useDialog() {
@@ -96,9 +93,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     return (
       <div className="fixed inset-0 z-[60]">
-        <div
-          className="fixed inset-0 bg-black/80"
-        />
+        <div className="fixed inset-0 bg-black/80" />
         <div className="fixed inset-x-4 top-[50%] z-[60] translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
           <div
             ref={ref}
@@ -124,58 +119,32 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 )
 DialogContent.displayName = 'DialogContent'
 
-const DialogHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      'flex flex-col space-y-1.5 text-center sm:text-left',
-      className
-    )}
-    {...props}
-  />
+const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)} {...props} />
 )
 DialogHeader.displayName = 'DialogHeader'
 
-const DialogFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      'flex flex-row justify-end gap-2',
-      className
-    )}
-    {...props}
-  />
+const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('flex flex-row justify-end gap-2', className)} {...props} />
 )
 DialogFooter.displayName = 'DialogFooter'
 
-const DialogTitle = React.forwardRef<
-  HTMLHeadingElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h2
-    ref={ref}
-    className={cn(
-      'text-lg font-semibold leading-none tracking-tight',
-      className
-    )}
-    {...props}
-  />
-))
+const DialogTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h2
+      ref={ref}
+      className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+      {...props}
+    />
+  )
+)
 DialogTitle.displayName = 'DialogTitle'
 
 const DialogDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn('text-base sm:text-sm text-muted-foreground', className)}
-    {...props}
-  />
+  <p ref={ref} className={cn('text-base sm:text-sm text-muted-foreground', className)} {...props} />
 ))
 DialogDescription.displayName = 'DialogDescription'
 

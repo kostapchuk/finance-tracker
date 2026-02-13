@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { ColorPicker } from '@/components/ui/color-picker'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ColorPicker } from '@/components/ui/color-picker'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Toggle } from '@/components/ui/toggle'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { categoryRepo } from '@/database/repositories'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
 import type { Category } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
 
 interface CategoryFormProps {
@@ -118,12 +131,17 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
           {budget && (
             <div className="space-y-2">
               <Label htmlFor="budgetPeriod">{t('budgetPeriod')}</Label>
-              <Select value={budgetPeriod} onValueChange={(v) => setBudgetPeriod(v as typeof budgetPeriod)}>
+              <Select
+                value={budgetPeriod}
+                onValueChange={(v) => setBudgetPeriod(v as typeof budgetPeriod)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder={t('selectPeriod')}>
-                    {budgetPeriod === 'weekly' ? t('weekly') :
-                     budgetPeriod === 'monthly' ? t('monthly') :
-                     t('yearly')}
+                    {budgetPeriod === 'weekly'
+                      ? t('weekly')
+                      : budgetPeriod === 'monthly'
+                        ? t('monthly')
+                        : t('yearly')}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

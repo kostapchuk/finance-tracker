@@ -30,3 +30,4 @@ dist-ssr
 /playwright/.cache/
 .vercel
 .env*.local
+coverage/

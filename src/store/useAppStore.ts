@@ -1,6 +1,24 @@
 import { create } from 'zustand'
-import type { Account, IncomeSource, Category, Transaction, Investment, Loan, CustomCurrency } from '@/database/types'
-import { accountRepo, incomeSourceRepo, categoryRepo, transactionRepo, investmentRepo, loanRepo, customCurrencyRepo, settingsRepo } from '@/database/repositories'
+
+import {
+  accountRepo,
+  incomeSourceRepo,
+  categoryRepo,
+  transactionRepo,
+  investmentRepo,
+  loanRepo,
+  customCurrencyRepo,
+  settingsRepo,
+} from '@/database/repositories'
+import type {
+  Account,
+  IncomeSource,
+  Category,
+  Transaction,
+  Investment,
+  Loan,
+  CustomCurrency,
+} from '@/database/types'
 
 // Guard to prevent duplicate data initialization (React StrictMode calls effects twice)
 let isInitializing = false
@@ -73,8 +91,10 @@ export const useAppStore = create<AppState>((set) => ({
   onboardingStep: 0,
 
   setActiveView: (view) => set({ activeView: view }),
-  navigateToHistoryWithCategory: (categoryId) => set({ historyCategoryFilter: categoryId, activeView: 'history' }),
-  navigateToHistoryWithAccount: (accountId) => set({ historyAccountFilter: accountId, activeView: 'history' }),
+  navigateToHistoryWithCategory: (categoryId) =>
+    set({ historyCategoryFilter: categoryId, activeView: 'history' }),
+  navigateToHistoryWithAccount: (accountId) =>
+    set({ historyAccountFilter: accountId, activeView: 'history' }),
   setSelectedMonth: (date) => set({ selectedMonth: date }),
 
   setMainCurrency: async (currency: string) => {
@@ -94,7 +114,16 @@ export const useAppStore = create<AppState>((set) => ({
 
     set({ isLoading: true })
     try {
-      const [accounts, incomeSources, categories, transactions, investments, loans, customCurrencies, settings] = await Promise.all([
+      const [
+        accounts,
+        incomeSources,
+        categories,
+        transactions,
+        investments,
+        loans,
+        customCurrencies,
+        settings,
+      ] = await Promise.all([
         accountRepo.getAll(),
         incomeSourceRepo.getAll(),
         categoryRepo.getAll(),
@@ -109,8 +138,10 @@ export const useAppStore = create<AppState>((set) => ({
       const blurFinancialFigures = settings?.blurFinancialFigures || false
 
       // Check if this is a new user (no data in IndexedDB)
-      const hasExistingData = accounts.length > 0 || transactions.length > 0 || incomeSources.length > 0
-      const onboardingCompleted = localStorage.getItem('finance-tracker-onboarding-completed') === 'true'
+      const hasExistingData =
+        accounts.length > 0 || transactions.length > 0 || incomeSources.length > 0
+      const onboardingCompleted =
+        localStorage.getItem('finance-tracker-onboarding-completed') === 'true'
 
       if (!hasExistingData && !onboardingCompleted) {
         // New user - create seed data and start onboarding

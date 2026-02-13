@@ -35,14 +35,14 @@ export function setCustomCurrencies(currencies: CurrencyInfo[]) {
 
 export function getAllCurrencies(): CurrencyInfo[] {
   // Custom currencies take precedence (appear first and can override common)
-  const customCodes = new Set(customCurrenciesCache.map(c => c.code))
-  const filteredCommon = COMMON_CURRENCIES.filter(c => !customCodes.has(c.code))
+  const customCodes = new Set(customCurrenciesCache.map((c) => c.code))
+  const filteredCommon = COMMON_CURRENCIES.filter((c) => !customCodes.has(c.code))
   return [...customCurrenciesCache, ...filteredCommon]
 }
 
 export function formatCurrency(amount: number, currency: string): string {
   const allCurrencies = getAllCurrencies()
-  const currencyInfo = allCurrencies.find(c => c.code === currency)
+  const currencyInfo = allCurrencies.find((c) => c.code === currency)
   const symbol = currencyInfo?.symbol || currency
 
   if (currency === 'BTC' || currency === 'ETH') {
@@ -58,7 +58,7 @@ export function formatCurrency(amount: number, currency: string): string {
 
 export function getCurrencySymbol(currency: string): string {
   const allCurrencies = getAllCurrencies()
-  const currencyInfo = allCurrencies.find(c => c.code === currency)
+  const currencyInfo = allCurrencies.find((c) => c.code === currency)
   return currencyInfo?.symbol || currency
 }
 

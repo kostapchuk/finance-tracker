@@ -1,9 +1,17 @@
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useLanguage } from '@/hooks/useLanguage'
-import type { Account } from '@/database/types'
+
 import type { SourceAccountInfo } from '../types'
+
+import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import type { Account } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface ImportAccountMappingProps {
   uniqueAccounts: SourceAccountInfo[]
@@ -24,7 +32,7 @@ export function ImportAccountMapping({
 }: ImportAccountMappingProps) {
   const { t } = useLanguage()
 
-  const mappedCount = Array.from(mapping.values()).filter((v) => v !== null).length
+  const mappedCount = [...mapping.values()].filter((v) => v !== null).length
   const allMapped = mappedCount === uniqueAccounts.length
   const canProceed = allMapped
 
@@ -67,7 +75,9 @@ export function ImportAccountMapping({
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{sourceAccount.name}</span>
-                    <span className="text-xs text-muted-foreground">({sourceAccount.currency})</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({sourceAccount.currency})
+                    </span>
                     {isMapped ? (
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                     ) : (
@@ -83,9 +93,7 @@ export function ImportAccountMapping({
                 >
                   <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder={t('selectAccount')}>
-                      {mappedId
-                        ? accounts.find((a) => a.id === mappedId)?.name
-                        : undefined}
+                      {mappedId ? accounts.find((a) => a.id === mappedId)?.name : undefined}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -102,7 +110,9 @@ export function ImportAccountMapping({
         </div>
 
         {!allMapped && (
-          <p className="text-sm text-destructive text-center">{t('importAllAccountsMustBeMapped')}</p>
+          <p className="text-sm text-destructive text-center">
+            {t('importAllAccountsMustBeMapped')}
+          </p>
         )}
       </div>
 

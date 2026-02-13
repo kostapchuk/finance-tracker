@@ -8,9 +8,5 @@ interface BlurredAmountProps {
 
 export function BlurredAmount({ children, className }: BlurredAmountProps) {
   const blur = useAppStore((state) => state.blurFinancialFigures)
-  return (
-    <span className={cn(blur && 'blur-sm select-none', className)}>
-      {children}
-    </span>
-  )
+  return <span className={cn(blur && 'blur-sm select-none', className)}>{children}</span>
 }

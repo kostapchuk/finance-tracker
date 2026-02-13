@@ -1,13 +1,14 @@
+import type { BudgetOkRow, AccountBalanceDelta, ImportResult, SourceAccountInfo } from '../types'
+
 import { db } from '@/database/db'
 import type { Transaction } from '@/database/types'
-import type { BudgetOkRow, AccountBalanceDelta, ImportResult, SourceAccountInfo } from '../types'
 
 interface ExecuteImportParams {
   rows: BudgetOkRow[]
   accountMapping: Map<string, number>
   categoryMapping: Map<string, number>
   incomeSourceMapping: Map<string, number>
-  accounts: Array<{ id?: number; currency: string }>
+  accounts: { id?: number; currency: string }[]
 }
 
 /**

@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { type Language, type TranslationKey, translations, getStoredLanguage, setStoredLanguage } from '@/utils/i18n'
+
+import {
+  type Language,
+  type TranslationKey,
+  translations,
+  getStoredLanguage,
+  setStoredLanguage,
+} from '@/utils/i18n'
 
 // Global subscribers for language changes
 const subscribers = new Set<() => void>()
@@ -7,7 +14,7 @@ const subscribers = new Set<() => void>()
 let currentLang: Language = 'ru'
 
 // Initialize from localStorage
-if (typeof window !== 'undefined') {
+if (globalThis.window !== undefined) {
   currentLang = getStoredLanguage()
   document.documentElement.lang = currentLang
 }
@@ -28,7 +35,7 @@ export function useLanguage() {
     setStoredLanguage(lang)
     document.documentElement.lang = lang
     // Notify all subscribers
-    subscribers.forEach(fn => fn())
+    subscribers.forEach((fn) => fn())
   }, [])
 
   const t = useCallback((key: TranslationKey): string => {

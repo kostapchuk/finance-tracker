@@ -1,13 +1,24 @@
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Wallet,
+  Building2,
+  Bitcoin,
+  TrendingUp,
+  CreditCard,
+} from 'lucide-react'
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Wallet, Building2, Bitcoin, TrendingUp, CreditCard } from 'lucide-react'
+
+import { AccountForm } from './AccountForm'
+
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { useAppStore } from '@/store/useAppStore'
 import { accountRepo } from '@/database/repositories'
-import { AccountForm } from './AccountForm'
-import { formatCurrency } from '@/utils/currency'
 import type { Account, AccountType } from '@/database/types'
+import { useAppStore } from '@/store/useAppStore'
+import { formatCurrency } from '@/utils/currency'
 
 const typeIcons: Record<AccountType, React.ReactNode> = {
   cash: <Wallet className="h-4 w-4" />,
@@ -49,13 +60,16 @@ export function AccountList() {
     setEditingAccount(null)
   }
 
-  const totalByType = accounts.reduce((acc, account) => {
-    if (!acc[account.currency]) {
-      acc[account.currency] = 0
-    }
-    acc[account.currency] += account.balance
-    return acc
-  }, {} as Record<string, number>)
+  const totalByType = accounts.reduce(
+    (acc, account) => {
+      if (!acc[account.currency]) {
+        acc[account.currency] = 0
+      }
+      acc[account.currency] += account.balance
+      return acc
+    },
+    {} as Record<string, number>
+  )
 
   return (
     <div className="space-y-6">
@@ -154,11 +168,7 @@ export function AccountList() {
         </div>
       )}
 
-      <AccountForm
-        account={editingAccount}
-        open={formOpen}
-        onClose={handleCloseForm}
-      />
+      <AccountForm account={editingAccount} open={formOpen} onClose={handleCloseForm} />
     </div>
   )
 }

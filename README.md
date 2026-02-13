@@ -33,7 +33,13 @@ npm ci
 |---------|-------------|
 | `npm run dev` | Start dev server at localhost:5173 |
 | `npm run build` | Type-check and build for production |
-| `npm run lint` | Run ESLint |
+| `npm run lint` | Run ESLint with accessibility checks |
+| `npm run format` | Format code with Prettier |
+| `npm run format:check` | Check code formatting |
+| `npm run test` | Run unit tests with Vitest |
+| `npm run test:watch` | Run unit tests in watch mode |
+| `npm run test:coverage` | Run unit tests with coverage report |
+| `npm run type-coverage` | Check TypeScript type coverage (90% threshold) |
 | `npm run preview` | Preview production build locally |
 | `npm run test:e2e` | Run Playwright E2E tests |
 | `npm run test:e2e:mobile` | Run E2E tests with mobile viewport |
@@ -50,7 +56,8 @@ npm ci
 | Styling | Tailwind CSS 4 |
 | Drag & Drop | @dnd-kit |
 | Icons | lucide-react |
-| Testing | Playwright |
+| Unit Testing | Vitest + Testing Library |
+| E2E Testing | Playwright |
 
 ### Architecture
 
@@ -90,12 +97,45 @@ For detailed architecture, data types, and code conventions, see [CLAUDE.md](./C
 
 GitHub Actions automatically runs on every push to `main`:
 
-1. **Lint** - ESLint checks
-2. **Build** - TypeScript compilation + Vite build
-3. **E2E Tests** - Playwright tests on mobile viewport
-4. **Deploy** - Automatic deployment to Vercel
+```
+┌─────────────┐   ┌──────────────┐   ┌─────────────┐   ┌─────────────┐   ┌──────────┐
+│    Lint     │   │  Unit Tests  │   │    Build    │   │  E2E Tests  │   │  Deploy  │
+│  ─────────  │   │  ──────────  │   │  ─────────  │   │  ─────────  │   │  ──────  │
+│  ESLint     │──▶│  Vitest      │──▶│  TypeScript │──▶│  Playwright │──▶│  Vercel  │
+│  Prettier   │   │  Coverage    │   │  Vite       │   │             │   │          │
+│  jsx-a11y   │   │              │   │  npm audit  │   │             │   │          │
+└─────────────┘   └──────────────┘   └─────────────┘   └─────────────┘   └──────────┘
+```
 
-Pull requests run lint, build, and tests without deploying.
+#### Quality Gates
+
+| Check | Tool | Description |
+|-------|------|-------------|
+| Linting | ESLint + jsx-a11y + unicorn | Code quality, accessibility, best practices |
+| Formatting | Prettier | Consistent code style |
+| Import Order | eslint-plugin-import | Enforced import ordering |
+| Unit Tests | Vitest | Component and utility tests with 20% coverage threshold |
+| Type Check | TypeScript (strict) | Static type checking with `noImplicitReturns` |
+| Type Coverage | type-coverage | 90% type coverage requirement |
+| Security Audit | npm audit (moderate) | Dependency vulnerability scan |
+| E2E Tests | Playwright | End-to-end testing on mobile viewport |
+| CodeQL | GitHub CodeQL (security-and-quality) | Advanced security analysis |
+| Dependency Review | GitHub | License and vulnerability checks |
+| Lighthouse | Lighthouse CI | Performance (85%), accessibility (95%), PWA (70%) |
+| Scorecard | OpenSSF | Security best practices assessment |
+
+#### Workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `test-and-deploy.yml` | Push/PR to main | Main CI/CD pipeline |
+| `security.yml` | PR to main, Weekly | Security audits and Lighthouse |
+| `codeql.yml` | Push/PR to main, Weekly | Advanced security analysis |
+| `scorecard.yml` | Push to main, Weekly | OpenSSF security scorecard |
+| `actionlint.yml` | Workflow file changes | Lint GitHub Actions |
+| `dependabot.yml` | Weekly | Dependency updates |
+
+Pull requests run all checks except deployment. Only main branch merges trigger deployment.
 
 ### Manual Deployment
 

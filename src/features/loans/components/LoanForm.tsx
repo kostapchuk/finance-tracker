@@ -1,17 +1,30 @@
+import { ArrowRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
+
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { loanRepo } from '@/database/repositories'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
 import type { Loan, LoanType } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 import { getAllCurrencies } from '@/utils/currency'
 import { formatDateForInput } from '@/utils/date'
-import { ArrowRight } from 'lucide-react'
 
 export interface LoanFormData {
   type: LoanType
@@ -47,7 +60,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   const [accountAmount, setAccountAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
 
-  const selectedAccount = accountId ? accounts.find(a => a.id === parseInt(accountId)) : null
+  const selectedAccount = accountId ? accounts.find((a) => a.id === parseInt(accountId)) : null
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
 
   useEffect(() => {
@@ -172,7 +185,9 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger>
                 <SelectValue placeholder={t('selectAccount')}>
-                  {selectedAccount ? `${selectedAccount.name} (${selectedAccount.currency})` : undefined}
+                  {selectedAccount
+                    ? `${selectedAccount.name} (${selectedAccount.currency})`
+                    : undefined}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -238,7 +253,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
                 <Select value={currency} onValueChange={setCurrency}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('currency')}>
-                      {getAllCurrencies().find(c => c.code === currency)?.symbol} {currency}
+                      {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -260,7 +275,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
               <Select value={currency} onValueChange={setCurrency}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('currency')}>
-                    {getAllCurrencies().find(c => c.code === currency)?.symbol} {currency}
+                    {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

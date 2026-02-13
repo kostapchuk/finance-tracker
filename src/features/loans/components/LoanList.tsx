@@ -1,16 +1,26 @@
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Handshake,
+  ArrowUpRight,
+  ArrowDownLeft,
+  CreditCard,
+} from 'lucide-react'
 import { useState, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Handshake, ArrowUpRight, ArrowDownLeft, CreditCard } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAppStore } from '@/store/useAppStore'
-import { loanRepo } from '@/database/repositories'
+
 import { LoanForm } from './LoanForm'
 import { PaymentDialog } from './PaymentDialog'
+
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { loanRepo } from '@/database/repositories'
+import type { Loan } from '@/database/types'
+import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
-import type { Loan } from '@/database/types'
 
 const statusConfig = {
   active: { label: 'Active', variant: 'default' as const },
@@ -79,9 +89,7 @@ export function LoanList() {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">Loans</h3>
-          <p className="text-sm text-muted-foreground">
-            Track money you've lent or borrowed
-          </p>
+          <p className="text-sm text-muted-foreground">Track money you've lent or borrowed</p>
         </div>
         <Button onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -255,11 +263,7 @@ export function LoanList() {
       </Tabs>
 
       <LoanForm loan={editingLoan} open={formOpen} onClose={handleCloseForm} />
-      <PaymentDialog
-        loan={paymentLoan}
-        open={!!paymentLoan}
-        onClose={() => setPaymentLoan(null)}
-      />
+      <PaymentDialog loan={paymentLoan} open={!!paymentLoan} onClose={() => setPaymentLoan(null)} />
     </div>
   )
 }

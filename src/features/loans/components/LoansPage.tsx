@@ -1,15 +1,17 @@
-import { useState, useMemo } from 'react'
 import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
-import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
-import { formatCurrency, getAmountColorClass } from '@/utils/currency'
-import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { useState, useMemo } from 'react'
+
 import { LoanForm } from './LoanForm'
-import { PaymentDialog } from './PaymentDialog'
 import type { LoanFormData } from './LoanForm'
+import { PaymentDialog } from './PaymentDialog'
+
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { Button } from '@/components/ui/button'
+import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 
 export function LoansPage() {
   const loans = useAppStore((state) => state.loans)
@@ -61,7 +63,8 @@ export function LoansPage() {
 
     const receivedByCurrency: Record<string, number> = {}
     activeReceived.forEach((l) => {
-      receivedByCurrency[l.currency] = (receivedByCurrency[l.currency] || 0) + (l.amount - l.paidAmount)
+      receivedByCurrency[l.currency] =
+        (receivedByCurrency[l.currency] || 0) + (l.amount - l.paidAmount)
     })
 
     return { givenByCurrency, receivedByCurrency }
@@ -93,7 +96,7 @@ export function LoansPage() {
         dueDate: data.dueDate,
       })
 
-      const account = accounts.find(a => a.id === data.accountId)
+      const account = accounts.find((a) => a.id === data.accountId)
       // Amount to use for account balance update
       const balanceAmount = data.accountAmount ?? data.amount
 
@@ -103,7 +106,8 @@ export function LoansPage() {
       await accountRepo.updateBalance(data.accountId, balanceChange)
 
       // Create transaction record
-      const transactionType = data.type === 'given' ? 'loan_given' as const : 'loan_received' as const
+      const transactionType =
+        data.type === 'given' ? ('loan_given' as const) : ('loan_received' as const)
       await transactionRepo.create({
         type: transactionType,
         amount: balanceAmount,
@@ -156,7 +160,10 @@ export function LoansPage() {
               </BlurredAmount>
             ) : (
               Object.entries(totals.givenByCurrency).map(([currency, amount]) => (
-                <BlurredAmount key={currency} className={`text-xl font-bold block ${getAmountColorClass(amount)}`}>
+                <BlurredAmount
+                  key={currency}
+                  className={`text-xl font-bold block ${getAmountColorClass(amount)}`}
+                >
                   {formatCurrency(amount, currency)}
                 </BlurredAmount>
               ))
@@ -175,7 +182,10 @@ export function LoansPage() {
               </BlurredAmount>
             ) : (
               Object.entries(totals.receivedByCurrency).map(([currency, amount]) => (
-                <BlurredAmount key={currency} className={`text-xl font-bold block ${amount === 0 ? 'text-foreground' : 'text-destructive'}`}>
+                <BlurredAmount
+                  key={currency}
+                  className={`text-xl font-bold block ${amount === 0 ? 'text-foreground' : 'text-destructive'}`}
+                >
                   {formatCurrency(amount, currency)}
                 </BlurredAmount>
               ))
@@ -242,9 +252,7 @@ export function LoansPage() {
         {receivedExpanded && (
           <div className="space-y-2 mt-2">
             {activeReceived.length === 0 ? (
-              <p className="text-center py-4 text-muted-foreground text-sm">
-                {t('noActiveDebts')}
-              </p>
+              <p className="text-center py-4 text-muted-foreground text-sm">{t('noActiveDebts')}</p>
             ) : (
               activeReceived.map((loan) => (
                 <LoanCard key={loan.id} loan={loan} onClick={() => handleLoanClick(loan)} />
@@ -336,7 +344,10 @@ function LoanCard({ loan, onClick }: { loan: Loan; onClick?: () => void }) {
         />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
-        <span><BlurredAmount>{formatCurrency(loan.paidAmount, loan.currency)}</BlurredAmount> {t('paid').toLowerCase()}</span>
+        <span>
+          <BlurredAmount>{formatCurrency(loan.paidAmount, loan.currency)}</BlurredAmount>{' '}
+          {t('paid').toLowerCase()}
+        </span>
         <BlurredAmount>{formatCurrency(loan.amount, loan.currency)}</BlurredAmount>
       </div>
     </button>

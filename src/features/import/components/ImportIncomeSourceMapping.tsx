@@ -1,8 +1,15 @@
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useLanguage } from '@/hooks/useLanguage'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { IncomeSource } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface ImportIncomeSourceMappingProps {
   uniqueIncomeSources: string[]
@@ -23,7 +30,7 @@ export function ImportIncomeSourceMapping({
 }: ImportIncomeSourceMappingProps) {
   const { t } = useLanguage()
 
-  const mappedCount = Array.from(mapping.values()).filter((v) => v !== null).length
+  const mappedCount = [...mapping.values()].filter((v) => v !== null).length
   const allMapped = mappedCount === uniqueIncomeSources.length
   const canProceed = allMapped
 
@@ -104,9 +111,7 @@ export function ImportIncomeSourceMapping({
                 >
                   <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder={t('importSelectIncomeSource')}>
-                      {mappedId
-                        ? incomeSources.find((s) => s.id === mappedId)?.name
-                        : undefined}
+                      {mappedId ? incomeSources.find((s) => s.id === mappedId)?.name : undefined}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>

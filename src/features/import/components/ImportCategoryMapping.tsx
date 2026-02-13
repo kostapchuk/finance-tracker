@@ -1,8 +1,15 @@
 import { AlertCircle, CheckCircle2 } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useLanguage } from '@/hooks/useLanguage'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { Category } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface ImportCategoryMappingProps {
   uniqueCategories: string[]
@@ -23,7 +30,7 @@ export function ImportCategoryMapping({
 }: ImportCategoryMappingProps) {
   const { t } = useLanguage()
 
-  const mappedCount = Array.from(mapping.values()).filter((v) => v !== null).length
+  const mappedCount = [...mapping.values()].filter((v) => v !== null).length
   const allMapped = mappedCount === uniqueCategories.length
   const canProceed = allMapped
 
@@ -104,9 +111,7 @@ export function ImportCategoryMapping({
                 >
                   <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder={t('importSelectCategory')}>
-                      {mappedId
-                        ? categories.find((c) => c.id === mappedId)?.name
-                        : undefined}
+                      {mappedId ? categories.find((c) => c.id === mappedId)?.name : undefined}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -129,7 +134,9 @@ export function ImportCategoryMapping({
         </div>
 
         {!allMapped && (
-          <p className="text-sm text-destructive text-center">{t('importAllCategoriesMustBeMapped')}</p>
+          <p className="text-sm text-destructive text-center">
+            {t('importAllCategoriesMustBeMapped')}
+          </p>
         )}
       </div>
 

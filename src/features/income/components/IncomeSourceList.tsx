@@ -1,11 +1,13 @@
-import { useState } from 'react'
 import { Plus, Pencil, Trash2, DollarSign } from 'lucide-react'
+import { useState } from 'react'
+
+import { IncomeSourceForm } from './IncomeSourceForm'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAppStore } from '@/store/useAppStore'
 import { incomeSourceRepo } from '@/database/repositories'
-import { IncomeSourceForm } from './IncomeSourceForm'
 import type { IncomeSource } from '@/database/types'
+import { useAppStore } from '@/store/useAppStore'
 
 export function IncomeSourceList() {
   const incomeSources = useAppStore((state) => state.incomeSources)
@@ -36,9 +38,7 @@ export function IncomeSourceList() {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">Income Sources</h3>
-          <p className="text-sm text-muted-foreground">
-            Track where your money comes from
-          </p>
+          <p className="text-sm text-muted-foreground">Track where your money comes from</p>
         </div>
         <Button onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -104,11 +104,7 @@ export function IncomeSourceList() {
         </div>
       )}
 
-      <IncomeSourceForm
-        source={editingSource}
-        open={formOpen}
-        onClose={handleCloseForm}
-      />
+      <IncomeSourceForm source={editingSource} open={formOpen} onClose={handleCloseForm} />
     </div>
   )
 }

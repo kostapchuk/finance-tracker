@@ -1,14 +1,16 @@
-import { useState } from 'react'
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react'
+import { useState } from 'react'
+
+import { CategoryForm } from './CategoryForm'
+
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { useAppStore } from '@/store/useAppStore'
 import { categoryRepo } from '@/database/repositories'
-import { useLanguage } from '@/hooks/useLanguage'
-import { formatCurrency } from '@/utils/currency'
-import { CategoryForm } from './CategoryForm'
 import type { Category } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { formatCurrency } from '@/utils/currency'
 
 export function CategoryList() {
   const categories = useAppStore((state) => state.categories)
@@ -105,7 +107,8 @@ export function CategoryList() {
               <CardContent>
                 {category.budget ? (
                   <Badge variant="secondary">
-                    {t('budget')}: {formatCurrency(category.budget, mainCurrency)}/{category.budgetPeriod}
+                    {t('budget')}: {formatCurrency(category.budget, mainCurrency)}/
+                    {category.budgetPeriod}
                   </Badge>
                 ) : (
                   <Badge variant="outline">{t('noBudget')}</Badge>
@@ -116,11 +119,7 @@ export function CategoryList() {
         </div>
       )}
 
-      <CategoryForm
-        category={editingCategory}
-        open={formOpen}
-        onClose={handleCloseForm}
-      />
+      <CategoryForm category={editingCategory} open={formOpen} onClose={handleCloseForm} />
     </div>
   )
 }

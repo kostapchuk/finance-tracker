@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useAppStore } from '@/store/useAppStore'
+
 import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 
 export function MonthSelector() {
   const selectedMonth = useAppStore((state) => state.selectedMonth)
@@ -22,7 +23,7 @@ export function MonthSelector() {
   const formatMonth = (date: Date) => {
     return date.toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     })
   }
 
@@ -43,9 +44,7 @@ export function MonthSelector() {
       >
         <ChevronLeft className="h-5 w-5" />
       </button>
-      <h2 className="text-lg font-semibold">
-        {formatMonth(selectedMonth)}
-      </h2>
+      <h2 className="text-lg font-semibold">{formatMonth(selectedMonth)}</h2>
       <button
         onClick={goToNextMonth}
         disabled={isCurrentMonth()}

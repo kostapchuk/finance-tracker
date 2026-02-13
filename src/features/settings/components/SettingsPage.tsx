@@ -1,39 +1,95 @@
-import { useState, useRef, useCallback } from 'react'
-import { version } from '../../../../package.json'
 import {
-  Wallet, Tags, DollarSign, Download, Upload, Trash2, ChevronRight,
-  Plus, Pencil, AlertTriangle, Coins, Globe, GripVertical, EyeOff, FileSpreadsheet, RefreshCw
-} from 'lucide-react'
-import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
-import { db } from '@/database/db'
-import { accountRepo, categoryRepo, incomeSourceRepo, customCurrencyRepo } from '@/database/repositories'
-import { formatCurrency, getAllCurrencies } from '@/utils/currency'
+import {
+  Wallet,
+  Tags,
+  DollarSign,
+  Download,
+  Upload,
+  Trash2,
+  ChevronRight,
+  Plus,
+  Pencil,
+  AlertTriangle,
+  Coins,
+  Globe,
+  GripVertical,
+  EyeOff,
+  FileSpreadsheet,
+  RefreshCw,
+} from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+
+import { version } from '../../../../package.json'
+
+import { CurrencyForm } from './CurrencyForm'
+
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
+import { db } from '@/database/db'
+import {
+  accountRepo,
+  categoryRepo,
+  incomeSourceRepo,
+  customCurrencyRepo,
+} from '@/database/repositories'
+import type { Account, Category, IncomeSource, CustomCurrency } from '@/database/types'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
+import {
+  BudgetOkImportWizard,
+  type SavedImportState,
+} from '@/features/import/components/BudgetOkImportWizard'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
-import { CurrencyForm } from './CurrencyForm'
-import { BudgetOkImportWizard, type SavedImportState } from '@/features/import/components/BudgetOkImportWizard'
-import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
-import type { Account, Category, IncomeSource, CustomCurrency } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { formatCurrency, getAllCurrencies } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
 
 type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | null
 
 export function SettingsPage() {
   const {
-    accounts, incomeSources, categories, transactions, investments, loans, customCurrencies,
-    mainCurrency, setMainCurrency,
-    blurFinancialFigures, setBlurFinancialFigures,
-    loadAllData, refreshAccounts, refreshCategories, refreshIncomeSources, refreshCustomCurrencies
+    accounts,
+    incomeSources,
+    categories,
+    transactions,
+    investments,
+    loans,
+    customCurrencies,
+    mainCurrency,
+    setMainCurrency,
+    blurFinancialFigures,
+    setBlurFinancialFigures,
+    loadAllData,
+    refreshAccounts,
+    refreshCategories,
+    refreshIncomeSources,
+    refreshCustomCurrencies,
   } = useAppStore()
   const { language, setLanguage, t } = useLanguage()
   const { needRefresh, updateServiceWorker } = useServiceWorker()
@@ -63,30 +119,35 @@ export function SettingsPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
   )
 
-  const handleReorder = useCallback(async (
-    event: DragEndEvent,
-    items: { id?: number }[],
-    repo: { update: (id: number, updates: Record<string, unknown>) => Promise<unknown> },
-    refresh: () => Promise<void>,
-  ) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
+  const handleReorder = useCallback(
+    async (
+      event: DragEndEvent,
+      items: { id?: number }[],
+      repo: { update: (id: number, updates: Record<string, unknown>) => Promise<unknown> },
+      refresh: () => Promise<void>
+    ) => {
+      const { active, over } = event
+      if (!over || active.id === over.id) return
 
-    const oldIndex = items.findIndex(i => i.id === active.id)
-    const newIndex = items.findIndex(i => i.id === over.id)
-    if (oldIndex === -1 || newIndex === -1) return
+      const oldIndex = items.findIndex((i) => i.id === active.id)
+      const newIndex = items.findIndex((i) => i.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
 
-    // Reorder array
-    const reordered = [...items]
-    const [moved] = reordered.splice(oldIndex, 1)
-    reordered.splice(newIndex, 0, moved)
+      // Reorder array
+      const reordered = [...items]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
 
-    // Update sortOrder for all items
-    await Promise.all(reordered.map((item, index) =>
-      item.id ? repo.update(item.id, { sortOrder: index }) : Promise.resolve()
-    ))
-    await refresh()
-  }, [])
+      // Update sortOrder for all items
+      await Promise.all(
+        reordered.map((item, index) =>
+          item.id ? repo.update(item.id, { sortOrder: index }) : Promise.resolve()
+        )
+      )
+      await refresh()
+    },
+    []
+  )
 
   // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -98,16 +159,21 @@ export function SettingsPage() {
       const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
-        accounts, incomeSources, categories, transactions, investments, loans,
+        accounts,
+        incomeSources,
+        categories,
+        transactions,
+        investments,
+        loans,
       }
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `finance-tracker-backup-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
+      document.body.append(a)
       a.click()
-      document.body.removeChild(a)
+      a.remove()
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Export failed:', error)
@@ -132,60 +198,84 @@ export function SettingsPage() {
         throw new Error('Invalid backup file format')
       }
 
-      await db.transaction('rw', [db.accounts, db.incomeSources, db.categories, db.transactions, db.investments, db.loans], async () => {
-        await db.accounts.clear()
-        await db.incomeSources.clear()
-        await db.categories.clear()
-        await db.transactions.clear()
-        await db.investments.clear()
-        await db.loans.clear()
+      await db.transaction(
+        'rw',
+        [db.accounts, db.incomeSources, db.categories, db.transactions, db.investments, db.loans],
+        async () => {
+          await db.accounts.clear()
+          await db.incomeSources.clear()
+          await db.categories.clear()
+          await db.transactions.clear()
+          await db.investments.clear()
+          await db.loans.clear()
 
-        if (data.accounts?.length) {
-          await db.accounts.bulkAdd(data.accounts.map((a: Record<string, unknown>) => ({
-            ...a, id: undefined,
-            createdAt: new Date(a.createdAt as string),
-            updatedAt: new Date(a.updatedAt as string),
-          })))
+          if (data.accounts?.length) {
+            await db.accounts.bulkAdd(
+              data.accounts.map((a: Record<string, unknown>) => ({
+                ...a,
+                id: undefined,
+                createdAt: new Date(a.createdAt as string),
+                updatedAt: new Date(a.updatedAt as string),
+              }))
+            )
+          }
+          if (data.incomeSources?.length) {
+            await db.incomeSources.bulkAdd(
+              data.incomeSources.map((s: Record<string, unknown>) => ({
+                ...s,
+                id: undefined,
+                createdAt: new Date(s.createdAt as string),
+                updatedAt: new Date(s.updatedAt as string),
+              }))
+            )
+          }
+          if (data.categories?.length) {
+            await db.categories.bulkAdd(
+              data.categories.map((c: Record<string, unknown>) => ({
+                ...c,
+                id: undefined,
+                createdAt: new Date(c.createdAt as string),
+                updatedAt: new Date(c.updatedAt as string),
+              }))
+            )
+          }
+          if (data.transactions?.length) {
+            await db.transactions.bulkAdd(
+              data.transactions.map((t: Record<string, unknown>) => ({
+                ...t,
+                id: undefined,
+                date: new Date(t.date as string),
+                createdAt: new Date(t.createdAt as string),
+                updatedAt: new Date(t.updatedAt as string),
+              }))
+            )
+          }
+          if (data.investments?.length) {
+            await db.investments.bulkAdd(
+              data.investments.map((i: Record<string, unknown>) => ({
+                ...i,
+                id: undefined,
+                lastPriceUpdate: i.lastPriceUpdate
+                  ? new Date(i.lastPriceUpdate as string)
+                  : undefined,
+                createdAt: new Date(i.createdAt as string),
+                updatedAt: new Date(i.updatedAt as string),
+              }))
+            )
+          }
+          if (data.loans?.length) {
+            await db.loans.bulkAdd(
+              data.loans.map((l: Record<string, unknown>) => ({
+                ...l,
+                id: undefined,
+                dueDate: l.dueDate ? new Date(l.dueDate as string) : undefined,
+                createdAt: new Date(l.createdAt as string),
+                updatedAt: new Date(l.updatedAt as string),
+              }))
+            )
+          }
         }
-        if (data.incomeSources?.length) {
-          await db.incomeSources.bulkAdd(data.incomeSources.map((s: Record<string, unknown>) => ({
-            ...s, id: undefined,
-            createdAt: new Date(s.createdAt as string),
-            updatedAt: new Date(s.updatedAt as string),
-          })))
-        }
-        if (data.categories?.length) {
-          await db.categories.bulkAdd(data.categories.map((c: Record<string, unknown>) => ({
-            ...c, id: undefined,
-            createdAt: new Date(c.createdAt as string),
-            updatedAt: new Date(c.updatedAt as string),
-          })))
-        }
-        if (data.transactions?.length) {
-          await db.transactions.bulkAdd(data.transactions.map((t: Record<string, unknown>) => ({
-            ...t, id: undefined,
-            date: new Date(t.date as string),
-            createdAt: new Date(t.createdAt as string),
-            updatedAt: new Date(t.updatedAt as string),
-          })))
-        }
-        if (data.investments?.length) {
-          await db.investments.bulkAdd(data.investments.map((i: Record<string, unknown>) => ({
-            ...i, id: undefined,
-            lastPriceUpdate: i.lastPriceUpdate ? new Date(i.lastPriceUpdate as string) : undefined,
-            createdAt: new Date(i.createdAt as string),
-            updatedAt: new Date(i.updatedAt as string),
-          })))
-        }
-        if (data.loans?.length) {
-          await db.loans.bulkAdd(data.loans.map((l: Record<string, unknown>) => ({
-            ...l, id: undefined,
-            dueDate: l.dueDate ? new Date(l.dueDate as string) : undefined,
-            createdAt: new Date(l.createdAt as string),
-            updatedAt: new Date(l.updatedAt as string),
-          })))
-        }
-      })
+      )
 
       await loadAllData()
       setImportSuccess(true)
@@ -206,14 +296,18 @@ export function SettingsPage() {
     setIsDeleting(true)
 
     try {
-      await db.transaction('rw', [db.accounts, db.incomeSources, db.categories, db.transactions, db.investments, db.loans], async () => {
-        await db.accounts.clear()
-        await db.incomeSources.clear()
-        await db.categories.clear()
-        await db.transactions.clear()
-        await db.investments.clear()
-        await db.loans.clear()
-      })
+      await db.transaction(
+        'rw',
+        [db.accounts, db.incomeSources, db.categories, db.transactions, db.investments, db.loans],
+        async () => {
+          await db.accounts.clear()
+          await db.incomeSources.clear()
+          await db.categories.clear()
+          await db.transactions.clear()
+          await db.investments.clear()
+          await db.loans.clear()
+        }
+      )
       await loadAllData()
       setDeleteModalOpen(false)
     } catch (error) {
@@ -257,11 +351,21 @@ export function SettingsPage() {
       <ManagementView
         title={t('manageAccounts')}
         onBack={() => setActiveSection(null)}
-        onAdd={() => { setEditingAccount(null); setAccountFormOpen(true) }}
+        onAdd={() => {
+          setEditingAccount(null)
+          setAccountFormOpen(true)
+        }}
         backLabel={t('back')}
       >
-        <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragEnd={(e) => handleReorder(e, accounts, accountRepo, refreshAccounts)}>
-          <SortableContext items={accounts.map(a => a.id!)} strategy={verticalListSortingStrategy}>
+        <DndContext
+          sensors={reorderSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e) => handleReorder(e, accounts, accountRepo, refreshAccounts)}
+        >
+          <SortableContext
+            items={accounts.map((a) => a.id!)}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-2">
               {accounts.map((account) => (
                 <SortableManagementItem
@@ -269,8 +373,15 @@ export function SettingsPage() {
                   id={account.id!}
                   color={account.color}
                   title={account.name}
-                  subtitle={<BlurredAmount>{formatCurrency(account.balance, account.currency)}</BlurredAmount>}
-                  onEdit={() => { setEditingAccount(account); setAccountFormOpen(true) }}
+                  subtitle={
+                    <BlurredAmount>
+                      {formatCurrency(account.balance, account.currency)}
+                    </BlurredAmount>
+                  }
+                  onEdit={() => {
+                    setEditingAccount(account)
+                    setAccountFormOpen(true)
+                  }}
                   onDelete={() => handleDeleteAccount(account)}
                 />
               ))}
@@ -294,11 +405,21 @@ export function SettingsPage() {
       <ManagementView
         title={t('manageCategories')}
         onBack={() => setActiveSection(null)}
-        onAdd={() => { setEditingCategory(null); setCategoryFormOpen(true) }}
+        onAdd={() => {
+          setEditingCategory(null)
+          setCategoryFormOpen(true)
+        }}
         backLabel={t('back')}
       >
-        <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragEnd={(e) => handleReorder(e, categories, categoryRepo, refreshCategories)}>
-          <SortableContext items={categories.map(c => c.id!)} strategy={verticalListSortingStrategy}>
+        <DndContext
+          sensors={reorderSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e) => handleReorder(e, categories, categoryRepo, refreshCategories)}
+        >
+          <SortableContext
+            items={categories.map((c) => c.id!)}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-2">
               {categories.map((category) => (
                 <SortableManagementItem
@@ -306,8 +427,20 @@ export function SettingsPage() {
                   id={category.id!}
                   color={category.color}
                   title={category.name}
-                  subtitle={category.budget ? <><span>{t('budget')}: </span><BlurredAmount>{formatCurrency(category.budget, mainCurrency)}</BlurredAmount></> : undefined}
-                  onEdit={() => { setEditingCategory(category); setCategoryFormOpen(true) }}
+                  subtitle={
+                    category.budget ? (
+                      <>
+                        <span>{t('budget')}: </span>
+                        <BlurredAmount>
+                          {formatCurrency(category.budget, mainCurrency)}
+                        </BlurredAmount>
+                      </>
+                    ) : undefined
+                  }
+                  onEdit={() => {
+                    setEditingCategory(category)
+                    setCategoryFormOpen(true)
+                  }}
                   onDelete={() => handleDeleteCategory(category)}
                 />
               ))}
@@ -331,11 +464,21 @@ export function SettingsPage() {
       <ManagementView
         title={t('manageIncomeSources')}
         onBack={() => setActiveSection(null)}
-        onAdd={() => { setEditingIncome(null); setIncomeFormOpen(true) }}
+        onAdd={() => {
+          setEditingIncome(null)
+          setIncomeFormOpen(true)
+        }}
         backLabel={t('back')}
       >
-        <DndContext sensors={reorderSensors} collisionDetection={closestCenter} onDragEnd={(e) => handleReorder(e, incomeSources, incomeSourceRepo, refreshIncomeSources)}>
-          <SortableContext items={incomeSources.map(s => s.id!)} strategy={verticalListSortingStrategy}>
+        <DndContext
+          sensors={reorderSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e) => handleReorder(e, incomeSources, incomeSourceRepo, refreshIncomeSources)}
+        >
+          <SortableContext
+            items={incomeSources.map((s) => s.id!)}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-2">
               {incomeSources.map((source) => (
                 <SortableManagementItem
@@ -343,7 +486,10 @@ export function SettingsPage() {
                   id={source.id!}
                   color={source.color}
                   title={source.name}
-                  onEdit={() => { setEditingIncome(source); setIncomeFormOpen(true) }}
+                  onEdit={() => {
+                    setEditingIncome(source)
+                    setIncomeFormOpen(true)
+                  }}
                   onDelete={() => handleDeleteIncomeSource(source)}
                 />
               ))}
@@ -367,7 +513,10 @@ export function SettingsPage() {
       <ManagementView
         title={t('manageCurrencies')}
         onBack={() => setActiveSection(null)}
-        onAdd={() => { setEditingCurrency(null); setCurrencyFormOpen(true) }}
+        onAdd={() => {
+          setEditingCurrency(null)
+          setCurrencyFormOpen(true)
+        }}
         backLabel={t('back')}
       >
         <div className="space-y-2">
@@ -377,7 +526,10 @@ export function SettingsPage() {
               color="#6366f1"
               title={`${currency.symbol} ${currency.code}`}
               subtitle={currency.name}
-              onEdit={() => { setEditingCurrency(currency); setCurrencyFormOpen(true) }}
+              onEdit={() => {
+                setEditingCurrency(currency)
+                setCurrencyFormOpen(true)
+              }}
               onDelete={() => handleDeleteCurrency(currency)}
             />
           ))}
@@ -423,10 +575,30 @@ export function SettingsPage() {
           {t('manage')}
         </h3>
         <div className="space-y-2">
-          <SettingsRow icon={DollarSign} label={t('incomeSources')} count={incomeSources.length} onClick={() => setActiveSection('income')} />
-          <SettingsRow icon={Wallet} label={t('accounts')} count={accounts.length} onClick={() => setActiveSection('accounts')} />
-          <SettingsRow icon={Tags} label={t('categories')} count={categories.length} onClick={() => setActiveSection('categories')} />
-          <SettingsRow icon={Coins} label={t('currencies')} count={customCurrencies.length} onClick={() => setActiveSection('currencies')} />
+          <SettingsRow
+            icon={DollarSign}
+            label={t('incomeSources')}
+            count={incomeSources.length}
+            onClick={() => setActiveSection('income')}
+          />
+          <SettingsRow
+            icon={Wallet}
+            label={t('accounts')}
+            count={accounts.length}
+            onClick={() => setActiveSection('accounts')}
+          />
+          <SettingsRow
+            icon={Tags}
+            label={t('categories')}
+            count={categories.length}
+            onClick={() => setActiveSection('categories')}
+          />
+          <SettingsRow
+            icon={Coins}
+            label={t('currencies')}
+            count={customCurrencies.length}
+            onClick={() => setActiveSection('currencies')}
+          />
         </div>
       </div>
 
@@ -443,9 +615,7 @@ export function SettingsPage() {
             </div>
             <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
               <SelectTrigger className="w-[140px]">
-                <SelectValue>
-                  {language === 'en' ? t('english') : t('russian')}
-                </SelectValue>
+                <SelectValue>{language === 'en' ? t('english') : t('russian')}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="en">{t('english')}</SelectItem>
@@ -464,7 +634,7 @@ export function SettingsPage() {
             <Select value={mainCurrency} onValueChange={(v) => setMainCurrency(v)}>
               <SelectTrigger className="w-[100px]">
                 <SelectValue>
-                  {getAllCurrencies().find(c => c.code === mainCurrency)?.symbol} {mainCurrency}
+                  {getAllCurrencies().find((c) => c.code === mainCurrency)?.symbol} {mainCurrency}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -513,7 +683,9 @@ export function SettingsPage() {
             }`}
           >
             <div className="flex items-center gap-3">
-              <FileSpreadsheet className={`h-5 w-5 ${savedImportState ? 'text-primary' : 'text-muted-foreground'}`} />
+              <FileSpreadsheet
+                className={`h-5 w-5 ${savedImportState ? 'text-primary' : 'text-muted-foreground'}`}
+              />
               <div className="text-left">
                 <span className={savedImportState ? 'text-primary font-medium' : ''}>
                   {savedImportState ? t('importResume') : t('importFromBudgetOk')}
@@ -523,7 +695,9 @@ export function SettingsPage() {
                 )}
               </div>
             </div>
-            <ChevronRight className={`h-5 w-5 ${savedImportState ? 'text-primary' : 'text-muted-foreground'}`} />
+            <ChevronRight
+              className={`h-5 w-5 ${savedImportState ? 'text-primary' : 'text-muted-foreground'}`}
+            />
           </button>
 
           <button
@@ -601,19 +775,13 @@ export function SettingsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              {t('deleteConfirmationMessage')}
-            </p>
+            <p className="text-sm text-muted-foreground">{t('deleteConfirmationMessage')}</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
               {t('cancel')}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
               {isDeleting ? t('processing') : t('deleteAllData')}
             </Button>
           </DialogFooter>
@@ -654,9 +822,7 @@ function SettingsRow({
         <span>{label}</span>
       </div>
       <div className="flex items-center gap-2">
-        {count !== undefined && (
-          <span className="text-sm text-muted-foreground">{count}</span>
-        )}
+        {count !== undefined && <span className="text-sm text-muted-foreground">{count}</span>}
         <ChevronRight className="h-5 w-5 text-muted-foreground" />
       </div>
     </button>
@@ -707,7 +873,9 @@ function SortableManagementItem({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -716,8 +884,16 @@ function SortableManagementItem({
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-      <button {...attributes} {...listeners} className="p-1 touch-none cursor-grab active:cursor-grabbing">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl"
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="p-1 touch-none cursor-grab active:cursor-grabbing"
+      >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </button>
       <div
@@ -739,7 +915,10 @@ function SortableManagementItem({
         <button onClick={onEdit} className="p-2 rounded-full hover:bg-secondary touch-target">
           <Pencil className="h-4 w-4 text-muted-foreground" />
         </button>
-        <button onClick={onDelete} className="p-2 rounded-full hover:bg-destructive/20 touch-target">
+        <button
+          onClick={onDelete}
+          className="p-2 rounded-full hover:bg-destructive/20 touch-target"
+        >
           <Trash2 className="h-4 w-4 text-destructive" />
         </button>
       </div>
@@ -781,7 +960,10 @@ function ManagementItem({
         <button onClick={onEdit} className="p-2 rounded-full hover:bg-secondary touch-target">
           <Pencil className="h-4 w-4 text-muted-foreground" />
         </button>
-        <button onClick={onDelete} className="p-2 rounded-full hover:bg-destructive/20 touch-target">
+        <button
+          onClick={onDelete}
+          className="p-2 rounded-full hover:bg-destructive/20 touch-target"
+        >
           <Trash2 className="h-4 w-4 text-destructive" />
         </button>
       </div>

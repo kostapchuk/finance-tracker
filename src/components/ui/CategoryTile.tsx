@@ -1,7 +1,8 @@
 import { icons, type LucideIcon } from 'lucide-react'
+
+import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
-import { BlurredAmount } from '@/components/ui/BlurredAmount'
 
 interface CategoryTileProps {
   name: string
@@ -24,9 +25,8 @@ export function CategoryTile({
   dragHandleProps,
 }: CategoryTileProps) {
   // Get icon component from lucide-react
-  const IconComponent: LucideIcon = icon && icon in icons
-    ? icons[icon as keyof typeof icons]
-    : icons.Circle
+  const IconComponent: LucideIcon =
+    icon && icon in icons ? icons[icon as keyof typeof icons] : icons.Circle
 
   // Get color based on amount and type
   const getAmountColor = () => {
@@ -43,16 +43,14 @@ export function CategoryTile({
       )}
     >
       <div
-        className={cn("w-12 h-12 rounded-full flex items-center justify-center", dragHandleProps && "touch-none cursor-grab")}
+        className={cn(
+          'w-12 h-12 rounded-full flex items-center justify-center',
+          dragHandleProps && 'touch-none cursor-grab'
+        )}
         style={{ backgroundColor: color + '20' }}
         {...dragHandleProps}
       >
-        {IconComponent && (
-          <IconComponent
-            className="h-6 w-6"
-            style={{ color }}
-          />
-        )}
+        {IconComponent && <IconComponent className="h-6 w-6" style={{ color }} />}
       </div>
       <div className="text-center w-full min-w-0 overflow-hidden">
         <p className="text-sm text-muted-foreground truncate">{name}</p>

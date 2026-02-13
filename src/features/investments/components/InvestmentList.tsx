@@ -1,15 +1,17 @@
-import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
+import { useState, useMemo } from 'react'
+
+import { InvestmentForm } from './InvestmentForm'
+
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
 import { investmentRepo } from '@/database/repositories'
-import { InvestmentForm } from './InvestmentForm'
-import { formatCurrency } from '@/utils/currency'
 import type { Investment } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { formatCurrency } from '@/utils/currency'
 
 export function InvestmentList() {
   const investments = useAppStore((state) => state.investments)
@@ -63,7 +65,7 @@ export function InvestmentList() {
     })
 
     const totalGain = totalValue - totalCost
-    const totalGainPercent = totalCost > 0 ? ((totalGain / totalCost) * 100) : 0
+    const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0
 
     return { totalValue, totalCost, totalGain, totalGainPercent }
   }, [investments])
@@ -73,9 +75,7 @@ export function InvestmentList() {
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">{t('investmentPortfolio')}</h3>
-          <p className="text-sm text-muted-foreground">
-            {t('trackInvestments')}
-          </p>
+          <p className="text-sm text-muted-foreground">{t('trackInvestments')}</p>
         </div>
         <Button onClick={() => setFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -136,9 +136,7 @@ export function InvestmentList() {
           <CardContent className="py-12 text-center">
             <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-medium mb-2">{t('noInvestments')}</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t('addInvestmentsToTrack')}
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">{t('addInvestmentsToTrack')}</p>
             <Button onClick={() => setFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               {t('addInvestment')}
@@ -151,7 +149,7 @@ export function InvestmentList() {
             const value = investment.quantity * investment.currentPrice
             const cost = investment.quantity * investment.averageCost
             const gain = value - cost
-            const gainPercent = cost > 0 ? ((gain / cost) * 100) : 0
+            const gainPercent = cost > 0 ? (gain / cost) * 100 : 0
             const isPositive = gain >= 0
 
             return (
@@ -248,11 +246,7 @@ export function InvestmentList() {
         </div>
       )}
 
-      <InvestmentForm
-        investment={editingInvestment}
-        open={formOpen}
-        onClose={handleCloseForm}
-      />
+      <InvestmentForm investment={editingInvestment} open={formOpen} onClose={handleCloseForm} />
     </div>
   )
 }

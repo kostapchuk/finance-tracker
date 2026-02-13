@@ -1,4 +1,10 @@
-import type { BudgetOkRow, BudgetOkOperationType, ParseError, ParsedImportData, SourceAccountInfo } from '../types'
+import type {
+  BudgetOkRow,
+  BudgetOkOperationType,
+  ParseError,
+  ParsedImportData,
+  SourceAccountInfo,
+} from '../types'
 
 /**
  * Parse a БюджетОк CSV file
@@ -36,7 +42,7 @@ export function parseBudgetOkCSV(csvContent: string): ParsedImportData {
       errors.push({
         lineNumber,
         message: error instanceof Error ? error.message : 'Unknown error',
-        rawLine: rawLine.length > 100 ? rawLine.substring(0, 100) + '...' : rawLine,
+        rawLine: rawLine.length > 100 ? rawLine.slice(0, 100) + '...' : rawLine,
       })
     }
   }
@@ -84,7 +90,7 @@ export function parseBudgetOkCSV(csvContent: string): ParsedImportData {
   }
 
   // Convert account currencies to SourceAccountInfo array
-  const uniqueAccounts: SourceAccountInfo[] = Array.from(accountCurrencies.entries())
+  const uniqueAccounts: SourceAccountInfo[] = [...accountCurrencies.entries()]
     .map(([name, currencyMap]) => {
       // Find most common currency for this account
       let maxCount = 0
@@ -103,9 +109,9 @@ export function parseBudgetOkCSV(csvContent: string): ParsedImportData {
     rows,
     errors,
     uniqueAccounts,
-    uniqueCategories: Array.from(uniqueCategories).sort(),
-    uniqueIncomeSources: Array.from(uniqueIncomeSources).sort(),
-    uniqueTransferDestinations: Array.from(uniqueTransferDestinations).sort(),
+    uniqueCategories: [...uniqueCategories].sort(),
+    uniqueIncomeSources: [...uniqueIncomeSources].sort(),
+    uniqueTransferDestinations: [...uniqueTransferDestinations].sort(),
     counts: {
       income: incomeCount,
       expense: expenseCount,
@@ -181,15 +187,15 @@ function parseCSVLine(line: string, lineNumber: number): BudgetOkRow | null {
 
   // Parse from end (5 fields: amount, currency, amount_dop, currency_dop, comment)
   // Comment may be empty, so we work backwards
-  const comment = fields[fields.length - 1].trim()
-  const currencyDop = fields[fields.length - 2].trim()
-  const amountDopRaw = fields[fields.length - 3].trim()
-  const currency = fields[fields.length - 4].trim()
-  const amountRaw = fields[fields.length - 5].trim()
+  const comment = (fields.at(-1) ?? '').trim()
+  const currencyDop = (fields.at(-2) ?? '').trim()
+  const amountDopRaw = (fields.at(-3) ?? '').trim()
+  const currency = (fields.at(-4) ?? '').trim()
+  const amountRaw = (fields.at(-5) ?? '').trim()
 
   // Everything in the middle (indices 3 to length-6) is category (may include commas)
   // Also includes the subcategory field which we merge into category
-  const middleFields = fields.slice(3, fields.length - 5)
+  const middleFields = fields.slice(3, -5)
   const category = middleFields
     .map((f) => f.trim())
     .filter((f) => f !== '') // Remove empty subcategory fields
@@ -282,9 +288,9 @@ function parseDate(value: string): Date | null {
   const trimmed = value.trim()
   if (trimmed.length !== 8) return null
 
-  const year = parseInt(trimmed.substring(0, 4), 10)
-  const month = parseInt(trimmed.substring(4, 6), 10) - 1 // 0-indexed
-  const day = parseInt(trimmed.substring(6, 8), 10)
+  const year = parseInt(trimmed.slice(0, 4), 10)
+  const month = parseInt(trimmed.slice(4, 6), 10) - 1 // 0-indexed
+  const day = parseInt(trimmed.slice(6, 8), 10)
 
   if (isNaN(year) || isNaN(month) || isNaN(day)) return null
   if (month < 0 || month > 11 || day < 1 || day > 31) return null

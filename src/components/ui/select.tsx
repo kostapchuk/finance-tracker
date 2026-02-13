@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { ChevronDown } from 'lucide-react'
+import * as React from 'react'
+
 import { cn } from '@/utils/cn'
 
 interface SelectContextValue {
@@ -89,7 +90,13 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
 )
 SelectTrigger.displayName = 'SelectTrigger'
 
-function SelectValue({ placeholder, children }: { placeholder?: string; children?: React.ReactNode }) {
+function SelectValue({
+  placeholder,
+  children,
+}: {
+  placeholder?: string
+  children?: React.ReactNode
+}) {
   const { value, labels } = useSelect()
   const displayLabel = labels.current.get(value)
   return <span className="truncate">{children ?? displayLabel ?? value ?? placeholder}</span>
@@ -157,18 +164,32 @@ const SelectItem = React.forwardRef<HTMLDivElement, SelectItemProps>(
     return (
       <div
         ref={ref}
+        role="option"
+        tabIndex={0}
+        aria-selected={isSelected}
         className={cn(
           'relative flex w-full cursor-pointer select-none items-center rounded-sm py-2.5 sm:py-1.5 pl-8 pr-2 text-base sm:text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
           isSelected && 'bg-accent',
           className
         )}
         onClick={() => onValueChange(value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onValueChange(value)
+          }
+        }}
         {...props}
       >
         {isSelected && (
           <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </span>
         )}

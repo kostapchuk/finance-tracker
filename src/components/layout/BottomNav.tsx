@@ -1,11 +1,16 @@
 import { LayoutDashboard, Clock, HandCoins, PieChart, Settings } from 'lucide-react'
-import { cn } from '@/utils/cn'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
+
 import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { cn } from '@/utils/cn'
 import type { TranslationKey } from '@/utils/i18n'
 
-const navItems: { id: 'dashboard' | 'history' | 'loans' | 'report' | 'settings', labelKey: TranslationKey, icon: typeof LayoutDashboard }[] = [
+const navItems: {
+  id: 'dashboard' | 'history' | 'loans' | 'report' | 'settings'
+  labelKey: TranslationKey
+  icon: typeof LayoutDashboard
+}[] = [
   { id: 'report', labelKey: 'report', icon: PieChart },
   { id: 'loans', labelKey: 'loans', icon: HandCoins },
   { id: 'dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
@@ -32,9 +37,7 @@ export function BottomNav() {
               onClick={() => setActiveView(item.id)}
               className={cn(
                 'flex flex-col items-center justify-center flex-1 h-full gap-1 touch-target transition-colors',
-                isActive
-                  ? 'text-primary'
-                  : 'text-muted-foreground active:text-foreground'
+                isActive ? 'text-primary' : 'text-muted-foreground active:text-foreground'
               )}
             >
               <span className="relative">

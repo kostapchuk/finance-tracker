@@ -1,8 +1,10 @@
-import { useRef } from 'react'
 import { Upload, FileText, AlertCircle, AlertTriangle } from 'lucide-react'
+import { useRef } from 'react'
+
+import { validateImportFile } from '../utils/csvParser'
+
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { validateImportFile } from '../utils/csvParser'
 
 interface ImportFileUploadProps {
   onFileSelect: (file: File) => void
@@ -56,10 +58,18 @@ export function ImportFileUpload({ onFileSelect, error, setError }: ImportFileUp
       </div>
 
       <div
+        role="button"
+        tabIndex={0}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         className="w-full max-w-sm border-2 border-dashed border-muted-foreground/25 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
         onClick={() => fileInputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            fileInputRef.current?.click()
+          }
+        }}
       >
         <Upload className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">{t('importDropOrClick')}</p>

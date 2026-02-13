@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
+
 import { BottomNav } from './BottomNav'
+
 import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
 import { useAppStore } from '@/store/useAppStore'
 import { setCustomCurrencies } from '@/utils/currency'
@@ -14,11 +16,13 @@ export function AppShell({ children }: AppShellProps) {
 
   // Sync custom currencies with the utility
   useEffect(() => {
-    setCustomCurrencies(customCurrencies.map(c => ({
-      code: c.code,
-      name: c.name,
-      symbol: c.symbol,
-    })))
+    setCustomCurrencies(
+      customCurrencies.map((c) => ({
+        code: c.code,
+        name: c.name,
+        symbol: c.symbol,
+      }))
+    )
   }, [customCurrencies])
 
   useEffect(() => {
@@ -27,9 +31,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
-      <main className="flex-1 overflow-auto pb-20 pt-safe">
-        {children}
-      </main>
+      <main className="flex-1 overflow-auto pb-20 pt-safe">{children}</main>
       <BottomNav />
       <OnboardingOverlay />
     </div>

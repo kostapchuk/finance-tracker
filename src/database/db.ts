@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
+
 import type {
   Account,
   IncomeSource,
@@ -25,7 +26,8 @@ db.version(1).stores({
   accounts: '++id, name, type, currency, createdAt',
   incomeSources: '++id, name, createdAt',
   categories: '++id, name, createdAt',
-  transactions: '++id, type, date, accountId, categoryId, incomeSourceId, loanId, investmentId, createdAt',
+  transactions:
+    '++id, type, date, accountId, categoryId, incomeSourceId, loanId, investmentId, createdAt',
   investments: '++id, accountId, symbol, createdAt',
   loans: '++id, type, status, personName, accountId, createdAt',
   settings: '++id',
@@ -35,7 +37,8 @@ db.version(2).stores({
   accounts: '++id, name, type, currency, createdAt',
   incomeSources: '++id, name, createdAt',
   categories: '++id, name, createdAt',
-  transactions: '++id, type, date, accountId, categoryId, incomeSourceId, loanId, investmentId, createdAt',
+  transactions:
+    '++id, type, date, accountId, categoryId, incomeSourceId, loanId, investmentId, createdAt',
   investments: '++id, accountId, symbol, createdAt',
   loans: '++id, type, status, personName, accountId, createdAt',
   settings: '++id',

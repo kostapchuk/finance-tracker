@@ -1,7 +1,16 @@
-import { AlertCircle, CheckCircle2, ArrowDown, ArrowUp, ArrowLeftRight, FileText } from 'lucide-react'
+import {
+  AlertCircle,
+  CheckCircle2,
+  ArrowDown,
+  ArrowUp,
+  ArrowLeftRight,
+  FileText,
+} from 'lucide-react'
+
+import type { ParsedImportData } from '../types'
+
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/hooks/useLanguage'
-import type { ParsedImportData } from '../types'
 
 interface ImportDataPreviewProps {
   data: ParsedImportData
@@ -122,8 +131,8 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
                   >
                     {row.operationType}
                   </span>{' '}
-                  | {row.date.toLocaleDateString()} | {row.account} → {row.category} |{' '}
-                  {row.amount} {row.currency}
+                  | {row.date.toLocaleDateString()} | {row.account} → {row.category} | {row.amount}{' '}
+                  {row.currency}
                 </div>
               ))}
               {data.rows.length > 5 && (

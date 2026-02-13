@@ -1,23 +1,31 @@
-import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
-import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { icons, type LucideIcon } from 'lucide-react'
-import { MonthSelector } from '@/components/ui/MonthSelector'
-import { CategoryTile } from '@/components/ui/CategoryTile'
-import { AccountCard } from '@/components/ui/AccountCard'
-import { QuickTransactionModal } from '@/components/ui/QuickTransactionModal'
+import { useMemo, useState } from 'react'
+
 import { DraggableItem } from '@/components/drag-drop/DraggableItem'
 import { DroppableZone } from '@/components/drag-drop/DroppableZone'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
-import { formatCurrency } from '@/utils/currency'
+import { AccountCard } from '@/components/ui/AccountCard'
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
-import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
+import { CategoryTile } from '@/components/ui/CategoryTile'
+import { MonthSelector } from '@/components/ui/MonthSelector'
+import { QuickTransactionModal } from '@/components/ui/QuickTransactionModal'
+import type { Category, IncomeSource, Account, AccountType } from '@/database/types'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
-import type { Category, IncomeSource, Account, AccountType } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { formatCurrency } from '@/utils/currency'
+import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 
 const defaultAccountIcons: Record<AccountType, keyof typeof icons> = {
   cash: 'Banknote',
@@ -207,11 +215,7 @@ export function Dashboard() {
   const isDraggingAccount = draggedItem?.type === 'account'
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-col min-h-full">
         {/* Month Selector */}
         <MonthSelector />
@@ -219,59 +223,62 @@ export function Dashboard() {
         {/* Income Section - Draggable */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
-          <button
-            onClick={() => {
-              const newValue = !incomeExpanded
-              setIncomeExpanded(newValue)
-              localStorage.setItem('incomeExpanded', String(newValue))
-            }}
-            className="flex items-center justify-between w-full touch-target px-1"
-          >
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('income')}
-              </h3>
-              <BlurredAmount className="font-semibold text-foreground">
-                {formatCurrency(monthlyData.totalIncome, mainCurrency)}
-              </BlurredAmount>
-              {incomeExpanded ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-            <span
-              role="button"
-              className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
-              onClick={(e) => { e.stopPropagation(); setIncomeFormOpen(true) }}
+            <button
+              onClick={() => {
+                const newValue = !incomeExpanded
+                setIncomeExpanded(newValue)
+                localStorage.setItem('incomeExpanded', String(newValue))
+              }}
+              className="flex items-center justify-between w-full touch-target px-1"
             >
-              <Plus className="h-5 w-5" />
-            </span>
-          </button>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t('income')}
+                </h3>
+                <BlurredAmount className="font-semibold text-foreground">
+                  {formatCurrency(monthlyData.totalIncome, mainCurrency)}
+                </BlurredAmount>
+                {incomeExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+              <button
+                type="button"
+                className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIncomeFormOpen(true)
+                }}
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </button>
 
-          {incomeExpanded && (
-            <div className="grid grid-cols-4 gap-2 mt-1 max-h-48 overflow-y-auto">
-              {visibleIncomeSources.map((source) => (
-                <DraggableItem
-                  key={source.id}
-                  id={`income-${source.id}`}
-                  data={{ type: 'income', source }}
-                >
-                  {(handle) => (
-                    <CategoryTile
-                      name={source.name}
-                      amount={monthlyData.incomeBySource[source.id!] || 0}
-                      currency={source.currency || mainCurrency}
-                      color={source.color}
-                      icon={source.icon}
-                      type="income"
-                      dragHandleProps={{ ...handle.listeners, ...handle.attributes }}
-                    />
-                  )}
-                </DraggableItem>
-              ))}
-            </div>
-          )}
+            {incomeExpanded && (
+              <div className="grid grid-cols-4 gap-2 mt-1 max-h-48 overflow-y-auto">
+                {visibleIncomeSources.map((source) => (
+                  <DraggableItem
+                    key={source.id}
+                    id={`income-${source.id}`}
+                    data={{ type: 'income', source }}
+                  >
+                    {(handle) => (
+                      <CategoryTile
+                        name={source.name}
+                        amount={monthlyData.incomeBySource[source.id!] || 0}
+                        currency={source.currency || mainCurrency}
+                        color={source.color}
+                        icon={source.icon}
+                        type="income"
+                        dragHandleProps={{ ...handle.listeners, ...handle.attributes }}
+                      />
+                    )}
+                  </DraggableItem>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -286,101 +293,97 @@ export function Dashboard() {
                 {isDraggingIncome && (
                   <span className="text-xs text-primary">{t('dropIncomeHere')}</span>
                 )}
-                {isDraggingAccount && (
-                  <span className="text-xs text-primary">{t('dropHere')}</span>
-                )}
+                {isDraggingAccount && <span className="text-xs text-primary">{t('dropHere')}</span>}
               </div>
-              <span
-                role="button"
+              <button
+                type="button"
                 className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
                 onClick={() => setAccountFormOpen(true)}
               >
                 <Plus className="h-5 w-5" />
-              </span>
+              </button>
             </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {visibleAccounts.map((account) => (
-              <DroppableZone
-                key={account.id}
-                id={`account-drop-${account.id}`}
-                data={{ type: 'account', account }}
-              >
-                <DraggableItem
-                  id={`account-${account.id}`}
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+              {visibleAccounts.map((account) => (
+                <DroppableZone
+                  key={account.id}
+                  id={`account-drop-${account.id}`}
                   data={{ type: 'account', account }}
                 >
-                  {(handle) => (
-                    <AccountCard
-                      name={account.name}
-                      type={account.type}
-                      balance={account.balance}
-                      currency={account.currency}
-                      color={account.color}
-                      icon={account.icon}
-                      onClick={() => handleAccountClick(account)}
-                      dragHandleProps={{ ...handle.listeners, ...handle.attributes }}
-                    />
-                  )}
-                </DraggableItem>
-              </DroppableZone>
-            ))}
-          </div>
+                  <DraggableItem id={`account-${account.id}`} data={{ type: 'account', account }}>
+                    {(handle) => (
+                      <AccountCard
+                        name={account.name}
+                        type={account.type}
+                        balance={account.balance}
+                        currency={account.currency}
+                        color={account.color}
+                        icon={account.icon}
+                        onClick={() => handleAccountClick(account)}
+                        dragHandleProps={{ ...handle.listeners, ...handle.attributes }}
+                      />
+                    )}
+                  </DraggableItem>
+                </DroppableZone>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Expenses Section - Droppable (for accounts) */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
-          <button
-            onClick={() => setExpensesExpanded(!expensesExpanded)}
-            className="flex items-center justify-between w-full touch-target px-1"
-          >
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                {t('expenses')}
-              </h3>
-              <BlurredAmount className="font-semibold text-foreground">
-                {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
-              </BlurredAmount>
-              {isDraggingAccount && (
-                <span className="text-xs text-primary">{t('dropHere')}</span>
-              )}
-              {expensesExpanded ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-            <span
-              role="button"
-              className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
-              onClick={(e) => { e.stopPropagation(); setCategoryFormOpen(true) }}
+            <button
+              onClick={() => setExpensesExpanded(!expensesExpanded)}
+              className="flex items-center justify-between w-full touch-target px-1"
             >
-              <Plus className="h-5 w-5" />
-            </span>
-          </button>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t('expenses')}
+                </h3>
+                <BlurredAmount className="font-semibold text-foreground">
+                  {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
+                </BlurredAmount>
+                {isDraggingAccount && <span className="text-xs text-primary">{t('dropHere')}</span>}
+                {expensesExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+              <button
+                type="button"
+                className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setCategoryFormOpen(true)
+                }}
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </button>
 
-          {expensesExpanded && (
-            <div className="grid grid-cols-4 gap-2 mt-1">
-              {expenseCategories.map((category) => (
-                <DroppableZone
-                  key={category.id}
-                  id={`category-${category.id}`}
-                  data={{ type: 'category', category }}
-                >
-                  <CategoryTile
-                    name={category.name}
-                    amount={monthlyData.expensesByCategory[category.id!] || 0}
-                    currency={mainCurrency}
-                    color={category.color}
-                    icon={category.icon}
-                    type="expense"
-                    onClick={() => handleCategoryClick(category)}
-                  />
-                </DroppableZone>
-              ))}
-            </div>
-          )}
+            {expensesExpanded && (
+              <div className="grid grid-cols-4 gap-2 mt-1">
+                {expenseCategories.map((category) => (
+                  <DroppableZone
+                    key={category.id}
+                    id={`category-${category.id}`}
+                    data={{ type: 'category', category }}
+                  >
+                    <CategoryTile
+                      name={category.name}
+                      amount={monthlyData.expensesByCategory[category.id!] || 0}
+                      currency={mainCurrency}
+                      color={category.color}
+                      icon={category.icon}
+                      type="expense"
+                      onClick={() => handleCategoryClick(category)}
+                    />
+                  </DroppableZone>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -389,32 +392,38 @@ export function Dashboard() {
           <QuickTransactionModal
             mode={transactionMode}
             accounts={accounts}
-            preselectedAccountId={'preselectedAccountId' in transactionMode ? transactionMode.preselectedAccountId : undefined}
+            preselectedAccountId={
+              'preselectedAccountId' in transactionMode
+                ? transactionMode.preselectedAccountId
+                : undefined
+            }
             onClose={handleCloseModal}
           />
         )}
 
         {/* Drag Overlay - only the icon circle follows the cursor */}
         <DragOverlay>
-          {draggedItem && (() => {
-            const color = draggedItem.type === 'income'
-              ? draggedItem.source.color
-              : draggedItem.account.color
-            const iconName = draggedItem.type === 'income'
-              ? (draggedItem.source.icon || 'Circle')
-              : (draggedItem.account.icon || defaultAccountIcons[draggedItem.account.type] || 'Wallet')
-            const Icon: LucideIcon = iconName in icons
-              ? icons[iconName as keyof typeof icons]
-              : icons.Circle
-            return (
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl scale-110"
-                style={{ backgroundColor: color + '20' }}
-              >
-                <Icon className="h-6 w-6" style={{ color }} />
-              </div>
-            )
-          })()}
+          {draggedItem &&
+            (() => {
+              const color =
+                draggedItem.type === 'income' ? draggedItem.source.color : draggedItem.account.color
+              const iconName =
+                draggedItem.type === 'income'
+                  ? draggedItem.source.icon || 'Circle'
+                  : draggedItem.account.icon ||
+                    defaultAccountIcons[draggedItem.account.type] ||
+                    'Wallet'
+              const Icon: LucideIcon =
+                iconName in icons ? icons[iconName as keyof typeof icons] : icons.Circle
+              return (
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl scale-110"
+                  style={{ backgroundColor: color + '20' }}
+                >
+                  <Icon className="h-6 w-6" style={{ color }} />
+                </div>
+              )
+            })()}
         </DragOverlay>
       </div>
 

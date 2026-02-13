@@ -1,14 +1,15 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
 import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
-import { cn } from '@/utils/cn'
-import { transactionRepo, accountRepo } from '@/database/repositories'
-import { useAppStore } from '@/store/useAppStore'
-import { useLanguage } from '@/hooks/useLanguage'
-import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
+import { useState, useRef, useEffect, useMemo } from 'react'
+
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
-import { reverseTransactionBalance } from '@/utils/transactionBalance'
-import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
+import { transactionRepo, accountRepo } from '@/database/repositories'
 import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
+import { cn } from '@/utils/cn'
+import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
+import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
+import { reverseTransactionBalance } from '@/utils/transactionBalance'
 
 export type TransactionMode =
   | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
@@ -47,9 +48,11 @@ export function QuickTransactionModal({
   const isEditMode = !!editTransaction
 
   const [amount, setAmount] = useState('')
-  const [targetAmount, setTargetAmount] = useState('')  // mainCurrency amount for totals
-  const [accountAmount, setAccountAmount] = useState('')  // account currency amount (for income when account != source)
-  const [activeField, setActiveField] = useState<'source' | 'target' | 'account' | 'comment' | 'date' | null>('source')
+  const [targetAmount, setTargetAmount] = useState('') // mainCurrency amount for totals
+  const [accountAmount, setAccountAmount] = useState('') // account currency amount (for income when account != source)
+  const [activeField, setActiveField] = useState<
+    'source' | 'target' | 'account' | 'comment' | 'date' | null
+  >('source')
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(
     preselectedAccountId ?? accounts[0]?.id
   )
@@ -78,7 +81,7 @@ export function QuickTransactionModal({
   useEffect(() => {
     const textarea = commentRef.current
     if (!textarea) return
-    
+
     textarea.style.height = 'auto'
     const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 150)
     textarea.style.height = `${newHeight}px`
@@ -105,8 +108,11 @@ export function QuickTransactionModal({
 
   // Swipe down to close - using refs for smooth animation
   const handleTouchStart = (e: React.TouchEvent) => {
-    if ((e.target as HTMLElement).tagName === 'INPUT' ||
-        (e.target as HTMLElement).tagName === 'TEXTAREA') return
+    if (
+      (e.target as HTMLElement).tagName === 'INPUT' ||
+      (e.target as HTMLElement).tagName === 'TEXTAREA'
+    )
+      return
     touchStartY.current = e.touches[0].clientY
     if (modalRef.current) {
       modalRef.current.style.transition = 'none'
@@ -144,7 +150,6 @@ export function QuickTransactionModal({
     touchStartY.current = 0
   }
 
-
   // Prevent page scroll on input focus using transform hack
   const handleInputTouchStart = (e: React.TouchEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const el = e.currentTarget
@@ -161,7 +166,6 @@ export function QuickTransactionModal({
       el.focus()
     }, 0)
   }
-
 
   // Track keyboard height and check if button is covered
   useEffect(() => {
@@ -205,22 +209,24 @@ export function QuickTransactionModal({
   useEffect(() => {
     if (disableAutoFocus) return
     // Try focusing at multiple intervals to catch after animation
-    const timers = [50, 150, 300, 500].map(ms =>
+    const timers = [50, 150, 300, 500].map((ms) =>
       setTimeout(() => amountInputRef.current?.focus(), ms)
     )
     return () => timers.forEach(clearTimeout)
   }, [disableAutoFocus])
 
   // Get the currently selected income source
-  const selectedSource = mode.type === 'income'
-    ? incomeSources.find(s => s.id === selectedSourceId) || mode.source
-    : null
+  const selectedSource =
+    mode.type === 'income'
+      ? incomeSources.find((s) => s.id === selectedSourceId) || mode.source
+      : null
 
   // Get the currently selected category (filter out loan categories)
-  const expenseCategories = categories.filter(c => c.categoryType !== 'loan')
-  const selectedCategory = mode.type === 'expense'
-    ? expenseCategories.find(c => c.id === selectedCategoryId) || mode.category
-    : null
+  const expenseCategories = categories.filter((c) => c.categoryType !== 'loan')
+  const selectedCategory =
+    mode.type === 'expense'
+      ? expenseCategories.find((c) => c.id === selectedCategoryId) || mode.category
+      : null
 
   // Calculate monthly total for selected category
   const categoryMonthlyTotal = useMemo(() => {
@@ -228,11 +234,12 @@ export function QuickTransactionModal({
     const startOfMonth = getStartOfMonth(selectedMonth)
     const endOfMonth = getEndOfMonth(selectedMonth)
     return transactions
-      .filter(t =>
-        t.type === 'expense' &&
-        t.categoryId === selectedCategoryId &&
-        new Date(t.date) >= startOfMonth &&
-        new Date(t.date) <= endOfMonth
+      .filter(
+        (t) =>
+          t.type === 'expense' &&
+          t.categoryId === selectedCategoryId &&
+          new Date(t.date) >= startOfMonth &&
+          new Date(t.date) <= endOfMonth
       )
       .reduce((sum, t) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
   }, [mode.type, selectedCategoryId, transactions, selectedMonth])
@@ -243,38 +250,41 @@ export function QuickTransactionModal({
     const startOfMonth = getStartOfMonth(selectedMonth)
     const endOfMonth = getEndOfMonth(selectedMonth)
     return transactions
-      .filter(t =>
-        t.type === 'income' &&
-        t.incomeSourceId === selectedSourceId &&
-        new Date(t.date) >= startOfMonth &&
-        new Date(t.date) <= endOfMonth
+      .filter(
+        (t) =>
+          t.type === 'income' &&
+          t.incomeSourceId === selectedSourceId &&
+          new Date(t.date) >= startOfMonth &&
+          new Date(t.date) <= endOfMonth
       )
       .reduce((sum, t) => sum + t.amount, 0)
   }, [mode.type, selectedSourceId, transactions, selectedMonth])
 
   // Detect multi-currency transfer
-  const isMultiCurrencyTransfer = mode.type === 'transfer' &&
-    mode.fromAccount.currency !== mode.toAccount.currency
+  const isMultiCurrencyTransfer =
+    mode.type === 'transfer' && mode.fromAccount.currency !== mode.toAccount.currency
 
   // Detect multi-currency for income/expense
-  const selectedAccount = accounts.find(a => a.id === selectedAccountId)
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId)
   // For income: need SEPARATE mainCurrency field only if source != mainCurrency AND account != mainCurrency
   // If account IS mainCurrency, the accountAmount serves as mainCurrencyAmount (no separate field needed)
-  const sourceCurrency = selectedSource?.currency || (mode.type === 'income' ? mode.source.currency : '')
-  const isMultiCurrencyIncome = mode.type === 'income' &&
+  const sourceCurrency =
+    selectedSource?.currency || (mode.type === 'income' ? mode.source.currency : '')
+  const isMultiCurrencyIncome =
+    mode.type === 'income' &&
     sourceCurrency !== mainCurrency &&
     selectedAccount?.currency !== mainCurrency
   // For expense: need mainCurrency conversion when account currency differs from mainCurrency (for budgets)
-  const isMultiCurrencyExpense = mode.type === 'expense' &&
-    selectedAccount?.currency !== mainCurrency
+  const isMultiCurrencyExpense =
+    mode.type === 'expense' && selectedAccount?.currency !== mainCurrency
   const isMultiCurrencyIncomeExpense = isMultiCurrencyIncome || isMultiCurrencyExpense
   // For income: need account currency conversion if account differs from source
-  const needsAccountConversion = mode.type === 'income' &&
-    selectedAccount?.currency !== sourceCurrency
+  const needsAccountConversion =
+    mode.type === 'income' && selectedAccount?.currency !== sourceCurrency
 
   // Reset amounts when account or source changes
   const handleAccountChange = (newAccountId: number) => {
-    const newAccount = accounts.find(a => a.id === newAccountId)
+    const newAccount = accounts.find((a) => a.id === newAccountId)
     const oldAccount = selectedAccount
     if (newAccount && oldAccount && newAccount.currency !== oldAccount.currency) {
       // Currency changed, reset conversion amounts
@@ -286,7 +296,7 @@ export function QuickTransactionModal({
   }
 
   const handleSourceChange = (newSourceId: number) => {
-    const newSource = incomeSources.find(s => s.id === newSourceId)
+    const newSource = incomeSources.find((s) => s.id === newSourceId)
     const oldSource = selectedSource
     if (newSource && oldSource && newSource.currency !== oldSource.currency) {
       // Currency changed, reset amounts
@@ -310,12 +320,15 @@ export function QuickTransactionModal({
     return '#6366f1' // Indigo for transfers
   }
   const color = getColor()
-  const currentSourceCurrency = selectedSource?.currency || (mode.type === 'income' ? mode.source.currency : '')
+  const currentSourceCurrency =
+    selectedSource?.currency || (mode.type === 'income' ? mode.source.currency : '')
 
   // Get current currency symbol for display
   const getCurrentCurrency = () => {
-    if (mode.type === 'income') return accounts.find(a => a.id === selectedAccountId)?.currency || 'USD'
-    if (mode.type === 'expense') return accounts.find(a => a.id === selectedAccountId)?.currency || 'USD'
+    if (mode.type === 'income')
+      return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
+    if (mode.type === 'expense')
+      return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
     return activeField === 'source' ? mode.fromAccount.currency : mode.toAccount.currency
   }
 
@@ -409,10 +422,10 @@ export function QuickTransactionModal({
           // - mainCurrencyAmount = main currency (for totals)
           // - account balance = accountAmount if account != source, else use amount
           const incomeSource = selectedSource || mode.source
-          const sourceAmount = numAmount  // source currency
+          const sourceAmount = numAmount // source currency
           const balanceAmount = needsAccountConversion
-            ? parseFloat(accountAmount)  // account currency if different from source
-            : numAmount  // same as source if currencies match
+            ? parseFloat(accountAmount) // account currency if different from source
+            : numAmount // same as source if currencies match
 
           // Determine mainCurrencyAmount:
           // - If source == mainCurrency: no conversion needed (undefined)
@@ -422,17 +435,17 @@ export function QuickTransactionModal({
           const accountIsMain = account.currency === mainCurrency
           let storedMainCurrencyAmount: number | undefined
           if (sourceIsMain) {
-            storedMainCurrencyAmount = undefined  // source is already main currency
+            storedMainCurrencyAmount = undefined // source is already main currency
           } else if (accountIsMain) {
-            storedMainCurrencyAmount = balanceAmount  // account amount = main currency amount
+            storedMainCurrencyAmount = balanceAmount // account amount = main currency amount
           } else if (isMultiCurrencyIncome) {
-            storedMainCurrencyAmount = parseFloat(targetAmount)  // separate field
+            storedMainCurrencyAmount = parseFloat(targetAmount) // separate field
           }
 
           const transactionData = {
             type: 'income' as const,
-            amount: sourceAmount,  // source currency amount for display
-            currency: incomeSource.currency,  // income source currency
+            amount: sourceAmount, // source currency amount for display
+            currency: incomeSource.currency, // income source currency
             date: new Date(date),
             comment: comment || undefined,
             accountId: selectedAccountId,
@@ -561,7 +574,9 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedSource?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(sourceMonthlyTotal, selectedSource?.currency || mainCurrency)}</BlurredAmount>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(sourceMonthlyTotal, selectedSource?.currency || mainCurrency)}
+                    </BlurredAmount>
                   </div>
                 </button>
                 <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
@@ -580,7 +595,12 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedAccount?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</BlurredAmount>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(
+                        selectedAccount?.balance || 0,
+                        selectedAccount?.currency || ''
+                      )}
+                    </BlurredAmount>
                   </div>
                 </button>
               </div>
@@ -602,7 +622,12 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedAccount?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}</BlurredAmount>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(
+                        selectedAccount?.balance || 0,
+                        selectedAccount?.currency || ''
+                      )}
+                    </BlurredAmount>
                   </div>
                 </button>
                 <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
@@ -621,7 +646,9 @@ export function QuickTransactionModal({
                   </div>
                   <div className="min-w-0 text-left">
                     <p className="font-semibold truncate">{selectedCategory?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">{formatCurrency(categoryMonthlyTotal, mainCurrency)}</BlurredAmount>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(categoryMonthlyTotal, mainCurrency)}
+                    </BlurredAmount>
                   </div>
                 </button>
               </div>
@@ -646,9 +673,7 @@ export function QuickTransactionModal({
               <div
                 className={cn(
                   'flex-1 p-4 rounded-xl transition-all',
-                  activeField === 'source'
-                    ? 'bg-primary/20 ring-2 ring-primary'
-                    : 'bg-secondary/50'
+                  activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
                 )}
               >
                 <p className="text-xs text-muted-foreground mb-1">{mode.fromAccount.currency}</p>
@@ -658,14 +683,16 @@ export function QuickTransactionModal({
                     autoFocus={!disableAutoFocus}
                     type="text"
                     inputMode="decimal"
-                                        value={amount}
+                    value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveField('source')}
-                                        onTouchStart={handleInputTouchStart}
+                    onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
-                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.fromAccount.currency)}</span>
+                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">
+                    {getCurrencySymbol(mode.fromAccount.currency)}
+                  </span>
                 </div>
               </div>
 
@@ -675,9 +702,7 @@ export function QuickTransactionModal({
               <div
                 className={cn(
                   'flex-1 p-4 rounded-xl transition-all',
-                  activeField === 'target'
-                    ? 'bg-primary/20 ring-2 ring-primary'
-                    : 'bg-secondary/50'
+                  activeField === 'target' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
                 )}
               >
                 <p className="text-xs text-muted-foreground mb-1">{mode.toAccount.currency}</p>
@@ -685,14 +710,16 @@ export function QuickTransactionModal({
                   <input
                     type="text"
                     inputMode="decimal"
-                                        value={targetAmount}
+                    value={targetAmount}
                     onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveField('target')}
-                                        onTouchStart={handleInputTouchStart}
+                    onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
-                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.toAccount.currency)}</span>
+                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">
+                    {getCurrencySymbol(mode.toAccount.currency)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -705,9 +732,7 @@ export function QuickTransactionModal({
               <div
                 className={cn(
                   'flex-1 p-3 rounded-xl transition-all',
-                  activeField === 'source'
-                    ? 'bg-primary/20 ring-2 ring-primary'
-                    : 'bg-secondary/50'
+                  activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
                 )}
               >
                 <p className="text-xs text-muted-foreground mb-1">
@@ -719,14 +744,18 @@ export function QuickTransactionModal({
                     autoFocus={!disableAutoFocus}
                     type="text"
                     inputMode="decimal"
-                                        value={amount}
+                    value={amount}
                     onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
                     onFocus={() => setActiveField('source')}
-                                        onTouchStart={handleInputTouchStart}
+                    onTouchStart={handleInputTouchStart}
                     placeholder="0"
                     className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
-                  <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency)}</span>
+                  <span className="text-xl font-bold tabular-nums text-muted-foreground">
+                    {getCurrencySymbol(
+                      mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency
+                    )}
+                  </span>
                 </div>
               </div>
 
@@ -746,16 +775,18 @@ export function QuickTransactionModal({
                     <div className="flex items-baseline gap-1">
                       <input
                         type="text"
-                    inputMode="decimal"
-                                            step="0.01"
+                        inputMode="decimal"
+                        step="0.01"
                         value={targetAmount}
                         onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveField('target')}
-                                            onTouchStart={handleInputTouchStart}
+                        onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
-                      <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(mainCurrency)}</span>
+                      <span className="text-xl font-bold tabular-nums text-muted-foreground">
+                        {getCurrencySymbol(mainCurrency)}
+                      </span>
                     </div>
                   </div>
                 </>
@@ -777,16 +808,18 @@ export function QuickTransactionModal({
                     <div className="flex items-baseline gap-1">
                       <input
                         type="text"
-                    inputMode="decimal"
-                                            step="0.01"
+                        inputMode="decimal"
+                        step="0.01"
                         value={accountAmount}
                         onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
                         onFocus={() => setActiveField('account')}
-                                                onTouchStart={handleInputTouchStart}
+                        onTouchStart={handleInputTouchStart}
                         placeholder="0"
                         className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                       />
-                      <span className="text-xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(selectedAccount.currency)}</span>
+                      <span className="text-xl font-bold tabular-nums text-muted-foreground">
+                        {getCurrencySymbol(selectedAccount.currency)}
+                      </span>
                     </div>
                   </div>
                 </>
@@ -796,10 +829,12 @@ export function QuickTransactionModal({
         ) : (
           // Single currency: show one amount
           <div className="p-4">
-            <div className={cn(
-              "p-4 rounded-xl transition-all",
-              activeField === 'source' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
-            )}>
+            <div
+              className={cn(
+                'p-4 rounded-xl transition-all',
+                activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+              )}
+            >
               <div className="flex items-baseline justify-center gap-2">
                 <input
                   ref={amountInputRef}
@@ -813,7 +848,9 @@ export function QuickTransactionModal({
                   placeholder="0"
                   className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
                 />
-                <span className="text-5xl font-bold tabular-nums text-muted-foreground">{getCurrencySymbol(getCurrentCurrency())}</span>
+                <span className="text-5xl font-bold tabular-nums text-muted-foreground">
+                  {getCurrencySymbol(getCurrentCurrency())}
+                </span>
               </div>
             </div>
           </div>
@@ -821,10 +858,12 @@ export function QuickTransactionModal({
 
         {/* Comment */}
         <div className="px-4 pb-3">
-          <div className={cn(
-            "flex items-start gap-3 px-3 py-3 rounded-xl transition-all",
-            activeField === 'comment' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
-          )}>
+          <div
+            className={cn(
+              'flex items-start gap-3 px-3 py-3 rounded-xl transition-all',
+              activeField === 'comment' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+            )}
+          >
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
             <textarea
               ref={commentRef}
@@ -840,16 +879,21 @@ export function QuickTransactionModal({
 
         {/* Date row */}
         <div className="px-4 pb-4 flex justify-end">
-          <label className={cn(
-            "inline-flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer relative transition-all",
-            activeField === 'date' ? "bg-primary/20 ring-2 ring-primary" : "bg-secondary/50"
-          )}>
+          <label
+            className={cn(
+              'inline-flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer relative transition-all',
+              activeField === 'date' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+            )}
+          >
             <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-sm">{
-              date === new Date().toISOString().split('T')[0]
+            <span className="text-sm">
+              {date === new Date().toISOString().split('T')[0]
                 ? t('today')
-                : new Date(date + 'T00:00:00').toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'short' })
-            }</span>
+                : new Date(date + 'T00:00:00').toLocaleDateString(
+                    language === 'ru' ? 'ru-RU' : 'en-US',
+                    { day: 'numeric', month: 'short' }
+                  )}
+            </span>
             <input
               type="date"
               lang={language}
@@ -862,7 +906,7 @@ export function QuickTransactionModal({
         </div>
 
         {/* Submit Button - inline after comment */}
-        <div ref={buttonContainerRef} className={cn("px-4 pb-4", buttonCovered && "invisible")}>
+        <div ref={buttonContainerRef} className={cn('px-4 pb-4', buttonCovered && 'invisible')}>
           <button
             onClick={handleSubmit}
             disabled={
@@ -887,10 +931,7 @@ export function QuickTransactionModal({
 
       {/* Submit Button - fixed above keyboard when covered */}
       {buttonCovered && (
-        <div
-          className="absolute left-0 right-0 px-4 pb-2"
-          style={{ bottom: keyboardHeight + 8 }}
-        >
+        <div className="absolute left-0 right-0 px-4 pb-2" style={{ bottom: keyboardHeight + 8 }}>
           <div className="max-w-lg mx-auto">
             <button
               onClick={handleSubmit}
@@ -934,9 +975,7 @@ export function QuickTransactionModal({
                 onClick={() => handleAccountChange(account.id!)}
                 className={cn(
                   'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
-                  account.id === selectedAccountId
-                    ? 'bg-primary/20'
-                    : 'hover:bg-secondary/50'
+                  account.id === selectedAccountId ? 'bg-primary/20' : 'hover:bg-secondary/50'
                 )}
               >
                 <div
@@ -982,19 +1021,14 @@ export function QuickTransactionModal({
                 onClick={() => handleSourceChange(source.id!)}
                 className={cn(
                   'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
-                  source.id === selectedSourceId
-                    ? 'bg-primary/20'
-                    : 'hover:bg-secondary/50'
+                  source.id === selectedSourceId ? 'bg-primary/20' : 'hover:bg-secondary/50'
                 )}
               >
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: source.color + '20' }}
                 >
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: source.color }}
-                  />
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: source.color }} />
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <p className="font-medium truncate">{source.name}</p>
@@ -1028,9 +1062,7 @@ export function QuickTransactionModal({
                 onClick={() => handleCategoryChange(category.id!)}
                 className={cn(
                   'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
-                  category.id === selectedCategoryId
-                    ? 'bg-primary/20'
-                    : 'hover:bg-secondary/50'
+                  category.id === selectedCategoryId ? 'bg-primary/20' : 'hover:bg-secondary/50'
                 )}
               >
                 <div

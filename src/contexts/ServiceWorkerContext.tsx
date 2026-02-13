@@ -5,6 +5,8 @@ declare global {
   interface Window {
     __TEST_FORCE_SW_UPDATE__?: boolean
   }
+
+  var __TEST_FORCE_SW_UPDATE__: boolean | undefined
 }
 
 interface ServiceWorkerContextValue {
@@ -23,7 +25,7 @@ export function ServiceWorkerProvider({ children }: { children: React.ReactNode 
     updateServiceWorker,
   } = useRegisterSW()
 
-  const showUpdate = needRefresh || !!window.__TEST_FORCE_SW_UPDATE__
+  const showUpdate = needRefresh || !!globalThis.__TEST_FORCE_SW_UPDATE__
 
   return (
     <ServiceWorkerContext.Provider
@@ -37,7 +39,6 @@ export function ServiceWorkerProvider({ children }: { children: React.ReactNode 
   )
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useServiceWorker() {
   return useContext(ServiceWorkerContext)
 }

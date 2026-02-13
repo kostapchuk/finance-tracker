@@ -1,6 +1,7 @@
 import { CheckCircle2, ArrowRight, X } from 'lucide-react'
-import { useAppStore } from '@/store/useAppStore'
+
 import { useLanguage } from '@/hooks/useLanguage'
+import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 
 export function OnboardingOverlay() {
@@ -30,10 +31,7 @@ export function OnboardingOverlay() {
             >
               {t('onboardingGetStarted')}
             </button>
-            <button
-              onClick={skipOnboarding}
-              className="w-full py-2 text-muted-foreground"
-            >
+            <button onClick={skipOnboarding} className="w-full py-2 text-muted-foreground">
               {t('onboardingSkip')}
             </button>
           </div>
@@ -178,7 +176,15 @@ export function OnboardingOverlay() {
   return null
 }
 
-function StepIndicator({ currentStep, totalSteps, onSkip }: { currentStep: number; totalSteps: number; onSkip: () => void }) {
+function StepIndicator({
+  currentStep,
+  totalSteps,
+  onSkip,
+}: {
+  currentStep: number
+  totalSteps: number
+  onSkip: () => void
+}) {
   const { t } = useLanguage()
 
   return (
@@ -189,7 +195,11 @@ function StepIndicator({ currentStep, totalSteps, onSkip }: { currentStep: numbe
             key={i}
             className={cn(
               'w-2 h-2 rounded-full transition-colors',
-              i + 1 === currentStep ? 'bg-primary' : i + 1 < currentStep ? 'bg-primary/50' : 'bg-white/30'
+              i + 1 === currentStep
+                ? 'bg-primary'
+                : i + 1 < currentStep
+                  ? 'bg-primary/50'
+                  : 'bg-white/30'
             )}
           />
         ))}
