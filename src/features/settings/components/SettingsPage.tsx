@@ -828,11 +828,15 @@ function ManagementView({
   return (
     <div className="flex flex-col min-h-full">
       <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={onBack} className="text-primary font-medium">
+        <button onClick={onBack} className="text-primary font-medium" aria-label="Back">
           {backLabel}
         </button>
         <h1 className="text-lg font-bold">{title}</h1>
-        <button onClick={onAdd} className="p-2 rounded-full bg-primary text-primary-foreground">
+        <button
+          onClick={onAdd}
+          className="p-2 rounded-full bg-primary text-primary-foreground"
+          aria-label="Add"
+        >
           <Plus className="h-5 w-5" />
         </button>
       </div>
@@ -876,6 +880,7 @@ function SortableManagementItem({
         {...attributes}
         {...listeners}
         className="p-1 touch-none cursor-grab active:cursor-grabbing"
+        aria-label="Drag to reorder"
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </button>
@@ -895,12 +900,17 @@ function SortableManagementItem({
         {subtitle && <p className="text-sm text-muted-foreground truncate">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-1">
-        <button onClick={onEdit} className="p-2 rounded-full hover:bg-secondary touch-target">
+        <button
+          onClick={onEdit}
+          className="p-2 rounded-full hover:bg-secondary touch-target"
+          aria-label="Edit"
+        >
           <Pencil className="h-4 w-4 text-muted-foreground" />
         </button>
         <button
           onClick={onDelete}
           className="p-2 rounded-full hover:bg-destructive/20 touch-target"
+          aria-label="Delete"
         >
           <Trash2 className="h-4 w-4 text-destructive" />
         </button>
@@ -940,12 +950,17 @@ function ManagementItem({
         {subtitle && <p className="text-sm text-muted-foreground truncate">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-1">
-        <button onClick={onEdit} className="p-2 rounded-full hover:bg-secondary touch-target">
+        <button
+          onClick={onEdit}
+          className="p-2 rounded-full hover:bg-secondary touch-target"
+          aria-label="Edit"
+        >
           <Pencil className="h-4 w-4 text-muted-foreground" />
         </button>
         <button
           onClick={onDelete}
           className="p-2 rounded-full hover:bg-destructive/20 touch-target"
+          aria-label="Delete"
         >
           <Trash2 className="h-4 w-4 text-destructive" />
         </button>

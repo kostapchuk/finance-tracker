@@ -31,7 +31,11 @@ export function OnboardingOverlay() {
             >
               {t('onboardingGetStarted')}
             </button>
-            <button onClick={skipOnboarding} className="w-full py-2 text-muted-foreground">
+            <button
+              onClick={skipOnboarding}
+              className="w-full py-2 text-muted-foreground"
+              aria-label={t('onboardingSkip')}
+            >
               {t('onboardingSkip')}
             </button>
           </div>
@@ -55,7 +59,7 @@ export function OnboardingOverlay() {
                 <h3 className="font-semibold mb-1">{t('onboardingIncomeTitle')}</h3>
                 <p className="text-sm text-muted-foreground">{t('onboardingIncomeText')}</p>
               </div>
-              <button onClick={skipOnboarding} className="p-1">
+              <button onClick={skipOnboarding} className="p-1" aria-label={t('close')}>
                 <X className="h-5 w-5 text-muted-foreground" />
               </button>
             </div>
@@ -92,7 +96,7 @@ export function OnboardingOverlay() {
                 <h3 className="font-semibold mb-1">{t('onboardingExpenseTitle')}</h3>
                 <p className="text-sm text-muted-foreground">{t('onboardingExpenseText')}</p>
               </div>
-              <button onClick={skipOnboarding} className="p-1">
+              <button onClick={skipOnboarding} className="p-1" aria-label={t('close')}>
                 <X className="h-5 w-5 text-muted-foreground" />
               </button>
             </div>
@@ -131,7 +135,7 @@ export function OnboardingOverlay() {
                 <h3 className="font-semibold mb-1">{t('onboardingCurrencyTitle')}</h3>
                 <p className="text-sm text-muted-foreground">{t('onboardingCurrencyText')}</p>
               </div>
-              <button onClick={skipOnboarding} className="p-1">
+              <button onClick={skipOnboarding} className="p-1" aria-label={t('close')}>
                 <X className="h-5 w-5 text-muted-foreground" />
               </button>
             </div>
@@ -204,7 +208,7 @@ function StepIndicator({
           />
         ))}
       </div>
-      <button onClick={onSkip} className="text-sm text-white/70">
+      <button onClick={onSkip} className="text-sm text-white/70" aria-label={t('onboardingSkip')}>
         {t('onboardingSkip')}
       </button>
     </div>

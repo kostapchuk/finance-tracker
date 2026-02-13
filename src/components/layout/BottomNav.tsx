@@ -39,6 +39,7 @@ export function BottomNav() {
                 'flex flex-col items-center justify-center flex-1 h-full gap-1 touch-target transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground active:text-foreground'
               )}
+              aria-label={t(item.labelKey)}
             >
               <span className="relative">
                 <Icon className={cn('h-5 w-5', isActive && 'scale-110')} />
