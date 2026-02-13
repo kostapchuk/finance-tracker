@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef, useReducer } from 'react'
 import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, X, Filter, Calendar, Wallet, TrendingUp, TrendingDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -7,7 +7,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import { formatCurrency } from '@/utils/currency'
-import { getStartOfMonth, getStartOfWeek } from '@/utils/date'
+import { getStartOfMonth, getStartOfWeek, getEndOfMonth, formatDateForInput } from '@/utils/date'
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { cn } from '@/utils/cn'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
@@ -15,6 +15,92 @@ import { QuickTransactionModal, type TransactionMode } from '@/components/ui/Qui
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
 import type { Transaction, TransactionType, Loan } from '@/database/types'
+
+type DateFilterType = 'all' | 'today' | 'week' | 'month' | 'last3months' | 'last6months' | 'year' | 'custom'
+
+interface FilterState {
+  typeFilter: 'all' | TransactionType | 'transfers' | 'loans'
+  categoryFilter: string
+  accountFilter: string
+  dateFilter: DateFilterType
+  customDateFrom: string
+  customDateTo: string
+  searchQuery: string
+  displayCount: number
+  showFilters: boolean
+}
+
+type FilterAction =
+  | { type: 'SET_TYPE_FILTER'; payload: FilterState['typeFilter'] }
+  | { type: 'SET_CATEGORY_FILTER'; payload: string }
+  | { type: 'SET_ACCOUNT_FILTER'; payload: string }
+  | { type: 'SET_DATE_FILTER'; payload: DateFilterType }
+  | { type: 'SET_CUSTOM_DATE_FROM'; payload: string }
+  | { type: 'SET_CUSTOM_DATE_TO'; payload: string }
+  | { type: 'SET_SEARCH_QUERY'; payload: string }
+  | { type: 'SET_SHOW_FILTERS'; payload: boolean }
+  | { type: 'LOAD_MORE' }
+  | { type: 'APPLY_CATEGORY_NAV'; payload: number }
+  | { type: 'APPLY_ACCOUNT_NAV'; payload: number }
+
+function getInitialFilterState(): FilterState {
+  const selectedMonth = useAppStore.getState().selectedMonth
+  const now = new Date()
+  const isCurrentMonth = selectedMonth.getMonth() === now.getMonth() && selectedMonth.getFullYear() === now.getFullYear()
+
+  return {
+    typeFilter: 'all',
+    categoryFilter: 'all',
+    accountFilter: 'all',
+    dateFilter: isCurrentMonth ? 'month' : 'custom',
+    customDateFrom: isCurrentMonth ? '' : formatDateForInput(getStartOfMonth(selectedMonth)),
+    customDateTo: isCurrentMonth ? '' : formatDateForInput(getEndOfMonth(selectedMonth)),
+    searchQuery: '',
+    displayCount: 50,
+    showFilters: !isCurrentMonth
+  }
+}
+
+function filterReducer(state: FilterState, action: FilterAction): FilterState {
+  switch (action.type) {
+    case 'SET_TYPE_FILTER':
+      return { ...state, typeFilter: action.payload, categoryFilter: 'all', displayCount: 50 }
+    case 'SET_CATEGORY_FILTER':
+      return { ...state, categoryFilter: action.payload, displayCount: 50 }
+    case 'SET_ACCOUNT_FILTER':
+      return { ...state, accountFilter: action.payload, displayCount: 50 }
+    case 'SET_DATE_FILTER':
+      return { ...state, dateFilter: action.payload, displayCount: 50 }
+    case 'SET_CUSTOM_DATE_FROM':
+      return { ...state, customDateFrom: action.payload, displayCount: 50 }
+    case 'SET_CUSTOM_DATE_TO':
+      return { ...state, customDateTo: action.payload, displayCount: 50 }
+    case 'SET_SEARCH_QUERY':
+      return { ...state, searchQuery: action.payload, displayCount: 50 }
+    case 'SET_SHOW_FILTERS':
+      return { ...state, showFilters: action.payload }
+    case 'LOAD_MORE':
+      return { ...state, displayCount: state.displayCount + 50 }
+    case 'APPLY_CATEGORY_NAV':
+      return {
+        ...state,
+        categoryFilter: String(action.payload),
+        typeFilter: 'expense',
+        dateFilter: 'month',
+        showFilters: true,
+        displayCount: 50
+      }
+    case 'APPLY_ACCOUNT_NAV':
+      return {
+        ...state,
+        accountFilter: String(action.payload),
+        showFilters: true,
+        displayCount: 50
+      }
+    default:
+      return state
+  }
+}
 
 export function HistoryPage() {
   const transactions = useAppStore((state) => state.transactions)
@@ -31,51 +117,44 @@ export function HistoryPage() {
   const historyCategoryFilter = useAppStore((state) => state.historyCategoryFilter)
   const historyAccountFilter = useAppStore((state) => state.historyAccountFilter)
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [typeFilter, setTypeFilter] = useState<'all' | TransactionType | 'transfers' | 'loans'>('all')
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [accountFilter, setAccountFilter] = useState<string>('all')
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'last3months' | 'last6months' | 'year' | 'custom'>('month')
-  const [customDateFrom, setCustomDateFrom] = useState('')
-  const [customDateTo, setCustomDateTo] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
+  const [filterState, dispatch] = useReducer(filterReducer, null, getInitialFilterState)
+  const {
+    typeFilter,
+    categoryFilter,
+    accountFilter,
+    dateFilter,
+    customDateFrom,
+    customDateTo,
+    searchQuery,
+    displayCount,
+    showFilters
+  } = filterState
 
-  // Infinite scroll state
-  const [displayCount, setDisplayCount] = useState(50)
+  const [showSearch, setShowSearch] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // Edit state
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment' | null>(null)
   const [editTransactionMode, setEditTransactionMode] = useState<TransactionMode | null>(null)
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
 
+  const navAppliedRef = useRef(false)
+
   useEffect(() => {
-    if (historyCategoryFilter !== null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync from store navigation action
-      setCategoryFilter(String(historyCategoryFilter))
-      setTypeFilter('expense')
-      setDateFilter('month')
-      setShowFilters(true)
+    if (historyCategoryFilter !== null && !navAppliedRef.current) {
+      navAppliedRef.current = true
+      dispatch({ type: 'APPLY_CATEGORY_NAV', payload: historyCategoryFilter })
       useAppStore.setState({ historyCategoryFilter: null })
     }
   }, [historyCategoryFilter])
 
   useEffect(() => {
-    if (historyAccountFilter !== null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync from store navigation action
-      setAccountFilter(String(historyAccountFilter))
-      setShowFilters(true)
+    if (historyAccountFilter !== null && !navAppliedRef.current) {
+      navAppliedRef.current = true
+      dispatch({ type: 'APPLY_ACCOUNT_NAV', payload: historyAccountFilter })
       useAppStore.setState({ historyAccountFilter: null })
     }
   }, [historyAccountFilter])
-
-  // Reset display count when filters change
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting pagination on filter change
-    setDisplayCount(50)
-  }, [typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo, searchQuery])
 
   const typeConfig: Record<TransactionType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
     income: { label: t('income'), icon: ArrowUpCircle, color: 'text-success' },
@@ -220,8 +299,8 @@ export function HistoryPage() {
   const loadMore = useCallback(async () => {
     if (isLoadingMore || !hasMore) return
     setIsLoadingMore(true)
-    await new Promise(r => setTimeout(r, 50)) // small delay for smooth UX
-    setDisplayCount(prev => prev + 50)
+    await new Promise(r => setTimeout(r, 50))
+    dispatch({ type: 'LOAD_MORE' })
     setIsLoadingMore(false)
   }, [isLoadingMore, hasMore])
 
@@ -408,11 +487,11 @@ export function HistoryPage() {
               type="text"
               placeholder={t('searchTransactions')}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => dispatch({ type: 'SET_SEARCH_QUERY', payload: e.target.value })}
               className="flex-1 bg-transparent outline-none text-base"
               autoFocus
             />
-            <button onClick={() => { setShowSearch(false); setSearchQuery('') }}>
+            <button onClick={() => { setShowSearch(false); dispatch({ type: 'SET_SEARCH_QUERY', payload: '' }) }}>
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
@@ -421,7 +500,7 @@ export function HistoryPage() {
             <h1 className="text-xl font-bold">{t('history')}</h1>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => dispatch({ type: 'SET_SHOW_FILTERS', payload: !showFilters })}
                 className={cn(
                   "p-2 rounded-full hover:bg-secondary touch-target",
                   showFilters && "bg-primary/20"
@@ -445,7 +524,7 @@ export function HistoryPage() {
         {(['all', 'income', 'expense', 'transfers', 'loans'] as const).map((filter) => (
           <button
             key={filter}
-            onClick={() => { setTypeFilter(filter); setCategoryFilter('all') }}
+            onClick={() => dispatch({ type: 'SET_TYPE_FILTER', payload: filter })}
             className={cn(
               'px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
               typeFilter === filter
@@ -466,7 +545,7 @@ export function HistoryPage() {
         <div className="px-4 pb-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             {/* Date Filter */}
-            <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as typeof dateFilter)}>
+            <Select value={dateFilter} onValueChange={(v) => dispatch({ type: 'SET_DATE_FILTER', payload: v as DateFilterType })}>
               <SelectTrigger className="h-9">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span className="truncate">
@@ -493,7 +572,7 @@ export function HistoryPage() {
             </Select>
 
             {/* Account Filter */}
-            <Select value={accountFilter} onValueChange={setAccountFilter}>
+            <Select value={accountFilter} onValueChange={(v) => dispatch({ type: 'SET_ACCOUNT_FILTER', payload: v })}>
               <SelectTrigger className="h-9">
                 <Wallet className="h-4 w-4 mr-2" />
                 <span className="truncate">
@@ -515,7 +594,7 @@ export function HistoryPage() {
 
           {/* Category/Source Filter */}
           {filterOptions.length > 0 && (
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select value={categoryFilter} onValueChange={(v) => dispatch({ type: 'SET_CATEGORY_FILTER', payload: v })}>
               <SelectTrigger className="h-9">
                 <SelectValue placeholder={typeFilter === 'income' ? t('incomeSources') : t('categories')}>
                   {categoryFilter === 'all'
@@ -543,7 +622,7 @@ export function HistoryPage() {
                   type="date"
                   lang={language}
                   value={customDateFrom}
-                  onChange={(e) => setCustomDateFrom(e.target.value)}
+                  onChange={(e) => dispatch({ type: 'SET_CUSTOM_DATE_FROM', payload: e.target.value })}
                   className="h-9"
                 />
               </div>
@@ -553,7 +632,7 @@ export function HistoryPage() {
                   type="date"
                   lang={language}
                   value={customDateTo}
-                  onChange={(e) => setCustomDateTo(e.target.value)}
+                  onChange={(e) => dispatch({ type: 'SET_CUSTOM_DATE_TO', payload: e.target.value })}
                   className="h-9"
                 />
               </div>
