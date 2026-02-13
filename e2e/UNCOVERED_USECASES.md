@@ -2,15 +2,6 @@
 
 This document lists use cases and features that are **not currently covered** by E2E tests.
 
-## Investments
-
-- [ ] Create investment position (buy)
-- [ ] Sell investment position
-- [ ] Update investment current price
-- [ ] View investment portfolio
-- [ ] Investment profit/loss calculation
-- [ ] Investment transactions in history
-
 ## Reports Page
 
 - [x] View monthly summary *(report.spec.ts)*
@@ -140,10 +131,9 @@ This document lists use cases and features that are **not currently covered** by
 6. Entity reordering
 
 ### Low Priority (Edge Cases)
-7. Investments (if not heavily used)
-8. Custom currencies
-9. PWA-specific features
-10. Error handling edge cases
+7. Custom currencies
+8. PWA-specific features
+9. Error handling edge cases
 
 ---
 

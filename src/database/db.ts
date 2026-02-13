@@ -5,7 +5,6 @@ import type {
   IncomeSource,
   Category,
   Transaction,
-  Investment,
   Loan,
   AppSettings,
   CustomCurrency,
@@ -16,7 +15,6 @@ const db = new Dexie('FinanceTrackerDB') as Dexie & {
   incomeSources: EntityTable<IncomeSource, 'id'>
   categories: EntityTable<Category, 'id'>
   transactions: EntityTable<Transaction, 'id'>
-  investments: EntityTable<Investment, 'id'>
   loans: EntityTable<Loan, 'id'>
   settings: EntityTable<AppSettings, 'id'>
   customCurrencies: EntityTable<CustomCurrency, 'id'>
@@ -26,9 +24,7 @@ db.version(1).stores({
   accounts: '++id, name, type, currency, createdAt',
   incomeSources: '++id, name, createdAt',
   categories: '++id, name, createdAt',
-  transactions:
-    '++id, type, date, accountId, categoryId, incomeSourceId, loanId, investmentId, createdAt',
-  investments: '++id, accountId, symbol, createdAt',
+  transactions: '++id, type, date, accountId, categoryId, incomeSourceId, loanId, createdAt',
   loans: '++id, type, status, personName, accountId, createdAt',
   settings: '++id',
 })
@@ -37,13 +33,34 @@ db.version(2).stores({
   accounts: '++id, name, type, currency, createdAt',
   incomeSources: '++id, name, createdAt',
   categories: '++id, name, createdAt',
-  transactions:
-    '++id, type, date, accountId, categoryId, incomeSourceId, loanId, investmentId, createdAt',
-  investments: '++id, accountId, symbol, createdAt',
+  transactions: '++id, type, date, accountId, categoryId, incomeSourceId, loanId, createdAt',
   loans: '++id, type, status, personName, accountId, createdAt',
   settings: '++id',
   customCurrencies: '++id, code, createdAt',
 })
+
+db.version(3)
+  .stores({
+    accounts: '++id, name, type, currency, createdAt',
+    incomeSources: '++id, name, createdAt',
+    categories: '++id, name, createdAt',
+    transactions: '++id, type, date, accountId, categoryId, incomeSourceId, loanId, createdAt',
+    loans: '++id, type, status, personName, accountId, createdAt',
+    settings: '++id',
+    customCurrencies: '++id, code, createdAt',
+    investments: null, // Delete table
+  })
+  .upgrade(async (tx) => {
+    // Clear investments table before deletion (if it exists from v2)
+    try {
+      const count = await tx.table('investments').count()
+      if (count > 0) {
+        await tx.table('investments').clear()
+      }
+    } catch {
+      // Table doesn't exist, ignore error
+    }
+  })
 
 export { db }
 
@@ -52,7 +69,6 @@ export type {
   IncomeSource,
   Category,
   Transaction,
-  Investment,
   Loan,
   AppSettings,
   CustomCurrency,

@@ -78,7 +78,6 @@ export function SettingsPage() {
     incomeSources,
     categories,
     transactions,
-    investments,
     loans,
     customCurrencies,
     mainCurrency,
@@ -163,7 +162,6 @@ export function SettingsPage() {
         incomeSources,
         categories,
         transactions,
-        investments,
         loans,
       }
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -200,13 +198,12 @@ export function SettingsPage() {
 
       await db.transaction(
         'rw',
-        [db.accounts, db.incomeSources, db.categories, db.transactions, db.investments, db.loans],
+        [db.accounts, db.incomeSources, db.categories, db.transactions, db.loans],
         async () => {
           await db.accounts.clear()
           await db.incomeSources.clear()
           await db.categories.clear()
           await db.transactions.clear()
-          await db.investments.clear()
           await db.loans.clear()
 
           if (data.accounts?.length) {
@@ -250,19 +247,6 @@ export function SettingsPage() {
               }))
             )
           }
-          if (data.investments?.length) {
-            await db.investments.bulkAdd(
-              data.investments.map((i: Record<string, unknown>) => ({
-                ...i,
-                id: undefined,
-                lastPriceUpdate: i.lastPriceUpdate
-                  ? new Date(i.lastPriceUpdate as string)
-                  : undefined,
-                createdAt: new Date(i.createdAt as string),
-                updatedAt: new Date(i.updatedAt as string),
-              }))
-            )
-          }
           if (data.loans?.length) {
             await db.loans.bulkAdd(
               data.loans.map((l: Record<string, unknown>) => ({
@@ -298,13 +282,12 @@ export function SettingsPage() {
     try {
       await db.transaction(
         'rw',
-        [db.accounts, db.incomeSources, db.categories, db.transactions, db.investments, db.loans],
+        [db.accounts, db.incomeSources, db.categories, db.transactions, db.loans],
         async () => {
           await db.accounts.clear()
           await db.incomeSources.clear()
           await db.categories.clear()
           await db.transactions.clear()
-          await db.investments.clear()
           await db.loans.clear()
         }
       )

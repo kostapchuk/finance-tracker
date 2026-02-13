@@ -82,9 +82,9 @@ export const translations = {
     manageCategories: 'Manage Categories',
     manageIncomeSources: 'Manage Income Sources',
     manageCurrencies: 'Manage Currencies',
-    goodExpensesSavings: 'Good Expenses (Savings/Investments)',
+    goodExpensesSavings: 'Good Expenses (Savings)',
     badExpensesRegular: 'Bad Expenses (Regular)',
-    noGoodExpenseCategories: 'No good expense categories. Add savings/investment categories!',
+    noGoodExpenseCategories: 'No good expense categories. Add savings categories!',
     noExpenseCategories: 'No expense categories',
     noAccountsYet: 'No accounts yet',
     noIncomeSources: 'No income sources yet',
@@ -115,7 +115,7 @@ export const translations = {
     addLoan: 'Add Loan',
     editLoan: 'Edit Loan',
     expense: 'Expense',
-    savingsInvestment: 'Savings / Investment',
+    savings: 'Savings',
     hideFromDashboard: 'Hide from Dashboard',
 
     // Transaction modal
@@ -166,7 +166,6 @@ export const translations = {
     cash: 'Cash',
     bankAccount: 'Bank Account',
     cryptoWallet: 'Crypto Wallet',
-    investmentAccount: 'Investment Account',
     creditCard: 'Credit Card',
 
     // Months
@@ -199,8 +198,6 @@ export const translations = {
     selectType: 'Select type',
     selectCurrency: 'Select currency',
     selectPeriod: 'Select period',
-    egAAPL: 'e.g., AAPL',
-    egAppleInc: 'e.g., Apple Inc.',
     egSalaryFreelance: 'e.g., Salary, Freelance',
     egGroceries: 'e.g., Groceries',
     egMainChecking: 'e.g., Main Checking',
@@ -211,7 +208,6 @@ export const translations = {
     confirmYourPassphrase: 'Confirm your passphrase',
     searchTransactions: 'Search transactions...',
     search: 'Search...',
-    newPrice: 'New price',
     leaveEmptyForNoBudget: 'Leave empty for no budget',
     budgetPeriod: 'Budget Period',
     weekly: 'Weekly',
@@ -230,8 +226,6 @@ export const translations = {
     allTime: 'All Time',
     all: 'All',
     noTransactionsFound: 'No transactions found',
-    buy: 'Buy',
-    sell: 'Sell',
     deleteTransaction: 'Delete this transaction?',
     deleteLoan:
       'Delete this loan? All related transactions will be removed and account balances will be reverted.',
@@ -239,23 +233,6 @@ export const translations = {
     // Delete confirmation
     deleteConfirmationMessage:
       'This will permanently delete ALL your data including accounts, transactions, categories, and loans. This action cannot be undone.',
-
-    // Investments
-    addInvestment: 'Add Investment',
-    editInvestment: 'Edit Investment',
-    quantity: 'Quantity',
-    averageCost: 'Avg. Cost',
-    currentPrice: 'Current Price',
-    investmentPortfolio: 'Investment Portfolio',
-    trackInvestments: 'Track your stocks, ETFs, and crypto holdings',
-    noInvestments: 'No investments yet',
-    addInvestmentsToTrack: 'Add investments to track your portfolio performance',
-    totalValue: 'Total Value',
-    totalCost: 'Total Cost',
-    gainLoss: 'Gain/Loss',
-    totalGainLoss: 'Total Gain/Loss',
-    totalReturn: 'Total Return',
-    noInvestmentAccounts: 'Create an investment account first',
     value: 'Value',
     account: 'Account',
 
@@ -270,7 +247,6 @@ export const translations = {
 
     // History page filters
     transfers: 'Transfers',
-    investments: 'Investments',
     loansFilter: 'Loans',
     customRange: 'Custom Range',
     from: 'From',
@@ -442,7 +418,7 @@ export const translations = {
     manageCategories: 'Управление категориями',
     manageIncomeSources: 'Управление источниками дохода',
     manageCurrencies: 'Управление валютами',
-    goodExpensesSavings: 'Хорошие расходы (Сбережения/Инвестиции)',
+    goodExpensesSavings: 'Хорошие расходы (Сбережения)',
     badExpensesRegular: 'Плохие расходы (Обычные)',
     noGoodExpenseCategories: 'Нет категорий хороших расходов. Добавьте категории сбережений!',
     noExpenseCategories: 'Нет категорий расходов',
@@ -475,7 +451,7 @@ export const translations = {
     addLoan: 'Добавить долг',
     editLoan: 'Редактировать долг',
     expense: 'Расход',
-    savingsInvestment: 'Сбережения / Инвестиции',
+    savings: 'Сбережения',
     hideFromDashboard: 'Скрыть с главной',
 
     // Transaction modal
@@ -526,7 +502,6 @@ export const translations = {
     cash: 'Наличные',
     bankAccount: 'Банковский счёт',
     cryptoWallet: 'Криптокошелёк',
-    investmentAccount: 'Инвестиционный счёт',
     creditCard: 'Кредитная карта',
 
     // Months
@@ -559,8 +534,6 @@ export const translations = {
     selectType: 'Выберите тип',
     selectCurrency: 'Выберите валюту',
     selectPeriod: 'Выберите период',
-    egAAPL: 'напр., AAPL',
-    egAppleInc: 'напр., Apple Inc.',
     egSalaryFreelance: 'напр., Зарплата, Фриланс',
     egGroceries: 'напр., Продукты',
     egMainChecking: 'напр., Основной счёт',
@@ -571,7 +544,6 @@ export const translations = {
     confirmYourPassphrase: 'Подтвердите пароль',
     searchTransactions: 'Поиск транзакций...',
     search: 'Поиск...',
-    newPrice: 'Новая цена',
     leaveEmptyForNoBudget: 'Оставьте пустым без бюджета',
     budgetPeriod: 'Период бюджета',
     weekly: 'Еженедельно',
@@ -590,8 +562,6 @@ export const translations = {
     allTime: 'Все время',
     all: 'Все',
     noTransactionsFound: 'Транзакции не найдены',
-    buy: 'Покупка',
-    sell: 'Продажа',
     deleteTransaction: 'Удалить эту транзакцию?',
     deleteLoan:
       'Удалить этот долг? Все связанные транзакции будут удалены, а балансы счетов возвращены.',
@@ -599,23 +569,6 @@ export const translations = {
     // Delete confirmation
     deleteConfirmationMessage:
       'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и долги. Это действие нельзя отменить.',
-
-    // Investments
-    addInvestment: 'Добавить инвестицию',
-    editInvestment: 'Редактировать инвестицию',
-    quantity: 'Количество',
-    averageCost: 'Сред. цена',
-    currentPrice: 'Текущая цена',
-    investmentPortfolio: 'Инвестиционный портфель',
-    trackInvestments: 'Отслеживайте акции, ETF и криптовалюту',
-    noInvestments: 'Инвестиций пока нет',
-    addInvestmentsToTrack: 'Добавьте инвестиции для отслеживания доходности',
-    totalValue: 'Общая стоимость',
-    totalCost: 'Общие затраты',
-    gainLoss: 'Прибыль/Убыток',
-    totalGainLoss: 'Общая прибыль/убыток',
-    totalReturn: 'Общая доходность',
-    noInvestmentAccounts: 'Сначала создайте инвестиционный счёт',
     value: 'Стоимость',
     account: 'Счёт',
 
@@ -630,7 +583,6 @@ export const translations = {
 
     // History page filters
     transfers: 'Переводы',
-    investments: 'Инвестиции',
     loansFilter: 'Долги',
     customRange: 'Свой период',
     from: 'С',

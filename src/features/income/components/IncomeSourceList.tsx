@@ -52,7 +52,7 @@ export function IncomeSourceList() {
             <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-medium mb-2">No income sources yet</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Add income sources like salary, freelance, or investments
+              Add income sources like salary or freelance
             </p>
             <Button onClick={() => setFormOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />

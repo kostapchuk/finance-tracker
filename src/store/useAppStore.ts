@@ -5,7 +5,6 @@ import {
   incomeSourceRepo,
   categoryRepo,
   transactionRepo,
-  investmentRepo,
   loanRepo,
   customCurrencyRepo,
   settingsRepo,
@@ -15,7 +14,6 @@ import type {
   IncomeSource,
   Category,
   Transaction,
-  Investment,
   Loan,
   CustomCurrency,
 } from '@/database/types'
@@ -29,7 +27,6 @@ interface AppState {
   incomeSources: IncomeSource[]
   categories: Category[]
   transactions: Transaction[]
-  investments: Investment[]
   loans: Loan[]
   customCurrencies: CustomCurrency[]
 
@@ -65,7 +62,6 @@ interface AppState {
   refreshIncomeSources: () => Promise<void>
   refreshCategories: () => Promise<void>
   refreshTransactions: () => Promise<void>
-  refreshInvestments: () => Promise<void>
   refreshLoans: () => Promise<void>
   refreshCustomCurrencies: () => Promise<void>
   setOnboardingStep: (step: number) => void
@@ -78,7 +74,6 @@ export const useAppStore = create<AppState>((set) => ({
   incomeSources: [],
   categories: [],
   transactions: [],
-  investments: [],
   loans: [],
   customCurrencies: [],
   mainCurrency: 'BYN',
@@ -114,25 +109,16 @@ export const useAppStore = create<AppState>((set) => ({
 
     set({ isLoading: true })
     try {
-      const [
-        accounts,
-        incomeSources,
-        categories,
-        transactions,
-        investments,
-        loans,
-        customCurrencies,
-        settings,
-      ] = await Promise.all([
-        accountRepo.getAll(),
-        incomeSourceRepo.getAll(),
-        categoryRepo.getAll(),
-        transactionRepo.getAll(),
-        investmentRepo.getAll(),
-        loanRepo.getAll(),
-        customCurrencyRepo.getAll(),
-        settingsRepo.get(),
-      ])
+      const [accounts, incomeSources, categories, transactions, loans, customCurrencies, settings] =
+        await Promise.all([
+          accountRepo.getAll(),
+          incomeSourceRepo.getAll(),
+          categoryRepo.getAll(),
+          transactionRepo.getAll(),
+          loanRepo.getAll(),
+          customCurrencyRepo.getAll(),
+          settingsRepo.get(),
+        ])
 
       const mainCurrency = settings?.defaultCurrency || 'BYN'
       const blurFinancialFigures = settings?.blurFinancialFigures || false
@@ -180,7 +166,6 @@ export const useAppStore = create<AppState>((set) => ({
           incomeSources: newIncomeSources,
           categories: newCategories,
           transactions,
-          investments,
           loans,
           customCurrencies,
           mainCurrency,
@@ -195,7 +180,6 @@ export const useAppStore = create<AppState>((set) => ({
           incomeSources,
           categories,
           transactions,
-          investments,
           loans,
           customCurrencies,
           mainCurrency,
@@ -229,11 +213,6 @@ export const useAppStore = create<AppState>((set) => ({
   refreshTransactions: async () => {
     const transactions = await transactionRepo.getAll()
     set({ transactions })
-  },
-
-  refreshInvestments: async () => {
-    const investments = await investmentRepo.getAll()
-    set({ investments })
   },
 
   refreshLoans: async () => {

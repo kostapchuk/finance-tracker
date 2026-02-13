@@ -31,7 +31,6 @@ const defaultAccountIcons: Record<AccountType, keyof typeof icons> = {
   cash: 'Banknote',
   bank: 'Building2',
   crypto: 'Bitcoin',
-  investment: 'TrendingUp',
   credit_card: 'CreditCard',
 }
 

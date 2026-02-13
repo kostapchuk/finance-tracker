@@ -190,8 +190,6 @@ export function HistoryPage() {
     income: { label: t('income'), icon: ArrowUpCircle, color: 'text-success' },
     expense: { label: t('expense'), icon: ArrowDownCircle, color: 'text-destructive' },
     transfer: { label: t('transfer'), icon: ArrowLeftRight, color: 'text-primary' },
-    investment_buy: { label: t('buy'), icon: ArrowDownCircle, color: 'text-investment' },
-    investment_sell: { label: t('sell'), icon: ArrowUpCircle, color: 'text-investment' },
     loan_given: { label: t('moneyGiven'), icon: ArrowDownCircle, color: 'text-loan' },
     loan_received: { label: t('moneyReceived'), icon: ArrowUpCircle, color: 'text-loan' },
     loan_payment: { label: t('paid'), icon: ArrowLeftRight, color: 'text-loan' },

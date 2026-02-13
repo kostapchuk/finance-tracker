@@ -10,7 +10,7 @@ interface CategoryTileProps {
   currency?: string
   color: string
   icon?: string
-  type?: 'expense' | 'income' | 'investment' | 'loan'
+  type?: 'expense' | 'income' | 'loan'
   onClick?: () => void
   dragHandleProps?: Record<string, unknown>
 }

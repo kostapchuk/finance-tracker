@@ -46,7 +46,6 @@ src/
 │   ├── categories/          # CategoryForm, CategoryList
 │   ├── income/              # IncomeSourceForm, IncomeSourceList
 │   ├── loans/               # LoansPage, LoanForm, LoanList, PaymentDialog
-│   ├── investments/         # InvestmentForm, InvestmentList
 │   ├── reports/             # ReportPage (monthly stats, charts)
 │   └── settings/            # SettingsPage, CurrencyForm
 ├── hooks/
@@ -67,29 +66,26 @@ src/
 ### Core Types
 
 ```typescript
-type AccountType = 'cash' | 'bank' | 'crypto' | 'investment' | 'credit_card'
+type AccountType = 'cash' | 'bank' | 'crypto' | 'credit_card'
 type TransactionType =
   | 'income'
   | 'expense'
   | 'transfer'
-  | 'investment_buy'
-  | 'investment_sell'
   | 'loan_given'
   | 'loan_received'
   | 'loan_payment'
 type LoanType = 'given' | 'received'
 type LoanStatus = 'active' | 'partially_paid' | 'fully_paid'
-type CategoryType = 'expense' | 'investment' | 'loan'
+type CategoryType = 'expense' | 'loan'
 ```
 
 ### Main Entities
 
 - **Account**: id, name, type, currency, balance, color, icon, sortOrder
-- **Transaction**: id, type, amount, currency, date, comment, accountId, categoryId, incomeSourceId, toAccountId, toAmount, loanId, investmentId, mainCurrencyAmount
+- **Transaction**: id, type, amount, currency, date, comment, accountId, categoryId, incomeSourceId, toAccountId, toAmount, loanId, mainCurrencyAmount
 - **Loan**: id, type, personName, description, amount, currency, paidAmount, status, accountId, dueDate
 - **Category**: id, name, color, icon, categoryType, budget, budgetPeriod, sortOrder
 - **IncomeSource**: id, name, currency, color, icon, sortOrder
-- **Investment**: id, accountId, symbol, name, quantity, averageCost, currentPrice, currency
 - **CustomCurrency**: id, code, name, symbol
 
 ## Custom UI Components
@@ -129,7 +125,7 @@ Custom modal with backdrop. Uses context for open state.
 
 ### State
 
-- `accounts`, `incomeSources`, `categories`, `transactions`, `investments`, `loans`, `customCurrencies` - Data arrays
+- `accounts`, `incomeSources`, `categories`, `transactions`, `loans`, `customCurrencies` - Data arrays
 - `mainCurrency` - Default currency (from settings)
 - `activeView` - Current page: 'dashboard' | 'history' | 'loans' | 'report' | 'settings'
 - `selectedMonth` - For monthly filtering
@@ -255,9 +251,16 @@ When loan/transaction currency differs from account currency:
 
 ## Development Workflow
 
-**After every code change:**
+**After every code change, run the same verification steps as CI/CD:**
 
-1. Run linter: `npm run lint`
-2. Run tests: `npm test`
-3. Create or update tests for any new/modified functionality
-4. Ensure all tests pass before considering the change complete
+```bash
+npm run lint              # ESLint check
+npm run format:check      # Prettier format check
+npm run type-coverage     # TypeScript type coverage
+npm run test:coverage     # Unit tests with coverage
+npm audit --audit-level=moderate  # Security audit
+npm run build             # Production build
+npx playwright test       # E2E tests (if applicable)
+```
+
+No warnings or errors should be present. Create or update tests for any new/modified functionality.

@@ -81,7 +81,6 @@ src/
 │   ├── categories/          # Category management
 │   ├── income/              # Income sources
 │   ├── loans/               # Loans/debts tracking
-│   ├── investments/         # Investment tracking
 │   ├── reports/             # Monthly reports
 │   └── settings/            # App settings
 ├── hooks/                   # Custom React hooks

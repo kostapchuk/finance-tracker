@@ -4,7 +4,6 @@ import {
   type IncomeSource,
   type Category,
   type Transaction,
-  type Investment,
   type Loan,
   type AppSettings,
   type CustomCurrency,
@@ -170,49 +169,6 @@ export const transactionRepo = {
 
   async delete(id: number) {
     return db.transactions.delete(id)
-  },
-}
-
-// Investment Repository
-export const investmentRepo = {
-  async getAll() {
-    return db.investments.orderBy('symbol').toArray()
-  },
-
-  async getById(id: number) {
-    return db.investments.get(id)
-  },
-
-  async getByAccount(accountId: number) {
-    return db.investments.where('accountId').equals(accountId).toArray()
-  },
-
-  async create(investment: Omit<Investment, 'id' | 'createdAt' | 'updatedAt'>) {
-    const now = new Date()
-    return db.investments.add({
-      ...investment,
-      createdAt: now,
-      updatedAt: now,
-    })
-  },
-
-  async update(id: number, updates: Partial<Omit<Investment, 'id' | 'createdAt'>>) {
-    return db.investments.update(id, {
-      ...updates,
-      updatedAt: new Date(),
-    })
-  },
-
-  async updatePrice(id: number, price: number) {
-    return db.investments.update(id, {
-      currentPrice: price,
-      lastPriceUpdate: new Date(),
-      updatedAt: new Date(),
-    })
-  },
-
-  async delete(id: number) {
-    return db.investments.delete(id)
   },
 }
 

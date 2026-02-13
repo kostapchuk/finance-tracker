@@ -26,11 +26,11 @@ export const generateId = () => crypto.randomUUID()
 **File: `src/database/types.ts`**
 
 All entity interfaces: change `id?: number` → `id: string` (no longer optional — generated before insert).
-All foreign key fields (`accountId`, `categoryId`, `incomeSourceId`, `toAccountId`, `investmentId`, `loanId`, `Investment.accountId`): change from `number` → `string`.
+All foreign key fields (`accountId`, `categoryId`, `incomeSourceId`, `toAccountId`, `loanId`): change from `number` → `string`.
 
 Add new types:
 ```ts
-export type SyncEntityType = 'accounts' | 'incomeSources' | 'categories' | 'transactions' | 'investments' | 'loans' | 'customCurrencies'
+export type SyncEntityType = 'accounts' | 'incomeSources' | 'categories' | 'transactions' | 'loans' | 'customCurrencies'
 
 export interface DeletionLogEntry {
   id: string
@@ -96,8 +96,6 @@ All files that use `.id!` as number, pass numeric IDs, or type IDs as `number`:
 - `src/features/transactions/components/TransactionList.tsx`
 - `src/features/loans/components/LoanForm.tsx`
 - `src/features/loans/components/LoanList.tsx`
-- `src/features/investments/components/InvestmentForm.tsx`
-- `src/features/investments/components/InvestmentList.tsx`
 - `src/features/import/components/ImportAccountMapping.tsx`
 - `src/features/import/components/ImportIncomeSourceMapping.tsx`
 - `src/features/import/components/ImportCategoryMapping.tsx`
@@ -140,7 +138,6 @@ users/{syncKey}/
     incomeSources/{id}
     categories/{id}
     transactions/{id}
-    investments/{id}
     loans/{id}
     customCurrencies/{id}
     settings/main   — single settings doc

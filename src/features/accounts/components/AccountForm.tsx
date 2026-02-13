@@ -42,7 +42,6 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
     { value: 'cash', label: t('cash') },
     { value: 'bank', label: t('bankAccount') },
     { value: 'crypto', label: t('cryptoWallet') },
-    { value: 'investment', label: t('investmentAccount') },
     { value: 'credit_card', label: t('creditCard') },
   ]
 

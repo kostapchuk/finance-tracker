@@ -36,12 +36,11 @@ export class AccountForm {
     await input.fill(name);
   }
 
-  async selectType(type: 'cash' | 'bank' | 'crypto' | 'investment' | 'credit_card'): Promise<void> {
+  async selectType(type: 'cash' | 'bank' | 'crypto' | 'credit_card'): Promise<void> {
     const typeLabels: Record<string, string> = {
       cash: 'Cash|Наличные',
       bank: 'Bank|Банк',
       crypto: 'Crypto|Крипто',
-      investment: 'Investment|Инвест',
       credit_card: 'Credit|Кредит',
     };
     await this.getTypeSelect().click();

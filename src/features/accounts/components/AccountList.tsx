@@ -1,13 +1,4 @@
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Wallet,
-  Building2,
-  Bitcoin,
-  TrendingUp,
-  CreditCard,
-} from 'lucide-react'
+import { Plus, Pencil, Trash2, Wallet, Building2, Bitcoin, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 
 import { AccountForm } from './AccountForm'
@@ -24,7 +15,6 @@ const typeIcons: Record<AccountType, React.ReactNode> = {
   cash: <Wallet className="h-4 w-4" />,
   bank: <Building2 className="h-4 w-4" />,
   crypto: <Bitcoin className="h-4 w-4" />,
-  investment: <TrendingUp className="h-4 w-4" />,
   credit_card: <CreditCard className="h-4 w-4" />,
 }
 
@@ -32,7 +22,6 @@ const typeLabels: Record<AccountType, string> = {
   cash: 'Cash',
   bank: 'Bank',
   crypto: 'Crypto',
-  investment: 'Investment',
   credit_card: 'Credit Card',
 }
 
@@ -77,7 +66,7 @@ export function AccountList() {
         <div>
           <h3 className="text-lg font-medium">Your Accounts</h3>
           <p className="text-sm text-muted-foreground">
-            Manage your cash, bank, crypto, and investment accounts
+            Manage your cash, bank, crypto, and credit card accounts
           </p>
         </div>
         <Button onClick={() => setFormOpen(true)}>

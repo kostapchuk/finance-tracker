@@ -39,16 +39,6 @@ export function TransactionList() {
       icon: <ArrowLeftRight className="h-4 w-4" />,
       color: 'text-blue-600',
     },
-    investment_buy: {
-      label: t('buy'),
-      icon: <ArrowDownCircle className="h-4 w-4" />,
-      color: 'text-purple-600',
-    },
-    investment_sell: {
-      label: t('sell'),
-      icon: <ArrowUpCircle className="h-4 w-4" />,
-      color: 'text-purple-600',
-    },
     loan_given: {
       label: t('loanGiven'),
       icon: <ArrowDownCircle className="h-4 w-4" />,
