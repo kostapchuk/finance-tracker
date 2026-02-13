@@ -1,5 +1,37 @@
-import { accountRepo, loanRepo } from '@/database/repositories'
+import { accountRepo, loanRepo, transactionRepo } from '@/database/repositories'
 import type { Transaction, Loan } from '@/database/types'
+
+export async function deleteLoanWithTransactions(loan: Loan): Promise<void> {
+  if (!loan.id) return
+
+  const transactions = await transactionRepo.getByLoan(loan.id)
+
+  for (const transaction of transactions) {
+    if (transaction.accountId) {
+      switch (transaction.type) {
+        case 'loan_given':
+          await accountRepo.updateBalance(transaction.accountId, transaction.amount)
+          break
+        case 'loan_received':
+          await accountRepo.updateBalance(transaction.accountId, -transaction.amount)
+          break
+        case 'loan_payment':
+          if (loan.type === 'given') {
+            await accountRepo.updateBalance(transaction.accountId, -transaction.amount)
+          } else {
+            await accountRepo.updateBalance(transaction.accountId, transaction.amount)
+          }
+          break
+      }
+    }
+
+    if (transaction.id) {
+      await transactionRepo.delete(transaction.id)
+    }
+  }
+
+  await loanRepo.delete(loan.id)
+}
 
 /**
  * Reverse a transaction's balance effects on accounts.

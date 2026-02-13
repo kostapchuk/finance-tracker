@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Trash2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import type { Loan, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
+import { deleteLoanWithTransactions } from '@/utils/transactionBalance'
 
 interface PaymentDialogProps {
   loan: Loan | null
@@ -189,6 +190,22 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     onClose()
   }
 
+  const handleDelete = async () => {
+    if (!loan?.id) return
+    if (!confirm(t('deleteLoan'))) return
+
+    setIsLoading(true)
+    try {
+      await deleteLoanWithTransactions(loan)
+      await Promise.all([refreshLoans(), refreshTransactions(), refreshAccounts()])
+      handleClose()
+    } catch (error) {
+      console.error('Failed to delete loan:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (!loan) return null
 
   const displayRemaining = loan.amount - loan.paidAmount
@@ -196,12 +213,21 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{loan.personName}</DialogTitle>
-          <DialogDescription>
-            {loan.type === 'given' ? t('moneyGiven') : t('moneyReceived')}
-          </DialogDescription>
-        </DialogHeader>
+        <div className="flex items-start justify-between">
+          <DialogHeader>
+            <DialogTitle>{loan.personName}</DialogTitle>
+            <DialogDescription>
+              {loan.type === 'given' ? t('moneyGiven') : t('moneyReceived')}
+            </DialogDescription>
+          </DialogHeader>
+          <button
+            onClick={handleDelete}
+            disabled={isLoading}
+            className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
+          >
+            <Trash2 className="h-5 w-5 text-destructive" />
+          </button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-3">
             <div className="flex justify-between items-baseline">

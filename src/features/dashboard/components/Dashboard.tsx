@@ -223,15 +223,15 @@ export function Dashboard() {
         {/* Income Section - Draggable */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
-            <button
-              onClick={() => {
-                const newValue = !incomeExpanded
-                setIncomeExpanded(newValue)
-                localStorage.setItem('incomeExpanded', String(newValue))
-              }}
-              className="flex items-center justify-between w-full touch-target px-1"
-            >
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between w-full touch-target px-1">
+              <button
+                onClick={() => {
+                  const newValue = !incomeExpanded
+                  setIncomeExpanded(newValue)
+                  localStorage.setItem('incomeExpanded', String(newValue))
+                }}
+                className="flex items-center gap-2 flex-1 text-left"
+              >
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t('income')}
                 </h3>
@@ -243,18 +243,15 @@ export function Dashboard() {
                 ) : (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 )}
-              </div>
+              </button>
               <button
                 type="button"
                 className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIncomeFormOpen(true)
-                }}
+                onClick={() => setIncomeFormOpen(true)}
               >
                 <Plus className="h-5 w-5" />
               </button>
-            </button>
+            </div>
 
             {incomeExpanded && (
               <div className="grid grid-cols-4 gap-2 mt-1 max-h-48 overflow-y-auto">
@@ -333,11 +330,11 @@ export function Dashboard() {
         {/* Expenses Section - Droppable (for accounts) */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
-            <button
-              onClick={() => setExpensesExpanded(!expensesExpanded)}
-              className="flex items-center justify-between w-full touch-target px-1"
-            >
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between w-full touch-target px-1">
+              <button
+                onClick={() => setExpensesExpanded(!expensesExpanded)}
+                className="flex items-center gap-2 flex-1 text-left"
+              >
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   {t('expenses')}
                 </h3>
@@ -350,18 +347,15 @@ export function Dashboard() {
                 ) : (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 )}
-              </div>
+              </button>
               <button
                 type="button"
                 className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setCategoryFormOpen(true)
-                }}
+                onClick={() => setCategoryFormOpen(true)}
               >
                 <Plus className="h-5 w-5" />
               </button>
-            </button>
+            </div>
 
             {expensesExpanded && (
               <div className="grid grid-cols-4 gap-2 mt-1">

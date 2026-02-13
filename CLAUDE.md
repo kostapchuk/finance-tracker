@@ -68,7 +68,15 @@ src/
 
 ```typescript
 type AccountType = 'cash' | 'bank' | 'crypto' | 'investment' | 'credit_card'
-type TransactionType = 'income' | 'expense' | 'transfer' | 'investment_buy' | 'investment_sell' | 'loan_given' | 'loan_received' | 'loan_payment'
+type TransactionType =
+  | 'income'
+  | 'expense'
+  | 'transfer'
+  | 'investment_buy'
+  | 'investment_sell'
+  | 'loan_given'
+  | 'loan_received'
+  | 'loan_payment'
 type LoanType = 'given' | 'received'
 type LoanStatus = 'active' | 'partially_paid' | 'fully_paid'
 type CategoryType = 'expense' | 'investment' | 'loan'
@@ -140,6 +148,7 @@ Custom modal with backdrop. Uses context for open state.
 ## Repositories (src/database/repositories.ts)
 
 All repos follow the pattern:
+
 - `getAll()` - Returns sorted array
 - `getById(id)` - Single item
 - `create(data)` - Returns new ID
@@ -147,6 +156,7 @@ All repos follow the pattern:
 - `delete(id)` - Remove
 
 Special methods:
+
 - `accountRepo.updateBalance(id, amount)` - Add/subtract from balance
 - `transactionRepo.getByDateRange(start, end)` - Filter by date
 - `loanRepo.recordPayment(id, amount)` - Update paidAmount + status
@@ -155,10 +165,12 @@ Special methods:
 ## Transaction Balance Logic (src/utils/transactionBalance.ts)
 
 When creating/editing/deleting transactions, use:
+
 - `applyTransactionBalance(transaction, loans)` - Apply effects to account balances
 - `reverseTransactionBalance(transaction, loans)` - Undo effects before deletion/update
 
 Balance rules by transaction type:
+
 - `income`: account += amount
 - `expense`: account -= amount
 - `transfer`: from -= amount, to += toAmount
@@ -181,15 +193,16 @@ return <span>{t('addAccount')}</span>
 ## Currency Utilities (src/utils/currency.ts)
 
 ```typescript
-formatCurrency(1234.56, 'USD')      // "1,234.56 $"
-formatCurrency(0.00012345, 'BTC')   // "0.00012345 ₿"
-getCurrencySymbol('EUR')            // "€"
-getAllCurrencies()                  // Common + custom currencies
+formatCurrency(1234.56, 'USD') // "1,234.56 $"
+formatCurrency(0.00012345, 'BTC') // "0.00012345 ₿"
+getCurrencySymbol('EUR') // "€"
+getAllCurrencies() // Common + custom currencies
 ```
 
 ## Multi-Currency Support
 
 When loan/transaction currency differs from account currency:
+
 1. Show dual amount inputs (loan amount + account amount)
 2. Use `accountAmount` for balance updates
 3. Store loan currency amount in `mainCurrencyAmount` field when applicable
@@ -197,6 +210,7 @@ When loan/transaction currency differs from account currency:
 ## Loan Workflows
 
 ### Creating a Loan (LoansPage.tsx)
+
 1. User fills LoanForm
 2. `loanRepo.create(loan)`
 3. `accountRepo.updateBalance(accountId, ±amount)`
@@ -204,6 +218,7 @@ When loan/transaction currency differs from account currency:
 5. Refresh all data
 
 ### Recording Payment
+
 1. User enters payment amount
 2. `loanRepo.recordPayment(loanId, loanCurrencyAmount)`
 3. `accountRepo.updateBalance(accountId, ±accountAmount)`
@@ -233,9 +248,15 @@ When loan/transaction currency differs from account currency:
 - Mobile-first: test on small screens, use responsive classes (sm:, etc.)
 - Path aliases: `@/` maps to `src/`
 
+## Development Rules
+
+1. **Always add tests after bug/feature changes**: Add unit and e2e tests if applicable after every bug fix or feature implementation.
+2. **Never disable lint/format rules**: Never use `eslint-disable`, `@ts-ignore`, or similar to bypass eslint, formatter, type checker, or any other linter rules. Fix the underlying issue instead.
+
 ## Development Workflow
 
 **After every code change:**
+
 1. Run linter: `npm run lint`
 2. Run tests: `npm test`
 3. Create or update tests for any new/modified functionality

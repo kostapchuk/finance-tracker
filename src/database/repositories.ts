@@ -144,6 +144,10 @@ export const transactionRepo = {
     return db.transactions.where('categoryId').equals(categoryId).reverse().toArray()
   },
 
+  async getByLoan(loanId: number) {
+    return db.transactions.where('loanId').equals(loanId).reverse().toArray()
+  },
+
   async getRecent(limit = 10) {
     return db.transactions.orderBy('date').reverse().limit(limit).toArray()
   },
