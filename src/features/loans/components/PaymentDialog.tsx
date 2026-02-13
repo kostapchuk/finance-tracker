@@ -224,6 +224,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             onClick={handleDelete}
             disabled={isLoading}
             className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
+            aria-label={t('delete')}
           >
             <Trash2 className="h-5 w-5 text-destructive" />
           </button>

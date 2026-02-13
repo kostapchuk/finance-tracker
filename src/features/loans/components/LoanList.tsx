@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { loanRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
@@ -29,6 +30,7 @@ const statusConfig = {
 }
 
 export function LoanList() {
+  const { t } = useLanguage()
   const loans = useAppStore((state) => state.loans)
   const accounts = useAppStore((state) => state.accounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
@@ -181,6 +183,7 @@ export function LoanList() {
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => handleEdit(loan)}
+                            aria-label={t('edit')}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -189,6 +192,7 @@ export function LoanList() {
                             size="icon"
                             className="h-8 w-8 text-destructive"
                             onClick={() => handleDelete(loan)}
+                            aria-label={t('delete')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

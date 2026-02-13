@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 
 import { AppShell } from '@/components/layout/AppShell'
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { ServiceWorkerProvider } from '@/contexts/ServiceWorkerContext'
 import { useAppStore } from '@/store/useAppStore'
 
@@ -20,32 +21,84 @@ const SettingsPage = lazy(() =>
   import('@/features/settings/components/SettingsPage').then((m) => ({ default: m.SettingsPage }))
 )
 
+function usePrefetchOnIdle() {
+  useEffect(() => {
+    if ('requestIdleCallback' in globalThis) {
+      const idleCallbackId = requestIdleCallback(
+        () => {
+          const views = ['history', 'loans', 'report', 'settings']
+          views.forEach((view, index) => {
+            setTimeout(() => {
+              const importer =
+                view === 'history'
+                  ? () => import('@/features/transactions/components/HistoryPage')
+                  : view === 'loans'
+                    ? () => import('@/features/loans/components/LoansPage')
+                    : view === 'report'
+                      ? () => import('@/features/reports/components/ReportPage')
+                      : () => import('@/features/settings/components/SettingsPage')
+              importer()
+            }, index * 200)
+          })
+        },
+        { timeout: 3000 }
+      )
+      return () => cancelIdleCallback(idleCallbackId)
+    }
+    return undefined
+  }, [])
+}
+
 function MainContent() {
   const activeView = useAppStore((state) => state.activeView)
 
   switch (activeView) {
     case 'dashboard':
-      return <Dashboard />
+      return (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <Dashboard />
+        </Suspense>
+      )
     case 'history':
-      return <HistoryPage />
+      return (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <HistoryPage />
+        </Suspense>
+      )
     case 'loans':
-      return <LoansPage />
+      return (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <LoansPage />
+        </Suspense>
+      )
     case 'report':
-      return <ReportPage />
+      return (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <ReportPage />
+        </Suspense>
+      )
     case 'settings':
-      return <SettingsPage />
+      return (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <SettingsPage />
+        </Suspense>
+      )
     default:
-      return <Dashboard />
+      return (
+        <Suspense fallback={<LoadingSkeleton />}>
+          <Dashboard />
+        </Suspense>
+      )
   }
 }
 
 export function App() {
+  usePrefetchOnIdle()
+
   return (
     <ServiceWorkerProvider>
       <AppShell>
-        <Suspense fallback={null}>
-          <MainContent />
-        </Suspense>
+        <MainContent />
       </AppShell>
     </ServiceWorkerProvider>
   )

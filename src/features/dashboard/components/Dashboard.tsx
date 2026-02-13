@@ -8,8 +8,7 @@ import {
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react'
-import { icons, type LucideIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 
 import { DraggableItem } from '@/components/drag-drop/DraggableItem'
 import { DroppableZone } from '@/components/drag-drop/DroppableZone'
@@ -17,17 +16,31 @@ import { AccountCard } from '@/components/ui/AccountCard'
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { CategoryTile } from '@/components/ui/CategoryTile'
 import { MonthSelector } from '@/components/ui/MonthSelector'
-import { QuickTransactionModal } from '@/components/ui/QuickTransactionModal'
 import type { Category, IncomeSource, Account, AccountType } from '@/database/types'
-import { AccountForm } from '@/features/accounts/components/AccountForm'
-import { CategoryForm } from '@/features/categories/components/CategoryForm'
-import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
+import { getIcon } from '@/utils/icons'
 
-const defaultAccountIcons: Record<AccountType, keyof typeof icons> = {
+const QuickTransactionModal = lazy(() =>
+  import('@/components/ui/QuickTransactionModal').then((m) => ({
+    default: m.QuickTransactionModal,
+  }))
+)
+const AccountForm = lazy(() =>
+  import('@/features/accounts/components/AccountForm').then((m) => ({ default: m.AccountForm }))
+)
+const CategoryForm = lazy(() =>
+  import('@/features/categories/components/CategoryForm').then((m) => ({ default: m.CategoryForm }))
+)
+const IncomeSourceForm = lazy(() =>
+  import('@/features/income/components/IncomeSourceForm').then((m) => ({
+    default: m.IncomeSourceForm,
+  }))
+)
+
+const defaultAccountIcons: Record<AccountType, string> = {
   cash: 'Banknote',
   bank: 'Building2',
   crypto: 'Bitcoin',
@@ -67,7 +80,6 @@ export function Dashboard() {
   const [accountFormOpen, setAccountFormOpen] = useState(false)
   const [categoryFormOpen, setCategoryFormOpen] = useState(false)
 
-  // Configure sensors for both mouse and touch
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -82,7 +94,6 @@ export function Dashboard() {
     })
   )
 
-  // Filter visible items for dashboard (exclude hidden and loan categories)
   const visibleIncomeSources = useMemo(() => {
     return incomeSources.filter((s) => !s.hiddenFromDashboard)
   }, [incomeSources])
@@ -95,7 +106,6 @@ export function Dashboard() {
     return categories.filter((cat) => cat.categoryType !== 'loan' && !cat.hiddenFromDashboard)
   }, [categories])
 
-  // Calculate monthly data
   const monthlyData = useMemo(() => {
     const startOfMonth = getStartOfMonth(selectedMonth)
     const endOfMonth = getEndOfMonth(selectedMonth)
@@ -104,20 +114,15 @@ export function Dashboard() {
       (t) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    // Income by source (use amount which is in source currency for tile display)
     const incomeBySource: Record<number, number> = {}
-    // Total income in mainCurrency for proper aggregation
     let totalIncome = 0
     monthlyTransactions
       .filter((t) => t.type === 'income' && t.incomeSourceId)
       .forEach((t) => {
-        // For tile display: use source currency amount
         incomeBySource[t.incomeSourceId!] = (incomeBySource[t.incomeSourceId!] || 0) + t.amount
-        // For total: use mainCurrencyAmount when available, otherwise assume same currency
         totalIncome += t.mainCurrencyAmount ?? t.amount
       })
 
-    // Expenses by category (use mainCurrencyAmount when available for proper aggregation)
     const expensesByCategory: Record<number, number> = {}
     let totalExpenses = 0
     monthlyTransactions
@@ -168,7 +173,6 @@ export function Dashboard() {
 
     if (!dragData || !dropData) return
 
-    // Income dropped onto Account → record income
     if (dragData.type === 'income' && dropData.type === 'account') {
       const account = dropData.account as Account
       setTransactionMode({
@@ -176,13 +180,10 @@ export function Dashboard() {
         source: dragData.source as IncomeSource,
         preselectedAccountId: account.id,
       })
-      // Advance onboarding if on step 2
       if (onboardingStep === 2) {
         setOnboardingStep(3)
       }
-    }
-    // Account dropped onto Category → record expense
-    else if (dragData.type === 'account' && dropData.type === 'category') {
+    } else if (dragData.type === 'account' && dropData.type === 'category') {
       const account = dragData.account as Account
       const category = dropData.category as Category
       setTransactionMode({
@@ -190,13 +191,10 @@ export function Dashboard() {
         category,
         preselectedAccountId: account.id,
       })
-      // Advance onboarding if on step 3
       if (onboardingStep === 3) {
         setOnboardingStep(4)
       }
-    }
-    // Account dropped onto another Account → transfer
-    else if (dragData.type === 'account' && dropData.type === 'account') {
+    } else if (dragData.type === 'account' && dropData.type === 'account') {
       const fromAccount = dragData.account as Account
       const toAccount = dropData.account as Account
       if (fromAccount.id !== toAccount.id) {
@@ -209,17 +207,14 @@ export function Dashboard() {
     }
   }
 
-  // Check what's being dragged to show appropriate drop hints
   const isDraggingIncome = draggedItem?.type === 'income'
   const isDraggingAccount = draggedItem?.type === 'account'
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-col min-h-full">
-        {/* Month Selector */}
         <MonthSelector />
 
-        {/* Income Section - Draggable */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
             <div className="flex items-center justify-between w-full touch-target px-1">
@@ -247,6 +242,7 @@ export function Dashboard() {
                 type="button"
                 className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
                 onClick={() => setIncomeFormOpen(true)}
+                aria-label={t('addIncomeSource')}
               >
                 <Plus className="h-5 w-5" />
               </button>
@@ -278,7 +274,6 @@ export function Dashboard() {
           </div>
         </section>
 
-        {/* Accounts Section - Draggable AND Droppable (for income and transfers) */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
             <div className="flex items-center justify-between mb-1 px-1 touch-target">
@@ -295,6 +290,7 @@ export function Dashboard() {
                 type="button"
                 className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
                 onClick={() => setAccountFormOpen(true)}
+                aria-label={t('addAccount')}
               >
                 <Plus className="h-5 w-5" />
               </button>
@@ -326,7 +322,6 @@ export function Dashboard() {
           </div>
         </section>
 
-        {/* Expenses Section - Droppable (for accounts) */}
         <section className="px-1 py-1">
           <div className="bg-secondary/50 rounded-xl p-2">
             <div className="flex items-center justify-between w-full touch-target px-1">
@@ -351,6 +346,7 @@ export function Dashboard() {
                 type="button"
                 className="p-2 bg-primary/20 rounded-lg text-primary hover:bg-primary/30 transition-colors"
                 onClick={() => setCategoryFormOpen(true)}
+                aria-label={t('addCategory')}
               >
                 <Plus className="h-5 w-5" />
               </button>
@@ -380,21 +376,21 @@ export function Dashboard() {
           </div>
         </section>
 
-        {/* Quick Transaction Modal */}
         {transactionMode && (
-          <QuickTransactionModal
-            mode={transactionMode}
-            accounts={accounts}
-            preselectedAccountId={
-              'preselectedAccountId' in transactionMode
-                ? transactionMode.preselectedAccountId
-                : undefined
-            }
-            onClose={handleCloseModal}
-          />
+          <Suspense fallback={null}>
+            <QuickTransactionModal
+              mode={transactionMode}
+              accounts={accounts}
+              preselectedAccountId={
+                'preselectedAccountId' in transactionMode
+                  ? transactionMode.preselectedAccountId
+                  : undefined
+              }
+              onClose={handleCloseModal}
+            />
+          </Suspense>
         )}
 
-        {/* Drag Overlay - only the icon circle follows the cursor */}
         <DragOverlay>
           {draggedItem &&
             (() => {
@@ -406,8 +402,7 @@ export function Dashboard() {
                   : draggedItem.account.icon ||
                     defaultAccountIcons[draggedItem.account.type] ||
                     'Wallet'
-              const Icon: LucideIcon =
-                iconName in icons ? icons[iconName as keyof typeof icons] : icons.Circle
+              const Icon = getIcon(iconName)
               return (
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center shadow-xl scale-110"
@@ -420,9 +415,11 @@ export function Dashboard() {
         </DragOverlay>
       </div>
 
-      <IncomeSourceForm open={incomeFormOpen} onClose={() => setIncomeFormOpen(false)} />
-      <AccountForm open={accountFormOpen} onClose={() => setAccountFormOpen(false)} />
-      <CategoryForm open={categoryFormOpen} onClose={() => setCategoryFormOpen(false)} />
+      <Suspense fallback={null}>
+        <IncomeSourceForm open={incomeFormOpen} onClose={() => setIncomeFormOpen(false)} />
+        <AccountForm open={accountFormOpen} onClose={() => setAccountFormOpen(false)} />
+        <CategoryForm open={categoryFormOpen} onClose={() => setCategoryFormOpen(false)} />
+      </Suspense>
     </DndContext>
   )
 }

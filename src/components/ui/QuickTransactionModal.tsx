@@ -658,6 +658,7 @@ export function QuickTransactionModal({
             <button
               onClick={() => onDelete(editTransaction)}
               className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
+              aria-label={t('delete')}
             >
               <Trash2 className="h-5 w-5 text-destructive" />
             </button>
@@ -964,6 +965,7 @@ export function QuickTransactionModal({
             <button
               onClick={() => setShowAccountPicker(false)}
               className="p-2 rounded-full hover:bg-secondary touch-target"
+              aria-label={t('close')}
             >
               <X className="h-5 w-5" />
             </button>
@@ -1010,6 +1012,7 @@ export function QuickTransactionModal({
             <button
               onClick={() => setShowSourcePicker(false)}
               className="p-2 rounded-full hover:bg-secondary touch-target"
+              aria-label={t('close')}
             >
               <X className="h-5 w-5" />
             </button>
@@ -1051,6 +1054,7 @@ export function QuickTransactionModal({
             <button
               onClick={() => setShowCategoryPicker(false)}
               className="p-2 rounded-full hover:bg-secondary touch-target"
+              aria-label={t('close')}
             >
               <X className="h-5 w-5" />
             </button>

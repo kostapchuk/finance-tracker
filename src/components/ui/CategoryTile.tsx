@@ -1,8 +1,9 @@
-import { icons, type LucideIcon } from 'lucide-react'
+import { useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
+import { getIcon } from '@/utils/icons'
 
 interface CategoryTileProps {
   name: string
@@ -25,8 +26,7 @@ export function CategoryTile({
   dragHandleProps,
 }: CategoryTileProps) {
   // Get icon component from lucide-react
-  const IconComponent: LucideIcon =
-    icon && icon in icons ? icons[icon as keyof typeof icons] : icons.Circle
+  const IconComponent = useMemo(() => getIcon(icon), [icon])
 
   // Get color based on amount and type
   const getAmountColor = () => {

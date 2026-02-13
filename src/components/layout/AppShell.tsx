@@ -1,10 +1,15 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 
 import { BottomNav } from './BottomNav'
 
-import { OnboardingOverlay } from '@/components/onboarding/OnboardingOverlay'
 import { useAppStore } from '@/store/useAppStore'
 import { setCustomCurrencies } from '@/utils/currency'
+
+const OnboardingOverlay = lazy(() =>
+  import('@/components/onboarding/OnboardingOverlay').then((m) => ({
+    default: m.OnboardingOverlay,
+  }))
+)
 
 interface AppShellProps {
   children: React.ReactNode
@@ -13,8 +18,8 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const loadAllData = useAppStore((state) => state.loadAllData)
   const customCurrencies = useAppStore((state) => state.customCurrencies)
+  const onboardingStep = useAppStore((state) => state.onboardingStep)
 
-  // Sync custom currencies with the utility
   useEffect(() => {
     setCustomCurrencies(
       customCurrencies.map((c) => ({
@@ -33,7 +38,11 @@ export function AppShell({ children }: AppShellProps) {
     <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
       <main className="flex-1 overflow-auto pb-20 pt-safe">{children}</main>
       <BottomNav />
-      <OnboardingOverlay />
+      {onboardingStep > 0 && (
+        <Suspense fallback={null}>
+          <OnboardingOverlay />
+        </Suspense>
+      )}
     </div>
   )
 }

@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { incomeSourceRepo } from '@/database/repositories'
 import type { IncomeSource } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 
 export function IncomeSourceList() {
+  const { t } = useLanguage()
   const incomeSources = useAppStore((state) => state.incomeSources)
   const refreshIncomeSources = useAppStore((state) => state.refreshIncomeSources)
   const [formOpen, setFormOpen] = useState(false)
@@ -85,6 +87,7 @@ export function IncomeSourceList() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleEdit(source)}
+                      aria-label={t('edit')}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -93,6 +96,7 @@ export function IncomeSourceList() {
                       size="icon"
                       className="h-8 w-8 text-destructive"
                       onClick={() => handleDelete(source)}
+                      aria-label={t('delete')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

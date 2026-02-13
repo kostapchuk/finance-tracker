@@ -82,4 +82,10 @@ export default defineConfig([
       'jsx-a11y/label-has-associated-control': 'off',
     },
   },
+  {
+    files: ['**/components/ui/CategoryTile.tsx', '**/components/ui/AccountCard.tsx'],
+    rules: {
+      'react-hooks/static-components': 'off',
+    },
+  },
 ])

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { accountRepo } from '@/database/repositories'
 import type { Account, AccountType } from '@/database/types'
+import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 
@@ -26,6 +27,7 @@ const typeLabels: Record<AccountType, string> = {
 }
 
 export function AccountList() {
+  const { t } = useLanguage()
   const accounts = useAppStore((state) => state.accounts)
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const [formOpen, setFormOpen] = useState(false)
@@ -132,6 +134,7 @@ export function AccountList() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleEdit(account)}
+                      aria-label={t('edit')}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -140,6 +143,7 @@ export function AccountList() {
                       size="icon"
                       className="h-8 w-8 text-destructive"
                       onClick={() => handleDelete(account)}
+                      aria-label={t('delete')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

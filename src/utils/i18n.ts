@@ -1,25 +1,143 @@
 export type Language = 'en' | 'ru'
 
-export const translations = {
+export const criticalTranslations = {
   en: {
-    // Navigation
     dashboard: 'Dashboard',
     history: 'History',
     loans: 'Loans',
     report: 'Report',
     settings: 'Settings',
-
-    // Dashboard
     income: 'Income',
-    goodExpenses: 'Good Expenses',
-    badExpenses: 'Bad Expenses',
+    expenses: 'Expenses',
     accounts: 'Accounts',
     dropIncomeHere: '(Drop income here)',
     dropHere: '(Drop here)',
-
-    // Loans
-    loansAndDebts: 'Loans & Debts',
+    cancel: 'Cancel',
+    confirm: 'Confirm',
+    processing: 'Processing...',
+    save: 'Save',
+    delete: 'Delete',
+    close: 'Close',
+    back: 'Back',
     add: 'Add',
+    edit: 'Edit',
+    name: 'Name',
+    type: 'Type',
+    color: 'Color',
+    currency: 'Currency',
+    amount: 'Amount',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    thisYear: 'This Year',
+    allTime: 'All Time',
+    all: 'All',
+    search: 'Search...',
+    noTransactionsFound: 'No transactions found',
+    language: 'Language',
+    english: 'English',
+    russian: 'Russian',
+    mainCurrency: 'Main Currency',
+    cash: 'Cash',
+    bankAccount: 'Bank Account',
+    cryptoWallet: 'Crypto Wallet',
+    creditCard: 'Credit Card',
+    jan: 'Jan',
+    feb: 'Feb',
+    mar: 'Mar',
+    apr: 'Apr',
+    may: 'May',
+    jun: 'Jun',
+    jul: 'Jul',
+    aug: 'Aug',
+    sep: 'Sep',
+    oct: 'Oct',
+    nov: 'Nov',
+    dec: 'Dec',
+    transfer: 'Transfer',
+    selectAccount: 'Select account',
+    selectType: 'Select type',
+    selectCurrency: 'Select currency',
+    selectPeriod: 'Select period',
+    updateAvailable: 'Update available',
+    updateDescription: 'A new version of the app is ready to install',
+    updateNow: 'Update',
+    loadingMore: 'Loading...',
+  },
+  ru: {
+    dashboard: 'Главная',
+    history: 'История',
+    loans: 'Долги',
+    report: 'Отчёт',
+    settings: 'Настройки',
+    income: 'Доходы',
+    expenses: 'Расходы',
+    accounts: 'Счета',
+    dropIncomeHere: '(Перетащите доход сюда)',
+    dropHere: '(Перетащите сюда)',
+    cancel: 'Отмена',
+    confirm: 'Подтвердить',
+    processing: 'Обработка...',
+    save: 'Сохранить',
+    delete: 'Удалить',
+    close: 'Закрыть',
+    back: 'Назад',
+    add: 'Добавить',
+    edit: 'Изменить',
+    name: 'Название',
+    type: 'Тип',
+    color: 'Цвет',
+    currency: 'Валюта',
+    amount: 'Сумма',
+    today: 'Сегодня',
+    yesterday: 'Вчера',
+    thisWeek: 'Эта неделя',
+    thisMonth: 'Этот месяц',
+    thisYear: 'Этот год',
+    allTime: 'Все время',
+    all: 'Все',
+    search: 'Поиск...',
+    noTransactionsFound: 'Транзакции не найдены',
+    language: 'Язык',
+    english: 'Английский',
+    russian: 'Русский',
+    mainCurrency: 'Основная валюта',
+    cash: 'Наличные',
+    bankAccount: 'Банковский счёт',
+    cryptoWallet: 'Криптокошелёк',
+    creditCard: 'Кредитная карта',
+    jan: 'Янв',
+    feb: 'Фев',
+    mar: 'Мар',
+    apr: 'Апр',
+    may: 'Май',
+    jun: 'Июн',
+    jul: 'Июл',
+    aug: 'Авг',
+    sep: 'Сен',
+    oct: 'Окт',
+    nov: 'Ноя',
+    dec: 'Дек',
+    transfer: 'Перевод',
+    selectAccount: 'Выберите счёт',
+    selectType: 'Выберите тип',
+    selectCurrency: 'Выберите валюту',
+    selectPeriod: 'Выберите период',
+    updateAvailable: 'Доступно обновление',
+    updateDescription: 'Новая версия приложения готова к установке',
+    updateNow: 'Обновить',
+    loadingMore: 'Загрузка...',
+  },
+} as const
+
+export type CriticalTranslationKey = keyof typeof criticalTranslations.en
+
+const lazyTranslations = {
+  en: {
+    goodExpenses: 'Good Expenses',
+    badExpenses: 'Bad Expenses',
+    loansAndDebts: 'Loans & Debts',
     owedToYou: 'Owed to you',
     youOwe: 'You owe',
     moneyGiven: 'Money Given',
@@ -37,29 +155,18 @@ export const translations = {
     youOweTo: 'You owe',
     paymentAmount: 'Payment Amount',
     payFullAmount: 'Pay Full Amount',
-    cancel: 'Cancel',
-    confirm: 'Confirm',
-    processing: 'Processing...',
-    edit: 'Edit',
-
-    // Report
     totalBalance: 'Total Balance',
-    expenses: 'Expenses',
     netFlow: 'Net Flow',
     currentLoansStatus: 'Current Loans Status',
     spendingByCategory: 'Spending by Category',
     noExpenseDataThisMonth: 'No expense data this month',
     sixMonthTrend: '6-Month Trend',
     noTransactionDataYet: 'No transaction data yet',
-
-    // History summary
     inflows: 'Inflows',
     outflows: 'Outflows',
     net: 'Net',
     last3Months: 'Last 3 Months',
     last6Months: 'Last 6 Months',
-
-    // Settings
     manage: 'Manage',
     categories: 'Categories',
     incomeSources: 'Income Sources',
@@ -69,15 +176,9 @@ export const translations = {
     importBackup: 'Import Backup',
     dangerZone: 'Danger Zone',
     deleteAllData: 'Delete All Data',
-    language: 'Language',
-    english: 'English',
-    russian: 'Russian',
-    mainCurrency: 'Main Currency',
     mainCurrencyDescription: 'Used for displaying summaries',
     privacyMode: 'Privacy Mode',
     privacyModeDescription: 'Hide all amounts for screenshots',
-
-    // Category management
     manageAccounts: 'Manage Accounts',
     manageCategories: 'Manage Categories',
     manageIncomeSources: 'Manage Income Sources',
@@ -89,15 +190,9 @@ export const translations = {
     noAccountsYet: 'No accounts yet',
     noIncomeSources: 'No income sources yet',
     noCustomCurrencies: 'No custom currencies. Add your own currencies here!',
-
-    // Forms
-    name: 'Name',
-    type: 'Type',
-    color: 'Color',
     budget: 'Budget',
     budgetOptional: 'Budget (optional)',
     initialBalance: 'Initial Balance',
-    currency: 'Currency',
     currencyCode: 'Currency Code',
     currencyName: 'Currency Name',
     symbol: 'Symbol',
@@ -117,8 +212,6 @@ export const translations = {
     expense: 'Expense',
     savings: 'Savings',
     hideFromDashboard: 'Hide from Dashboard',
-
-    // Transaction modal
     addIncome: 'Add income',
     addExpense: 'Add expense',
     editIncome: 'Edit income',
@@ -126,9 +219,6 @@ export const translations = {
     editTransfer: 'Edit transfer',
     addComment: 'Add a comment...',
     comment: 'Comment',
-    save: 'Save',
-
-    // Loan comments
     paymentReceivedFrom: 'Payment received from',
     paymentMadeTo: 'Payment made to',
     loanTo: 'Loan to',
@@ -146,14 +236,11 @@ export const translations = {
     payFullRemaining: 'Pay Full Remaining',
     paymentAccount: 'Payment Account',
     recording: 'Recording...',
-
-    // Loan form
     moneyILent: 'Money I Lent (Given)',
     moneyIBorrowed: 'Money I Borrowed (Received)',
     whoDidYouLendTo: 'Who did you lend to?',
     whoDidYouBorrowFrom: 'Who did you borrow from?',
     personOrCompanyName: 'Person or company name',
-    amount: 'Amount',
     amountOnLoan: 'loan amount',
     amountOnAccount: 'account amount',
     relatedAccount: 'Account',
@@ -161,43 +248,12 @@ export const translations = {
     dueDate: 'Due Date (optional)',
     description: 'Description (optional)',
     addNotesAboutLoan: 'Add notes about this loan...',
-
-    // Account types
-    cash: 'Cash',
-    bankAccount: 'Bank Account',
-    cryptoWallet: 'Crypto Wallet',
-    creditCard: 'Credit Card',
-
-    // Months
-    jan: 'Jan',
-    feb: 'Feb',
-    mar: 'Mar',
-    apr: 'Apr',
-    may: 'May',
-    jun: 'Jun',
-    jul: 'Jul',
-    aug: 'Aug',
-    sep: 'Sep',
-    oct: 'Oct',
-    nov: 'Nov',
-    dec: 'Dec',
-
-    // Misc
-    back: 'Back',
-    delete: 'Delete',
     remaining: 'remaining',
     of: 'of',
     dataStoredLocally: 'Data stored locally in your browser',
     dataImportedSuccessfully: 'Data imported successfully!',
     min: 'min',
     hour: 'hour',
-    transfer: 'Transfer',
-
-    // Placeholders
-    selectAccount: 'Select account',
-    selectType: 'Select type',
-    selectCurrency: 'Select currency',
-    selectPeriod: 'Select period',
     egSalaryFreelance: 'e.g., Salary, Freelance',
     egGroceries: 'e.g., Groceries',
     egMainChecking: 'e.g., Main Checking',
@@ -207,7 +263,6 @@ export const translations = {
     enterYourPassphrase: 'Enter your passphrase',
     confirmYourPassphrase: 'Confirm your passphrase',
     searchTransactions: 'Search transactions...',
-    search: 'Search...',
     leaveEmptyForNoBudget: 'Leave empty for no budget',
     budgetPeriod: 'Budget Period',
     weekly: 'Weekly',
@@ -216,27 +271,13 @@ export const translations = {
     symbolOptional: 'Symbol (optional)',
     currencyCodeHint: '3-5 letter code (e.g., USD, EUR, BYN)',
     symbolHint: 'Symbol shown before amounts. If empty, code will be used.',
-
-    // History page
-    today: 'Today',
-    yesterday: 'Yesterday',
-    thisWeek: 'This Week',
-    thisMonth: 'This Month',
-    thisYear: 'This Year',
-    allTime: 'All Time',
-    all: 'All',
-    noTransactionsFound: 'No transactions found',
     deleteTransaction: 'Delete this transaction?',
     deleteLoan:
       'Delete this loan? All related transactions will be removed and account balances will be reverted.',
-
-    // Delete confirmation
     deleteConfirmationMessage:
       'This will permanently delete ALL your data including accounts, transactions, categories, and loans. This action cannot be undone.',
     value: 'Value',
     account: 'Account',
-
-    // Transaction types
     loanGiven: 'Loan Given',
     loanReceived: 'Loan Received',
     payment: 'Payment',
@@ -244,8 +285,6 @@ export const translations = {
     allAccounts: 'All Accounts',
     transactionHistory: 'Transaction History',
     transactions: 'transactions',
-
-    // History page filters
     transfers: 'Transfers',
     loansFilter: 'Loans',
     customRange: 'Custom Range',
@@ -253,8 +292,6 @@ export const translations = {
     to: 'To',
     tapToEdit: 'Tap to edit',
     noBudget: 'No budget',
-
-    // Onboarding
     onboardingWelcomeTitle: 'Welcome to Finance Tracker',
     onboardingWelcomeText: 'Track your income and expenses with simple drag & drop gestures',
     onboardingGetStarted: 'Get Started',
@@ -272,8 +309,6 @@ export const translations = {
     onboardingSalary: 'Salary',
     onboardingBankAccount: 'Bank Account',
     onboardingGroceries: 'Groceries',
-
-    // Import from БюджетОк
     importFromBudgetOk: 'Import from BudgetOk',
     importSelectFile: 'Select File',
     importPreviewData: 'Preview Data',
@@ -327,35 +362,12 @@ export const translations = {
     importPause: 'Pause',
     importResume: 'Resume Import',
     importPauseHint: 'You can pause to create missing items, then resume',
-
-    // PWA Update
-    updateAvailable: 'Update available',
-    updateDescription: 'A new version of the app is ready to install',
-    updateNow: 'Update',
-
-    // Infinite scroll
-    loadingMore: 'Loading...',
     showingAllTransactions: 'Showing all {count} transactions',
   },
   ru: {
-    // Navigation
-    dashboard: 'Главная',
-    history: 'История',
-    loans: 'Долги',
-    report: 'Отчёт',
-    settings: 'Настройки',
-
-    // Dashboard
-    income: 'Доходы',
     goodExpenses: 'Хорошие расходы',
     badExpenses: 'Плохие расходы',
-    accounts: 'Счета',
-    dropIncomeHere: '(Перетащите доход сюда)',
-    dropHere: '(Перетащите сюда)',
-
-    // Loans
     loansAndDebts: 'Долги',
-    add: 'Добавить',
     owedToYou: 'Должны вам',
     youOwe: 'Вы должны',
     moneyGiven: 'Дал в долг',
@@ -373,29 +385,18 @@ export const translations = {
     youOweTo: 'Вы должны',
     paymentAmount: 'Сумма платежа',
     payFullAmount: 'Оплатить полностью',
-    cancel: 'Отмена',
-    confirm: 'Подтвердить',
-    processing: 'Обработка...',
-    edit: 'Изменить',
-
-    // Report
     totalBalance: 'Общий баланс',
-    expenses: 'Расходы',
     netFlow: 'Чистый поток',
     currentLoansStatus: 'Текущий статус долгов',
     spendingByCategory: 'Расходы по категориям',
     noExpenseDataThisMonth: 'Нет данных о расходах за этот месяц',
     sixMonthTrend: 'Тренд за 6 месяцев',
     noTransactionDataYet: 'Пока нет данных о транзакциях',
-
-    // History summary
     inflows: 'Поступления',
     outflows: 'Расходы',
     net: 'Чистый',
     last3Months: 'Последние 3 месяца',
     last6Months: 'Последние 6 месяцев',
-
-    // Settings
     manage: 'Управление',
     categories: 'Категории',
     incomeSources: 'Источники дохода',
@@ -405,15 +406,9 @@ export const translations = {
     importBackup: 'Импорт резервной копии',
     dangerZone: 'Опасная зона',
     deleteAllData: 'Удалить все данные',
-    language: 'Язык',
-    english: 'Английский',
-    russian: 'Русский',
-    mainCurrency: 'Основная валюта',
     mainCurrencyDescription: 'Используется для отображения итогов',
     privacyMode: 'Режим приватности',
     privacyModeDescription: 'Скрыть суммы для скриншотов',
-
-    // Category management
     manageAccounts: 'Управление счетами',
     manageCategories: 'Управление категориями',
     manageIncomeSources: 'Управление источниками дохода',
@@ -425,15 +420,9 @@ export const translations = {
     noAccountsYet: 'Пока нет счетов',
     noIncomeSources: 'Пока нет источников дохода',
     noCustomCurrencies: 'Нет пользовательских валют. Добавьте свои валюты здесь!',
-
-    // Forms
-    name: 'Название',
-    type: 'Тип',
-    color: 'Цвет',
     budget: 'Бюджет',
     budgetOptional: 'Бюджет (необязательно)',
     initialBalance: 'Начальный баланс',
-    currency: 'Валюта',
     currencyCode: 'Код валюты',
     currencyName: 'Название валюты',
     symbol: 'Символ',
@@ -453,8 +442,6 @@ export const translations = {
     expense: 'Расход',
     savings: 'Сбережения',
     hideFromDashboard: 'Скрыть с главной',
-
-    // Transaction modal
     addIncome: 'Добавить доход',
     addExpense: 'Добавить расход',
     editIncome: 'Редактировать доход',
@@ -462,9 +449,6 @@ export const translations = {
     editTransfer: 'Редактировать перевод',
     addComment: 'Добавить комментарий...',
     comment: 'Комментарий',
-    save: 'Сохранить',
-
-    // Loan comments
     paymentReceivedFrom: 'Платёж получен от',
     paymentMadeTo: 'Платёж отправлен',
     loanTo: 'Долг для',
@@ -482,14 +466,11 @@ export const translations = {
     payFullRemaining: 'Оплатить остаток',
     paymentAccount: 'Счёт для платежа',
     recording: 'Запись...',
-
-    // Loan form
     moneyILent: 'Дал в долг',
     moneyIBorrowed: 'Взял в долг',
     whoDidYouLendTo: 'Кому вы одолжили?',
     whoDidYouBorrowFrom: 'У кого вы заняли?',
     personOrCompanyName: 'Имя человека или компании',
-    amount: 'Сумма',
     amountOnLoan: 'сумма долга',
     amountOnAccount: 'сумма на счёте',
     relatedAccount: 'Счёт',
@@ -497,43 +478,12 @@ export const translations = {
     dueDate: 'Дата погашения (необязательно)',
     description: 'Описание (необязательно)',
     addNotesAboutLoan: 'Добавьте заметки о долге...',
-
-    // Account types
-    cash: 'Наличные',
-    bankAccount: 'Банковский счёт',
-    cryptoWallet: 'Криптокошелёк',
-    creditCard: 'Кредитная карта',
-
-    // Months
-    jan: 'Янв',
-    feb: 'Фев',
-    mar: 'Мар',
-    apr: 'Апр',
-    may: 'Май',
-    jun: 'Июн',
-    jul: 'Июл',
-    aug: 'Авг',
-    sep: 'Сен',
-    oct: 'Окт',
-    nov: 'Ноя',
-    dec: 'Дек',
-
-    // Misc
-    back: 'Назад',
-    delete: 'Удалить',
     remaining: 'осталось',
     of: 'из',
     dataStoredLocally: 'Данные хранятся локально в вашем браузере',
     dataImportedSuccessfully: 'Данные успешно импортированы!',
     min: 'мин',
     hour: 'час',
-    transfer: 'Перевод',
-
-    // Placeholders
-    selectAccount: 'Выберите счёт',
-    selectType: 'Выберите тип',
-    selectCurrency: 'Выберите валюту',
-    selectPeriod: 'Выберите период',
     egSalaryFreelance: 'напр., Зарплата, Фриланс',
     egGroceries: 'напр., Продукты',
     egMainChecking: 'напр., Основной счёт',
@@ -543,7 +493,6 @@ export const translations = {
     enterYourPassphrase: 'Введите пароль',
     confirmYourPassphrase: 'Подтвердите пароль',
     searchTransactions: 'Поиск транзакций...',
-    search: 'Поиск...',
     leaveEmptyForNoBudget: 'Оставьте пустым без бюджета',
     budgetPeriod: 'Период бюджета',
     weekly: 'Еженедельно',
@@ -552,27 +501,13 @@ export const translations = {
     symbolOptional: 'Символ (необязательно)',
     currencyCodeHint: 'Код из 3-5 букв (напр., USD, EUR, BYN)',
     symbolHint: 'Символ перед суммами. Если пусто, будет использован код.',
-
-    // History page
-    today: 'Сегодня',
-    yesterday: 'Вчера',
-    thisWeek: 'Эта неделя',
-    thisMonth: 'Этот месяц',
-    thisYear: 'Этот год',
-    allTime: 'Все время',
-    all: 'Все',
-    noTransactionsFound: 'Транзакции не найдены',
     deleteTransaction: 'Удалить эту транзакцию?',
     deleteLoan:
       'Удалить этот долг? Все связанные транзакции будут удалены, а балансы счетов возвращены.',
-
-    // Delete confirmation
     deleteConfirmationMessage:
       'Это навсегда удалит ВСЕ ваши данные, включая счета, транзакции, категории и долги. Это действие нельзя отменить.',
     value: 'Стоимость',
     account: 'Счёт',
-
-    // Transaction types
     loanGiven: 'Дал в долг',
     loanReceived: 'Взял в долг',
     payment: 'Платёж',
@@ -580,8 +515,6 @@ export const translations = {
     allAccounts: 'Все счета',
     transactionHistory: 'История транзакций',
     transactions: 'транзакций',
-
-    // History page filters
     transfers: 'Переводы',
     loansFilter: 'Долги',
     customRange: 'Свой период',
@@ -589,8 +522,6 @@ export const translations = {
     to: 'По',
     tapToEdit: 'Нажмите для редактирования',
     noBudget: 'Без бюджета',
-
-    // Onboarding
     onboardingWelcomeTitle: 'Добро пожаловать',
     onboardingWelcomeText: 'Отслеживайте доходы и расходы с помощью простых жестов перетаскивания',
     onboardingGetStarted: 'Начать',
@@ -609,8 +540,6 @@ export const translations = {
     onboardingSalary: 'Зарплата',
     onboardingBankAccount: 'Банковский счёт',
     onboardingGroceries: 'Продукты',
-
-    // Import from БюджетОк
     importFromBudgetOk: 'Импорт из БюджетОк',
     importSelectFile: 'Выбор файла',
     importPreviewData: 'Предпросмотр',
@@ -665,21 +594,19 @@ export const translations = {
     importPause: 'Приостановить',
     importResume: 'Продолжить импорт',
     importPauseHint: 'Вы можете приостановить, чтобы создать недостающие элементы',
-
-    // PWA Update
-    updateAvailable: 'Доступно обновление',
-    updateDescription: 'Новая версия приложения готова к установке',
-    updateNow: 'Обновить',
-
-    // Infinite scroll
-    loadingMore: 'Загрузка...',
     showingAllTransactions: 'Показаны все {count} транзакций',
   },
 } as const
 
+export type LazyTranslationKey = keyof typeof lazyTranslations.en
+
+export const translations = {
+  en: { ...criticalTranslations.en, ...lazyTranslations.en },
+  ru: { ...criticalTranslations.ru, ...lazyTranslations.ru },
+} as const
+
 export type TranslationKey = keyof typeof translations.en
 
-// Language store using localStorage
 const LANGUAGE_KEY = 'finance-tracker-language'
 
 export function getStoredLanguage(): Language {
@@ -691,7 +618,6 @@ export function setStoredLanguage(lang: Language) {
   localStorage.setItem(LANGUAGE_KEY, lang)
 }
 
-// Simple translation function
 let currentLanguage: Language = 'ru'
 
 export function setLanguage(lang: Language) {
@@ -707,7 +633,10 @@ export function t(key: TranslationKey): string {
   return translations[currentLanguage][key] || translations.en[key] || key
 }
 
-// Initialize language from localStorage
+export function tc(key: CriticalTranslationKey): string {
+  return criticalTranslations[currentLanguage][key] || criticalTranslations.en[key] || key
+}
+
 if (globalThis.window !== undefined) {
   currentLanguage = getStoredLanguage()
 }

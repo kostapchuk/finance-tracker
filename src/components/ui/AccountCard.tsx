@@ -1,9 +1,11 @@
-import { icons, type LucideIcon } from 'lucide-react'
+import { Wallet } from 'lucide-react'
+import { useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import type { AccountType } from '@/database/types'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
+import { getIcon } from '@/utils/icons'
 
 interface AccountCardProps {
   name: string
@@ -16,7 +18,7 @@ interface AccountCardProps {
   dragHandleProps?: Record<string, unknown>
 }
 
-const defaultIcons: Record<AccountType, keyof typeof icons> = {
+const defaultIcons: Record<AccountType, string> = {
   cash: 'Banknote',
   bank: 'Building2',
   crypto: 'Bitcoin',
@@ -34,8 +36,7 @@ export function AccountCard({
   dragHandleProps,
 }: AccountCardProps) {
   const iconName = icon || defaultIcons[type] || 'Wallet'
-  const IconComponent: LucideIcon =
-    iconName in icons ? icons[iconName as keyof typeof icons] : icons.Wallet
+  const IconComponent = useMemo(() => getIcon(iconName, Wallet), [iconName])
 
   return (
     <button

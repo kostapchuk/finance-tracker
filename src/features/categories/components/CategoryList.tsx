@@ -90,6 +90,7 @@ export function CategoryList() {
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleEdit(category)}
+                      aria-label={t('edit')}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -98,6 +99,7 @@ export function CategoryList() {
                       size="icon"
                       className="h-8 w-8 text-destructive"
                       onClick={() => handleDelete(category)}
+                      aria-label={t('delete')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

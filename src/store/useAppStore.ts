@@ -191,6 +191,7 @@ export const useAppStore = create<AppState>((set) => ({
     } catch (error) {
       console.error('Failed to load data:', error)
       set({ isLoading: false })
+    } finally {
       isInitializing = false
     }
   },

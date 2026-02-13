@@ -6,6 +6,7 @@ import { cn } from '@/utils/cn'
 interface DialogContextValue {
   open: boolean
   onOpenChange: (open: boolean) => void
+  titleId: string
 }
 
 const DialogContext = React.createContext<DialogContextValue | undefined>(undefined)
@@ -19,6 +20,7 @@ interface DialogProps {
 function Dialog({ open = false, onOpenChange, children }: DialogProps) {
   const [internalOpen, setInternalOpen] = React.useState(open)
   const isControlled = onOpenChange !== undefined
+  const titleId = React.useId()
 
   const handleOpenChange = React.useCallback(
     (newOpen: boolean) => {
@@ -35,8 +37,9 @@ function Dialog({ open = false, onOpenChange, children }: DialogProps) {
     () => ({
       open: isControlled ? open : internalOpen,
       onOpenChange: handleOpenChange,
+      titleId,
     }),
-    [isControlled, open, internalOpen, handleOpenChange]
+    [isControlled, open, internalOpen, handleOpenChange, titleId]
   )
 
   return <DialogContext.Provider value={contextValue}>{children}</DialogContext.Provider>
@@ -77,26 +80,86 @@ interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
   ({ className, children, ...props }, ref) => {
-    const { open, onOpenChange } = useDialog()
+    const { open, onOpenChange, titleId } = useDialog()
+    const dialogRef = React.useRef<HTMLDivElement>(null)
+    const previousActiveElement = React.useRef<Element | null>(null)
 
     React.useEffect(() => {
       if (open) {
+        // Save previously focused element
+        previousActiveElement.current = document.activeElement
+        // Disable body scroll
         document.body.style.overflow = 'hidden'
+        // Focus the dialog
+        setTimeout(() => {
+          dialogRef.current?.focus()
+        }, 0)
       }
 
       return () => {
         document.body.style.overflow = ''
+        // Restore focus when dialog closes
+        if (!open && previousActiveElement.current instanceof HTMLElement) {
+          previousActiveElement.current.focus()
+        }
       }
     }, [open])
+
+    // Escape key handler
+    React.useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && open) {
+          onOpenChange(false)
+        }
+      }
+      document.addEventListener('keydown', handleKeyDown)
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown)
+      }
+    }, [open, onOpenChange])
+
+    // Focus trap handler
+    const handleTabTrap = (e: React.KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const focusableElements = dialogRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (!focusableElements?.length) return
+      const elements = [...focusableElements]
+      const first = elements[0] as HTMLElement
+      const last = elements.at(-1) as HTMLElement
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
 
     if (!open) return null
 
     return (
       <div className="fixed inset-0 z-[60]">
-        <div className="fixed inset-0 bg-black/80" />
+        {/* Backdrop - click to close */}
+        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+        <div className="fixed inset-0 bg-black/80" onClick={() => onOpenChange(false)} />
         <div className="fixed inset-x-4 top-[50%] z-[60] translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
-            ref={ref}
+            ref={(node) => {
+              dialogRef.current = node
+              if (typeof ref === 'function') {
+                ref(node)
+              } else if (ref) {
+                ref.current = node
+              }
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            onKeyDown={handleTabTrap}
             className={cn(
               'grid w-full gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg',
               className
@@ -130,13 +193,17 @@ const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
 DialogFooter.displayName = 'DialogFooter'
 
 const DialogTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
-    <h2
-      ref={ref}
-      className={cn('text-lg font-semibold leading-none tracking-tight', className)}
-      {...props}
-    />
-  )
+  ({ className, ...props }, ref) => {
+    const { titleId } = useDialog()
+    return (
+      <h2
+        ref={ref}
+        id={titleId}
+        className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+        {...props}
+      />
+    )
+  }
 )
 DialogTitle.displayName = 'DialogTitle'
 
