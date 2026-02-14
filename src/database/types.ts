@@ -16,6 +16,7 @@ export type CategoryType = 'expense' | 'loan'
 
 export interface Account {
   id?: number
+  userId?: string
   name: string
   type: AccountType
   currency: string
@@ -30,6 +31,7 @@ export interface Account {
 
 export interface IncomeSource {
   id?: number
+  userId?: string
   name: string
   currency: string
   color: string
@@ -42,6 +44,7 @@ export interface IncomeSource {
 
 export interface Category {
   id?: number
+  userId?: string
   name: string
   color: string
   icon?: string
@@ -56,6 +59,7 @@ export interface Category {
 
 export interface Transaction {
   id?: number
+  userId?: string
   type: TransactionType
   amount: number
   currency: string
@@ -87,6 +91,7 @@ export interface Transaction {
 
 export interface Loan {
   id?: number
+  userId?: string
   type: LoanType
   personName: string
   description?: string
@@ -102,6 +107,7 @@ export interface Loan {
 
 export interface AppSettings {
   id?: number
+  userId?: string
   defaultCurrency: string
   blurFinancialFigures?: boolean
   createdAt: Date
@@ -110,9 +116,24 @@ export interface AppSettings {
 
 export interface CustomCurrency {
   id?: number
+  userId?: string
   code: string
   name: string
   symbol: string
   createdAt: Date
   updatedAt: Date
+}
+
+export type SyncOperation = 'create' | 'update' | 'delete'
+
+export interface SyncQueueItem {
+  id?: number
+  operation: SyncOperation
+  entity: string
+  recordId: number | string
+  data?: Record<string, unknown>
+  createdAt: Date
+  attempts: number
+  lastAttemptAt?: Date
+  error?: string
 }

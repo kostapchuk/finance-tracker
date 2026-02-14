@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -21,8 +22,8 @@ import {
 import { Toggle } from '@/components/ui/toggle'
 import { incomeSourceRepo } from '@/database/repositories'
 import type { IncomeSource } from '@/database/types'
+import { useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
 import { getAllCurrencies } from '@/utils/currency'
 
@@ -33,10 +34,10 @@ interface IncomeSourceFormProps {
 }
 
 export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProps) {
-  const refreshIncomeSources = useAppStore((state) => state.refreshIncomeSources)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
+  const queryClient = useQueryClient()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
 
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState(mainCurrency)
@@ -61,7 +62,6 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
     e.preventDefault()
     if (!name.trim()) return
 
-    setIsLoading(true)
     try {
       if (source?.id) {
         await incomeSourceRepo.update(source.id, {
@@ -78,12 +78,10 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
           hiddenFromDashboard,
         })
       }
-      await refreshIncomeSources()
+      queryClient.invalidateQueries({ queryKey: ['incomeSources'], refetchType: 'all' })
       onClose()
     } catch (error) {
       console.error('Failed to save income source:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -137,9 +135,7 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
             <Button type="button" variant="outline" onClick={onClose}>
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : source ? t('update') : t('create')}
-            </Button>
+            <Button type="submit">{source ? t('update') : t('create')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

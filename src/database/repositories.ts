@@ -1,213 +1,405 @@
-import {
-  db,
-  type Account,
-  type IncomeSource,
-  type Category,
-  type Transaction,
-  type Loan,
-  type AppSettings,
-  type CustomCurrency,
-} from './db'
-import type { LoanStatus } from './types'
+import { localCache } from './localCache'
+import { syncService } from './syncService'
+import type {
+  Account,
+  IncomeSource,
+  Category,
+  Transaction,
+  Loan,
+  AppSettings,
+  CustomCurrency,
+  LoanStatus,
+} from './types'
 
-// Account Repository
+import { getDeviceId } from '@/lib/deviceId'
+
+function generateTempId(): string {
+  return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+}
+
+function getNumericId(id: number | string | undefined): number | null {
+  if (typeof id === 'number') return id
+  if (typeof id === 'string' && id.startsWith('temp_')) return null
+  if (typeof id === 'string') return parseInt(id, 10)
+  return null
+}
+
 export const accountRepo = {
-  async getAll() {
-    const items = await db.accounts.toArray()
-    return items.sort(
-      (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
-    )
+  async getAll(): Promise<Account[]> {
+    return localCache.accounts.getAll()
   },
 
-  async getById(id: number) {
-    return db.accounts.get(id)
+  async getById(id: number): Promise<Account | undefined> {
+    return localCache.accounts.getById(id)
   },
 
-  async create(account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>) {
+  async create(
+    account: Omit<Account, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<number | string> {
     const now = new Date()
-    return db.accounts.add({
+    const fullAccount: Account = {
       ...account,
+      userId: getDeviceId(),
       createdAt: now,
       updatedAt: now,
-    })
+    }
+
+    const tempId = generateTempId()
+    const tempAccount = { ...fullAccount, id: tempId as unknown as number }
+    await localCache.accounts.put(tempAccount)
+
+    syncService.queueOperation(
+      'create',
+      'accounts',
+      tempId,
+      fullAccount as unknown as Record<string, unknown>
+    )
+
+    return tempId
   },
 
-  async update(id: number, updates: Partial<Omit<Account, 'id' | 'createdAt'>>) {
-    return db.accounts.update(id, {
+  async update(
+    id: number | string,
+    updates: Partial<Omit<Account, 'id' | 'createdAt' | 'userId'>>
+  ): Promise<void> {
+    const numericId = getNumericId(id)
+    if (!numericId) return
+
+    const cached = await localCache.accounts.getById(numericId)
+    if (!cached) return
+
+    const updatedAccount: Account = {
+      ...cached,
       ...updates,
       updatedAt: new Date(),
-    })
+    }
+    await localCache.accounts.put(updatedAccount)
+
+    syncService.queueOperation(
+      'update',
+      'accounts',
+      numericId,
+      updates as unknown as Record<string, unknown>
+    )
   },
 
-  async updateBalance(id: number, amount: number) {
-    const account = await db.accounts.get(id)
+  async updateBalance(id: number | string, amount: number): Promise<void> {
+    const numericId = getNumericId(id)
+    if (!numericId) return
+
+    const account = await localCache.accounts.getById(numericId)
     if (!account) return
-    return db.accounts.update(id, {
-      balance: account.balance + amount,
-      updatedAt: new Date(),
-    })
+
+    await this.update(numericId, { balance: account.balance + amount })
   },
 
-  async delete(id: number) {
-    return db.accounts.delete(id)
+  async delete(id: number | string): Promise<void> {
+    const numericId = getNumericId(id)
+
+    await localCache.accounts.delete(numericId || parseInt(String(id), 10))
+
+    if (numericId) {
+      syncService.queueOperation('delete', 'accounts', numericId)
+    }
   },
 }
 
-// Income Source Repository
 export const incomeSourceRepo = {
-  async getAll() {
-    const items = await db.incomeSources.toArray()
-    return items.sort(
-      (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
-    )
+  async getAll(): Promise<IncomeSource[]> {
+    return localCache.incomeSources.getAll()
   },
 
-  async getById(id: number) {
-    return db.incomeSources.get(id)
+  async getById(id: number): Promise<IncomeSource | undefined> {
+    return localCache.incomeSources.getById(id)
   },
 
-  async create(source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt'>) {
+  async create(
+    source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<number | string> {
     const now = new Date()
-    return db.incomeSources.add({
+    const fullSource: IncomeSource = {
       ...source,
+      userId: getDeviceId(),
       createdAt: now,
       updatedAt: now,
-    })
+    }
+
+    const tempId = generateTempId()
+    const tempSource = { ...fullSource, id: tempId as unknown as number }
+    await localCache.incomeSources.put(tempSource)
+
+    syncService.queueOperation(
+      'create',
+      'incomeSources',
+      tempId,
+      fullSource as unknown as Record<string, unknown>
+    )
+
+    return tempId
   },
 
-  async update(id: number, updates: Partial<Omit<IncomeSource, 'id' | 'createdAt'>>) {
-    return db.incomeSources.update(id, {
+  async update(
+    id: number | string,
+    updates: Partial<Omit<IncomeSource, 'id' | 'createdAt' | 'userId'>>
+  ): Promise<void> {
+    const numericId = getNumericId(id)
+    if (!numericId) return
+
+    const cached = await localCache.incomeSources.getById(numericId)
+    if (!cached) return
+
+    const updatedSource: IncomeSource = {
+      ...cached,
       ...updates,
       updatedAt: new Date(),
-    })
-  },
+    }
+    await localCache.incomeSources.put(updatedSource)
 
-  async delete(id: number) {
-    return db.incomeSources.delete(id)
-  },
-}
-
-// Category Repository
-export const categoryRepo = {
-  async getAll() {
-    const items = await db.categories.toArray()
-    return items.sort(
-      (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
+    syncService.queueOperation(
+      'update',
+      'incomeSources',
+      numericId,
+      updates as unknown as Record<string, unknown>
     )
   },
 
-  async getById(id: number) {
-    return db.categories.get(id)
+  async delete(id: number | string): Promise<void> {
+    const numericId = getNumericId(id)
+
+    await localCache.incomeSources.delete(numericId || parseInt(String(id), 10))
+
+    if (numericId) {
+      syncService.queueOperation('delete', 'incomeSources', numericId)
+    }
+  },
+}
+
+export const categoryRepo = {
+  async getAll(): Promise<Category[]> {
+    return localCache.categories.getAll()
   },
 
-  async create(category: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) {
+  async getById(id: number): Promise<Category | undefined> {
+    return localCache.categories.getById(id)
+  },
+
+  async create(
+    category: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<number | string> {
     const now = new Date()
-    return db.categories.add({
+    const fullCategory: Category = {
       ...category,
+      userId: getDeviceId(),
       createdAt: now,
       updatedAt: now,
-    })
+    }
+
+    const tempId = generateTempId()
+    const tempCategory = { ...fullCategory, id: tempId as unknown as number }
+    await localCache.categories.put(tempCategory)
+
+    syncService.queueOperation(
+      'create',
+      'categories',
+      tempId,
+      fullCategory as unknown as Record<string, unknown>
+    )
+
+    return tempId
   },
 
-  async update(id: number, updates: Partial<Omit<Category, 'id' | 'createdAt'>>) {
-    return db.categories.update(id, {
+  async update(
+    id: number | string,
+    updates: Partial<Omit<Category, 'id' | 'createdAt' | 'userId'>>
+  ): Promise<void> {
+    const numericId = getNumericId(id)
+    if (!numericId) return
+
+    const cached = await localCache.categories.getById(numericId)
+    if (!cached) return
+
+    const updatedCategory: Category = {
+      ...cached,
       ...updates,
       updatedAt: new Date(),
-    })
+    }
+    await localCache.categories.put(updatedCategory)
+
+    syncService.queueOperation(
+      'update',
+      'categories',
+      numericId,
+      updates as unknown as Record<string, unknown>
+    )
   },
 
-  async delete(id: number) {
-    return db.categories.delete(id)
+  async delete(id: number | string): Promise<void> {
+    const numericId = getNumericId(id)
+
+    await localCache.categories.delete(numericId || parseInt(String(id), 10))
+
+    if (numericId) {
+      syncService.queueOperation('delete', 'categories', numericId)
+    }
   },
 }
 
-// Transaction Repository
 export const transactionRepo = {
-  async getAll() {
-    return db.transactions.orderBy('date').reverse().toArray()
+  async getAll(): Promise<Transaction[]> {
+    return localCache.transactions.getRecent(50)
   },
 
-  async getById(id: number) {
-    return db.transactions.get(id)
+  async getById(id: number): Promise<Transaction | undefined> {
+    return localCache.transactions.getById(id)
   },
 
-  async getByDateRange(startDate: Date, endDate: Date) {
-    return db.transactions.where('date').between(startDate, endDate).reverse().toArray()
+  async getByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
+    return localCache.transactions.getByDateRange(startDate, endDate)
   },
 
-  async getByAccount(accountId: number) {
-    return db.transactions.where('accountId').equals(accountId).reverse().toArray()
+  async getByAccount(accountId: number): Promise<Transaction[]> {
+    return localCache.transactions.getByAccount(accountId)
   },
 
-  async getByCategory(categoryId: number) {
-    return db.transactions.where('categoryId').equals(categoryId).reverse().toArray()
+  async getByCategory(categoryId: number): Promise<Transaction[]> {
+    return localCache.transactions.getByCategory(categoryId)
   },
 
-  async getByLoan(loanId: number) {
-    return db.transactions.where('loanId').equals(loanId).reverse().toArray()
+  async getByLoan(loanId: number): Promise<Transaction[]> {
+    return localCache.transactions.getByLoan(loanId)
   },
 
-  async getRecent(limit = 10) {
-    return db.transactions.orderBy('date').reverse().limit(limit).toArray()
+  async getRecent(limit = 10): Promise<Transaction[]> {
+    return localCache.transactions.getRecent(limit)
   },
 
-  async create(transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) {
+  async create(
+    transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<number | string> {
     const now = new Date()
-    return db.transactions.add({
+    const fullTransaction: Transaction = {
       ...transaction,
+      userId: getDeviceId(),
       createdAt: now,
       updatedAt: now,
-    })
+    }
+
+    const tempId = generateTempId()
+    const tempTransaction = { ...fullTransaction, id: tempId as unknown as number }
+    await localCache.transactions.put(tempTransaction)
+    await localCache.transactions.trimToLimit()
+
+    syncService.queueOperation(
+      'create',
+      'transactions',
+      tempId,
+      fullTransaction as unknown as Record<string, unknown>
+    )
+
+    return tempId
   },
 
-  async update(id: number, updates: Partial<Omit<Transaction, 'id' | 'createdAt'>>) {
-    return db.transactions.update(id, {
+  async update(
+    id: number | string,
+    updates: Partial<Omit<Transaction, 'id' | 'createdAt' | 'userId'>>
+  ): Promise<void> {
+    const numericId = getNumericId(id)
+    if (!numericId) return
+
+    const cached = await localCache.transactions.getById(numericId)
+    if (!cached) return
+
+    const updatedTransaction: Transaction = {
+      ...cached,
       ...updates,
       updatedAt: new Date(),
-    })
+    }
+    await localCache.transactions.put(updatedTransaction)
+
+    syncService.queueOperation(
+      'update',
+      'transactions',
+      numericId,
+      updates as unknown as Record<string, unknown>
+    )
   },
 
-  async delete(id: number) {
-    return db.transactions.delete(id)
+  async delete(id: number | string): Promise<void> {
+    const numericId = getNumericId(id)
+
+    await localCache.transactions.delete(numericId || parseInt(String(id), 10))
+
+    if (numericId) {
+      syncService.queueOperation('delete', 'transactions', numericId)
+    }
   },
 }
 
-// Loan Repository
 export const loanRepo = {
-  async getAll() {
-    return db.loans.orderBy('createdAt').reverse().toArray()
+  async getAll(): Promise<Loan[]> {
+    return localCache.loans.getAll()
   },
 
-  async getById(id: number) {
-    return db.loans.get(id)
+  async getById(id: number): Promise<Loan | undefined> {
+    return localCache.loans.getById(id)
   },
 
-  async getActive() {
-    return db.loans.where('status').anyOf(['active', 'partially_paid']).toArray()
+  async getActive(): Promise<Loan[]> {
+    return localCache.loans.getActive()
   },
 
-  async getByType(type: 'given' | 'received') {
-    return db.loans.where('type').equals(type).toArray()
-  },
-
-  async create(loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt'>) {
+  async create(
+    loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<number | string> {
     const now = new Date()
-    return db.loans.add({
+    const fullLoan: Loan = {
       ...loan,
+      userId: getDeviceId(),
       createdAt: now,
       updatedAt: now,
-    })
+    }
+
+    const tempId = generateTempId()
+    const tempLoan = { ...fullLoan, id: tempId as unknown as number }
+    await localCache.loans.put(tempLoan)
+
+    syncService.queueOperation(
+      'create',
+      'loans',
+      tempId,
+      fullLoan as unknown as Record<string, unknown>
+    )
+
+    return tempId
   },
 
-  async update(id: number, updates: Partial<Omit<Loan, 'id' | 'createdAt'>>) {
-    return db.loans.update(id, {
+  async update(
+    id: number | string,
+    updates: Partial<Omit<Loan, 'id' | 'createdAt' | 'userId'>>
+  ): Promise<void> {
+    const cached = await localCache.loans.getById(id)
+    if (!cached) return
+
+    const updatedLoan: Loan = {
+      ...cached,
       ...updates,
       updatedAt: new Date(),
-    })
+    }
+    await localCache.loans.put(updatedLoan)
+
+    const numericId = getNumericId(id)
+    if (numericId) {
+      syncService.queueOperation(
+        'update',
+        'loans',
+        numericId,
+        updates as unknown as Record<string, unknown>
+      )
+    }
   },
 
-  async recordPayment(id: number, amount: number) {
-    const loan = await db.loans.get(id)
+  async recordPayment(id: number | string, amount: number): Promise<void> {
+    const loan = await localCache.loans.getById(id)
     if (!loan) return
 
     const newPaidAmount = loan.paidAmount + amount
@@ -217,15 +409,11 @@ export const loanRepo = {
       status = 'fully_paid'
     }
 
-    return db.loans.update(id, {
-      paidAmount: newPaidAmount,
-      status,
-      updatedAt: new Date(),
-    })
+    await this.update(id, { paidAmount: newPaidAmount, status })
   },
 
-  async reversePayment(id: number, amount: number) {
-    const loan = await db.loans.get(id)
+  async reversePayment(id: number | string, amount: number): Promise<void> {
+    const loan = await localCache.loans.getById(id)
     if (!loan) return
 
     const newPaidAmount = Math.max(0, loan.paidAmount - amount)
@@ -237,73 +425,136 @@ export const loanRepo = {
       status = 'fully_paid'
     }
 
-    return db.loans.update(id, {
-      paidAmount: newPaidAmount,
-      status,
-      updatedAt: new Date(),
-    })
+    await this.update(id, { paidAmount: newPaidAmount, status })
   },
 
-  async delete(id: number) {
-    return db.loans.delete(id)
-  },
-}
+  async delete(id: number | string): Promise<void> {
+    await localCache.loans.delete(id)
 
-// Settings Repository
-export const settingsRepo = {
-  async get() {
-    const settings = await db.settings.toArray()
-    return settings[0] || null
-  },
-
-  async create(settings: Omit<AppSettings, 'id' | 'createdAt' | 'updatedAt'>) {
-    const now = new Date()
-    return db.settings.add({
-      ...settings,
-      createdAt: now,
-      updatedAt: now,
-    })
-  },
-
-  async update(updates: Partial<Omit<AppSettings, 'id' | 'createdAt'>>) {
-    const settings = await db.settings.toArray()
-    if (settings[0]?.id) {
-      return db.settings.update(settings[0].id, {
-        ...updates,
-        updatedAt: new Date(),
-      })
+    const numericId = getNumericId(id)
+    if (numericId) {
+      syncService.queueOperation('delete', 'loans', numericId)
     }
-    return undefined
   },
 }
 
-// Custom Currency Repository
-export const customCurrencyRepo = {
-  async getAll() {
-    return db.customCurrencies.orderBy('code').toArray()
+export const settingsRepo = {
+  async get(): Promise<AppSettings | null> {
+    const result = await localCache.settings.get()
+    return result ?? null
   },
 
-  async getById(id: number) {
-    return db.customCurrencies.get(id)
-  },
-
-  async create(currency: Omit<CustomCurrency, 'id' | 'createdAt' | 'updatedAt'>) {
+  async create(
+    settings: Omit<AppSettings, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<number | string> {
     const now = new Date()
-    return db.customCurrencies.add({
-      ...currency,
+    const fullSettings: AppSettings = {
+      ...settings,
+      userId: getDeviceId(),
       createdAt: now,
       updatedAt: now,
-    })
+    }
+
+    const tempId = generateTempId()
+    const tempSettings = { ...fullSettings, id: tempId as unknown as number }
+    await localCache.settings.put(tempSettings)
+
+    syncService.queueOperation(
+      'create',
+      'settings',
+      tempId,
+      fullSettings as unknown as Record<string, unknown>
+    )
+
+    return tempId
   },
 
-  async update(id: number, updates: Partial<Omit<CustomCurrency, 'id' | 'createdAt'>>) {
-    return db.customCurrencies.update(id, {
+  async update(updates: Partial<Omit<AppSettings, 'id' | 'createdAt' | 'userId'>>): Promise<void> {
+    const cached = await localCache.settings.get()
+    if (!cached) return
+
+    const updatedSettings: AppSettings = {
+      ...cached,
       ...updates,
       updatedAt: new Date(),
-    })
+    }
+    await localCache.settings.put(updatedSettings)
+
+    syncService.queueOperation(
+      'update',
+      'settings',
+      cached?.id || 0,
+      updates as unknown as Record<string, unknown>
+    )
+  },
+}
+
+export const customCurrencyRepo = {
+  async getAll(): Promise<CustomCurrency[]> {
+    return localCache.customCurrencies.getAll()
   },
 
-  async delete(id: number) {
-    return db.customCurrencies.delete(id)
+  async getById(id: number): Promise<CustomCurrency | undefined> {
+    return localCache.customCurrencies.getById(id)
+  },
+
+  async create(
+    currency: Omit<CustomCurrency, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+  ): Promise<number | string> {
+    const now = new Date()
+    const fullCurrency: CustomCurrency = {
+      ...currency,
+      userId: getDeviceId(),
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    const tempId = generateTempId()
+    const tempCurrency = { ...fullCurrency, id: tempId as unknown as number }
+    await localCache.customCurrencies.put(tempCurrency)
+
+    syncService.queueOperation(
+      'create',
+      'customCurrencies',
+      tempId,
+      fullCurrency as unknown as Record<string, unknown>
+    )
+
+    return tempId
+  },
+
+  async update(
+    id: number | string,
+    updates: Partial<Omit<CustomCurrency, 'id' | 'createdAt' | 'userId'>>
+  ): Promise<void> {
+    const numericId = getNumericId(id)
+    if (!numericId) return
+
+    const cached = await localCache.customCurrencies.getById(numericId)
+    if (!cached) return
+
+    const updatedCurrency: CustomCurrency = {
+      ...cached,
+      ...updates,
+      updatedAt: new Date(),
+    }
+    await localCache.customCurrencies.put(updatedCurrency)
+
+    syncService.queueOperation(
+      'update',
+      'customCurrencies',
+      numericId,
+      updates as unknown as Record<string, unknown>
+    )
+  },
+
+  async delete(id: number | string): Promise<void> {
+    const numericId = getNumericId(id)
+
+    await localCache.customCurrencies.delete(numericId || parseInt(String(id), 10))
+
+    if (numericId) {
+      syncService.queueOperation('delete', 'customCurrencies', numericId)
+    }
   },
 }

@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Trash2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -21,8 +22,8 @@ import {
 } from '@/components/ui/select'
 import { loanRepo, transactionRepo, accountRepo } from '@/database/repositories'
 import type { Loan, Transaction } from '@/database/types'
+import { useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
 import { deleteLoanWithTransactions } from '@/utils/transactionBalance'
 
@@ -34,12 +35,11 @@ interface PaymentDialogProps {
 }
 
 export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentDialogProps) {
-  const accounts = useAppStore((state) => state.accounts)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
+  const { data: accounts = [] } = useAccounts()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
+  const queryClient = useQueryClient()
   const { t } = useLanguage()
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const [amount, setAmount] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
   const [comment, setComment] = useState('')
@@ -171,9 +171,9 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         }
       }
 
-      await refreshLoans()
-      await refreshTransactions()
-      await refreshAccounts()
+      queryClient.setQueryData(['loans'], await loanRepo.getAll())
+      queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
+      queryClient.setQueryData(['accounts'], await accountRepo.getAll())
       handleClose()
     } catch (error) {
       console.error('Failed to record payment:', error)
@@ -197,7 +197,9 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     setIsLoading(true)
     try {
       await deleteLoanWithTransactions(loan)
-      await Promise.all([refreshLoans(), refreshTransactions(), refreshAccounts()])
+      queryClient.setQueryData(['loans'], await loanRepo.getAll())
+      queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
+      queryClient.setQueryData(['accounts'], await accountRepo.getAll())
       handleClose()
     } catch (error) {
       console.error('Failed to delete loan:', error)

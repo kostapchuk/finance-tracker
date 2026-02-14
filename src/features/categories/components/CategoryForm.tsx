@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -22,7 +23,6 @@ import { Toggle } from '@/components/ui/toggle'
 import { categoryRepo } from '@/database/repositories'
 import type { Category } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
 
 interface CategoryFormProps {
@@ -32,9 +32,8 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
-  const refreshCategories = useAppStore((state) => state.refreshCategories)
+  const queryClient = useQueryClient()
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
 
   const [name, setName] = useState('')
   const [color, setColor] = useState(getRandomColor())
@@ -62,7 +61,6 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
     e.preventDefault()
     if (!name.trim()) return
 
-    setIsLoading(true)
     try {
       const budgetValue = budget ? parseFloat(budget) : undefined
       if (category?.id) {
@@ -84,12 +82,10 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
           hiddenFromDashboard,
         })
       }
-      await refreshCategories()
+      queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' })
       onClose()
     } catch (error) {
       console.error('Failed to save category:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -162,9 +158,7 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : category ? t('update') : t('create')}
-            </Button>
+            <Button type="submit">{category ? t('update') : t('create')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

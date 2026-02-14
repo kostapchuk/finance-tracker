@@ -1,5 +1,6 @@
 import { ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Filter } from 'lucide-react'
 import { useState, useMemo } from 'react'
+import { type ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,54 +12,54 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import type { Transaction, TransactionType } from '@/database/types'
+import type { Transaction } from '@/database/types'
+import { useTransactions, useAccounts, useCategories, useIncomeSources } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
+
+const typeConfig: Record<string, { icon: ReactNode; color: string; label: string }> = {
+  income: {
+    icon: <ArrowUpCircle className="h-5 w-5 text-green-500" />,
+    color: 'text-green-500',
+    label: 'Income',
+  },
+  expense: {
+    icon: <ArrowDownCircle className="h-5 w-5 text-red-500" />,
+    color: 'text-red-500',
+    label: 'Expense',
+  },
+  transfer: {
+    icon: <ArrowLeftRight className="h-5 w-5 text-blue-500" />,
+    color: 'text-blue-500',
+    label: 'Transfer',
+  },
+  loan_given: {
+    icon: <ArrowUpCircle className="h-5 w-5 text-orange-500" />,
+    color: 'text-orange-500',
+    label: 'Loan Given',
+  },
+  loan_received: {
+    icon: <ArrowDownCircle className="h-5 w-5 text-purple-500" />,
+    color: 'text-purple-500',
+    label: 'Loan Received',
+  },
+  loan_payment: {
+    icon: <ArrowLeftRight className="h-5 w-5 text-amber-500" />,
+    color: 'text-amber-500',
+    label: 'Loan Payment',
+  },
+}
+
 export function TransactionList() {
   const { t } = useLanguage()
 
-  const typeConfig: Record<
-    TransactionType,
-    { label: string; icon: React.ReactNode; color: string }
-  > = {
-    income: {
-      label: t('income'),
-      icon: <ArrowUpCircle className="h-4 w-4" />,
-      color: 'text-green-600',
-    },
-    expense: {
-      label: t('expense'),
-      icon: <ArrowDownCircle className="h-4 w-4" />,
-      color: 'text-red-600',
-    },
-    transfer: {
-      label: t('transfer'),
-      icon: <ArrowLeftRight className="h-4 w-4" />,
-      color: 'text-blue-600',
-    },
-    loan_given: {
-      label: t('loanGiven'),
-      icon: <ArrowDownCircle className="h-4 w-4" />,
-      color: 'text-orange-600',
-    },
-    loan_received: {
-      label: t('loanReceived'),
-      icon: <ArrowUpCircle className="h-4 w-4" />,
-      color: 'text-orange-600',
-    },
-    loan_payment: {
-      label: t('payment'),
-      icon: <ArrowLeftRight className="h-4 w-4" />,
-      color: 'text-orange-600',
-    },
-  }
-  const transactions = useAppStore((state) => state.transactions)
-  const accounts = useAppStore((state) => state.accounts)
-  const categories = useAppStore((state) => state.categories)
-  const incomeSources = useAppStore((state) => state.incomeSources)
+  const { data: transactions = [] } = useTransactions()
+  const { data: accounts = [] } = useAccounts()
+  const { data: categories = [] } = useCategories()
+  const { data: incomeSources = [] } = useIncomeSources()
   const mainCurrency = useAppStore((state) => state.mainCurrency)
 
   const [typeFilter, setTypeFilter] = useState<string>('all')

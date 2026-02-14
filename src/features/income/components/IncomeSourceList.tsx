@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, DollarSign } from 'lucide-react'
 import { useState } from 'react'
 
@@ -7,13 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { incomeSourceRepo } from '@/database/repositories'
 import type { IncomeSource } from '@/database/types'
+import { useIncomeSources } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 
 export function IncomeSourceList() {
   const { t } = useLanguage()
-  const incomeSources = useAppStore((state) => state.incomeSources)
-  const refreshIncomeSources = useAppStore((state) => state.refreshIncomeSources)
+  const { data: incomeSources = [] } = useIncomeSources()
+  const queryClient = useQueryClient()
   const [formOpen, setFormOpen] = useState(false)
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null)
 
@@ -27,7 +28,7 @@ export function IncomeSourceList() {
     if (!confirm(`Delete "${source.name}"? This cannot be undone.`)) return
 
     await incomeSourceRepo.delete(source.id)
-    await refreshIncomeSources()
+    await queryClient.invalidateQueries({ queryKey: ['incomeSources'], refetchType: 'all' })
   }
 
   const handleCloseForm = () => {

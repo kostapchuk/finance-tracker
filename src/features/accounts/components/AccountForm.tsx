@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -33,10 +34,9 @@ interface AccountFormProps {
 }
 
 export function AccountForm({ account, open, onClose }: AccountFormProps) {
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
+  const queryClient = useQueryClient()
 
   const accountTypes: { value: AccountType; label: string }[] = [
     { value: 'cash', label: t('cash') },
@@ -74,7 +74,6 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
     e.preventDefault()
     if (!name.trim()) return
 
-    setIsLoading(true)
     try {
       if (account?.id) {
         await accountRepo.update(account.id, {
@@ -95,12 +94,10 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
           hiddenFromDashboard,
         })
       }
-      await refreshAccounts()
+      queryClient.invalidateQueries({ queryKey: ['accounts'], refetchType: 'all' })
       onClose()
     } catch (error) {
       console.error('Failed to save account:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -184,9 +181,7 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : account ? t('update') : t('create')}
-            </Button>
+            <Button type="submit">{account ? t('update') : t('create')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

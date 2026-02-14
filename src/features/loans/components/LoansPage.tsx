@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, useMemo } from 'react'
 
@@ -9,17 +10,16 @@ import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { Button } from '@/components/ui/button'
 import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
+import { useLoans, useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 
 export function LoansPage() {
-  const loans = useAppStore((state) => state.loans)
-  const accounts = useAppStore((state) => state.accounts)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
+  const { data: loans = [] } = useLoans()
+  const { data: accounts = [] } = useAccounts()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
+  const queryClient = useQueryClient()
   const { t } = useLanguage()
 
   const [loanFormOpen, setLoanFormOpen] = useState(false)
@@ -119,11 +119,11 @@ export function LoansPage() {
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })
 
-      await refreshAccounts()
-      await refreshTransactions()
+      queryClient.setQueryData(['accounts'], await accountRepo.getAll())
+      queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
     }
 
-    await refreshLoans()
+    queryClient.setQueryData(['loans'], await loanRepo.getAll())
   }
 
   const handleAddNew = () => {

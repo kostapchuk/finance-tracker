@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Pause } from 'lucide-react'
 import { useState, useCallback, useEffect } from 'react'
 
@@ -14,8 +15,8 @@ import { ImportIncomeSourceMapping } from './ImportIncomeSourceMapping'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { useAccounts, useCategories, useIncomeSources } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 
 interface BudgetOkImportWizardProps {
   open: boolean
@@ -44,7 +45,15 @@ export function BudgetOkImportWizard({
   onStateChange,
 }: BudgetOkImportWizardProps) {
   const { t } = useLanguage()
-  const { accounts, categories, incomeSources, loadAllData } = useAppStore()
+  const { data: accountsData = [] } = useAccounts()
+  const { data: categoriesData = [] } = useCategories()
+  const { data: incomeSourcesData = [] } = useIncomeSources()
+
+  const accounts = accountsData
+  const categories = categoriesData
+  const incomeSources = incomeSourcesData
+
+  const queryClient = useQueryClient()
 
   // Wizard state - initialize from saved state if available
   const [step, setStep] = useState<ImportWizardStep>(savedState?.step ?? 1)
@@ -249,7 +258,7 @@ export function BudgetOkImportWizard({
 
       if (result.success) {
         // Refresh all data after successful import
-        await loadAllData()
+        await queryClient.invalidateQueries()
       }
     } catch (error) {
       setImportResult({
@@ -260,7 +269,7 @@ export function BudgetOkImportWizard({
     } finally {
       setIsImporting(false)
     }
-  }, [parsedData, accountMapping, categoryMapping, incomeSourceMapping, accounts, loadAllData])
+  }, [parsedData, accountMapping, categoryMapping, incomeSourceMapping, accounts, queryClient])
 
   // Step titles for progress indicator
   const stepTitles: Record<ImportWizardStep, string> = {

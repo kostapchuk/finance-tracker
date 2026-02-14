@@ -1,41 +1,34 @@
 import { create } from 'zustand'
 
 import {
-  accountRepo,
-  incomeSourceRepo,
-  categoryRepo,
-  transactionRepo,
-  loanRepo,
-  customCurrencyRepo,
-  settingsRepo,
-} from '@/database/repositories'
-import type {
-  Account,
-  IncomeSource,
-  Category,
-  Transaction,
-  Loan,
-  CustomCurrency,
-} from '@/database/types'
+  isMigrationComplete,
+  hasLocalData,
+  migrateLocalToSupabase,
+  clearLocalData,
+} from '@/database/migration'
+import { settingsRepo } from '@/database/repositories'
+import { syncService } from '@/database/syncService'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
-// Guard to prevent duplicate data initialization (React StrictMode calls effects twice)
 let isInitializing = false
 
-interface AppState {
-  // Data
-  accounts: Account[]
-  incomeSources: IncomeSource[]
-  categories: Category[]
-  transactions: Transaction[]
-  loans: Loan[]
-  customCurrencies: CustomCurrency[]
+interface MigrationState {
+  showMigrationDialog: boolean
+  isMigrating: boolean
+  migrationProgress: { current: number; total: number; entity: string } | null
+  migrationError: string | null
+}
 
+interface AppState {
   // Settings
   mainCurrency: string
   blurFinancialFigures: boolean
 
   // Loading states
   isLoading: boolean
+
+  // Migration state
+  migration: MigrationState
 
   // UI State - Mobile-first: dashboard, history, loans, report, settings
   activeView: 'dashboard' | 'history' | 'loans' | 'report' | 'settings'
@@ -58,27 +51,26 @@ interface AppState {
   setMainCurrency: (currency: string) => Promise<void>
   setBlurFinancialFigures: (blur: boolean) => Promise<void>
   loadAllData: () => Promise<void>
-  refreshAccounts: () => Promise<void>
-  refreshIncomeSources: () => Promise<void>
-  refreshCategories: () => Promise<void>
-  refreshTransactions: () => Promise<void>
-  refreshLoans: () => Promise<void>
-  refreshCustomCurrencies: () => Promise<void>
   setOnboardingStep: (step: number) => void
   completeOnboarding: () => void
   skipOnboarding: () => void
+
+  // Migration actions
+  startMigration: () => Promise<void>
+  skipMigration: () => Promise<void>
+  dismissMigrationDialog: () => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  accounts: [],
-  incomeSources: [],
-  categories: [],
-  transactions: [],
-  loans: [],
-  customCurrencies: [],
   mainCurrency: 'BYN',
   blurFinancialFigures: false,
   isLoading: true,
+  migration: {
+    showMigrationDialog: false,
+    isMigrating: false,
+    migrationProgress: null,
+    migrationError: null,
+  },
   activeView: 'dashboard',
   selectedMonth: new Date(),
   historyCategoryFilter: null,
@@ -103,127 +95,61 @@ export const useAppStore = create<AppState>((set) => ({
   },
 
   loadAllData: async () => {
-    // Prevent duplicate initialization (React StrictMode calls effects twice)
     if (isInitializing) return
     isInitializing = true
 
     set({ isLoading: true })
-    try {
-      const [accounts, incomeSources, categories, transactions, loans, customCurrencies, settings] =
-        await Promise.all([
-          accountRepo.getAll(),
-          incomeSourceRepo.getAll(),
-          categoryRepo.getAll(),
-          transactionRepo.getAll(),
-          loanRepo.getAll(),
-          customCurrencyRepo.getAll(),
-          settingsRepo.get(),
-        ])
 
+    try {
+      const settings = await settingsRepo.get()
       const mainCurrency = settings?.defaultCurrency || 'BYN'
       const blurFinancialFigures = settings?.blurFinancialFigures || false
 
-      // Check if this is a new user (no data in IndexedDB)
-      const hasExistingData =
-        accounts.length > 0 || transactions.length > 0 || incomeSources.length > 0
+      const migrationComplete = isMigrationComplete()
+      const hasExistingLocalData = await hasLocalData()
+
+      if (!migrationComplete && hasExistingLocalData && isSupabaseConfigured()) {
+        set({
+          isLoading: false,
+          mainCurrency,
+          blurFinancialFigures,
+          migration: {
+            showMigrationDialog: true,
+            isMigrating: false,
+            migrationProgress: null,
+            migrationError: null,
+          },
+        })
+        isInitializing = false
+        return
+      }
+
       const onboardingCompleted =
         localStorage.getItem('finance-tracker-onboarding-completed') === 'true'
 
-      if (!hasExistingData && !onboardingCompleted) {
-        // New user - create seed data and start onboarding
-        await Promise.all([
-          incomeSourceRepo.create({
-            name: 'Salary',
-            currency: mainCurrency,
-            color: '#22c55e',
-            icon: 'Banknote',
-          }),
-          accountRepo.create({
-            name: 'Bank Account',
-            type: 'bank',
-            balance: 0,
-            currency: mainCurrency,
-            color: '#3b82f6',
-            icon: 'Building2',
-          }),
-          categoryRepo.create({
-            name: 'Groceries',
-            categoryType: 'expense',
-            color: '#f97316',
-            icon: 'ShoppingCart',
-          }),
-        ])
-
-        // Reload data after creating seed data
-        const [newAccounts, newIncomeSources, newCategories] = await Promise.all([
-          accountRepo.getAll(),
-          incomeSourceRepo.getAll(),
-          categoryRepo.getAll(),
-        ])
-
-        set({
-          accounts: newAccounts,
-          incomeSources: newIncomeSources,
-          categories: newCategories,
-          transactions,
-          loans,
-          customCurrencies,
-          mainCurrency,
-          blurFinancialFigures,
-          isLoading: false,
-          onboardingStep: 1, // Start onboarding
-        })
-      } else {
-        // Existing user or onboarding already completed
-        set({
-          accounts,
-          incomeSources,
-          categories,
-          transactions,
-          loans,
-          customCurrencies,
-          mainCurrency,
-          blurFinancialFigures,
-          isLoading: false,
-          onboardingStep: 0,
-        })
+      if (isSupabaseConfigured()) {
+        await syncService.pullFromRemote()
+        await syncService.syncAll()
       }
+
+      set({
+        mainCurrency,
+        blurFinancialFigures,
+        isLoading: false,
+        onboardingStep: onboardingCompleted ? 0 : 0,
+        migration: {
+          showMigrationDialog: false,
+          isMigrating: false,
+          migrationProgress: null,
+          migrationError: null,
+        },
+      })
     } catch (error) {
       console.error('Failed to load data:', error)
       set({ isLoading: false })
     } finally {
       isInitializing = false
     }
-  },
-
-  refreshAccounts: async () => {
-    const accounts = await accountRepo.getAll()
-    set({ accounts })
-  },
-
-  refreshIncomeSources: async () => {
-    const incomeSources = await incomeSourceRepo.getAll()
-    set({ incomeSources })
-  },
-
-  refreshCategories: async () => {
-    const categories = await categoryRepo.getAll()
-    set({ categories })
-  },
-
-  refreshTransactions: async () => {
-    const transactions = await transactionRepo.getAll()
-    set({ transactions })
-  },
-
-  refreshLoans: async () => {
-    const loans = await loanRepo.getAll()
-    set({ loans })
-  },
-
-  refreshCustomCurrencies: async () => {
-    const customCurrencies = await customCurrencyRepo.getAll()
-    set({ customCurrencies })
   },
 
   setOnboardingStep: (step) => set({ onboardingStep: step }),
@@ -236,5 +162,65 @@ export const useAppStore = create<AppState>((set) => ({
   skipOnboarding: () => {
     localStorage.setItem('finance-tracker-onboarding-completed', 'true')
     set({ onboardingStep: 0 })
+  },
+
+  startMigration: async () => {
+    set({
+      migration: {
+        showMigrationDialog: true,
+        isMigrating: true,
+        migrationProgress: null,
+        migrationError: null,
+      },
+    })
+
+    const result = await migrateLocalToSupabase((progress) => {
+      set((state) => ({
+        migration: {
+          ...state.migration,
+          migrationProgress: progress,
+        },
+      }))
+    })
+
+    if (result.success) {
+      set({
+        migration: {
+          showMigrationDialog: false,
+          isMigrating: false,
+          migrationProgress: null,
+          migrationError: null,
+        },
+      })
+    } else {
+      set((state) => ({
+        migration: {
+          ...state.migration,
+          isMigrating: false,
+          migrationError: result.error || 'Migration failed',
+        },
+      }))
+    }
+  },
+
+  skipMigration: async () => {
+    await clearLocalData()
+    set({
+      migration: {
+        showMigrationDialog: false,
+        isMigrating: false,
+        migrationProgress: null,
+        migrationError: null,
+      },
+    })
+  },
+
+  dismissMigrationDialog: () => {
+    set((state) => ({
+      migration: {
+        ...state.migration,
+        showMigrationDialog: false,
+      },
+    }))
   },
 }))

@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -21,8 +22,8 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { loanRepo } from '@/database/repositories'
 import type { Loan, LoanType } from '@/database/types'
+import { useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 import { getAllCurrencies } from '@/utils/currency'
 import { formatDateForInput } from '@/utils/date'
 
@@ -45,11 +46,11 @@ interface LoanFormProps {
 }
 
 export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
-  const accounts = useAppStore((state) => state.accounts)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
+  const { data: accounts = [] } = useAccounts()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
+  const queryClient = useQueryClient()
   const { t, language } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
 
   const [type, setType] = useState<LoanType>('given')
   const [personName, setPersonName] = useState('')
@@ -95,7 +96,6 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
     if (isNaN(parsedAmount) || parsedAmount <= 0) return
     if (isMultiCurrency && (isNaN(parsedAccountAmount!) || parsedAccountAmount! <= 0)) return
 
-    setIsLoading(true)
     try {
       const formData: LoanFormData = {
         type,
@@ -135,13 +135,11 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             dueDate: formData.dueDate,
           })
         }
-        await refreshLoans()
+        queryClient.setQueryData(['loans'], await loanRepo.getAll())
       }
       onClose()
     } catch (error) {
       console.error('Failed to save loan:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -315,8 +313,8 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading || !accountId}>
-              {isLoading ? t('saving') : loan ? t('update') : t('create')}
+            <Button type="submit" disabled={!accountId}>
+              {loan ? t('update') : t('create')}
             </Button>
           </DialogFooter>
         </form>

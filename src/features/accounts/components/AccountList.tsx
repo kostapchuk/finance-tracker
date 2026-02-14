@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Wallet, Building2, Bitcoin, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 
@@ -8,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { accountRepo } from '@/database/repositories'
 import type { Account, AccountType } from '@/database/types'
+import { useAccounts } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 
 const typeIcons: Record<AccountType, React.ReactNode> = {
@@ -28,8 +29,8 @@ const typeLabels: Record<AccountType, string> = {
 
 export function AccountList() {
   const { t } = useLanguage()
-  const accounts = useAppStore((state) => state.accounts)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
+  const { data: accounts = [] } = useAccounts()
+  const queryClient = useQueryClient()
   const [formOpen, setFormOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
 
@@ -43,7 +44,7 @@ export function AccountList() {
     if (!confirm(`Delete "${account.name}"? This cannot be undone.`)) return
 
     await accountRepo.delete(account.id)
-    await refreshAccounts()
+    await queryClient.invalidateQueries({ queryKey: ['accounts'], refetchType: 'all' })
   }
 
   const handleCloseForm = () => {

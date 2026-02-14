@@ -26,8 +26,16 @@ import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import type { Transaction, TransactionType, Loan } from '@/database/types'
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
+import {
+  useTransactions,
+  useAccounts,
+  useCategories,
+  useIncomeSources,
+  useLoans,
+} from '@/hooks/useDataHooks'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
@@ -130,15 +138,12 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
 }
 
 export function HistoryPage() {
-  const transactions = useAppStore((state) => state.transactions)
-  const accounts = useAppStore((state) => state.accounts)
-  const categories = useAppStore((state) => state.categories)
-  const incomeSources = useAppStore((state) => state.incomeSources)
+  const { data: transactions = [] } = useTransactions()
+  const { data: accounts = [] } = useAccounts()
+  const { data: categories = [] } = useCategories()
+  const { data: incomeSources = [] } = useIncomeSources()
+  const { data: loans = [] } = useLoans()
   const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const loans = useAppStore((state) => state.loans)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
   const { t, language } = useLanguage()
 
   const historyCategoryFilter = useAppStore((state) => state.historyCategoryFilter)
@@ -413,7 +418,9 @@ export function HistoryPage() {
     await reverseTransactionBalance(transaction, loans)
 
     await transactionRepo.delete(transaction.id)
-    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
+    queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
+    queryClient.setQueryData(['accounts'], await accountRepo.getAll())
+    queryClient.setQueryData(['loans'], await loanRepo.getAll())
   }
 
   const handleEdit = (transaction: Transaction) => {
@@ -530,8 +537,9 @@ export function HistoryPage() {
     const balanceChange = data.type === 'given' ? -newBalanceAmount : newBalanceAmount
     await accountRepo.updateBalance(data.accountId, balanceChange)
 
-    // Refresh all data
-    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
+    queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
+    queryClient.setQueryData(['accounts'], await accountRepo.getAll())
+    queryClient.setQueryData(['loans'], await loanRepo.getAll())
     handleCloseEditModal()
   }
 

@@ -1,6 +1,6 @@
 import type { BudgetOkRow, AccountBalanceDelta, ImportResult, SourceAccountInfo } from '../types'
 
-import { db } from '@/database/db'
+import { accountRepo, transactionRepo } from '@/database/repositories'
 import type { Transaction } from '@/database/types'
 
 interface ExecuteImportParams {
@@ -36,22 +36,15 @@ export async function executeImport(params: ExecuteImportParams): Promise<Import
       accountCurrencyMap
     )
 
-    // Execute in a single transaction for atomicity
-    await db.transaction('rw', [db.transactions, db.accounts], async () => {
-      // Bulk add all transactions
-      await db.transactions.bulkAdd(transactions)
+    // Add all transactions
+    for (const tx of transactions) {
+      await transactionRepo.create(tx)
+    }
 
-      // Update account balances
-      for (const delta of balanceDeltas) {
-        await db.accounts
-          .where('id')
-          .equals(delta.accountId)
-          .modify((account) => {
-            account.balance += delta.delta
-            account.updatedAt = new Date()
-          })
-      }
-    })
+    // Update account balances
+    for (const delta of balanceDeltas) {
+      await accountRepo.updateBalance(delta.accountId, delta.delta)
+    }
 
     return {
       success: true,

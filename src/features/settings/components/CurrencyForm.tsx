@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,6 @@ import { Label } from '@/components/ui/label'
 import { customCurrencyRepo } from '@/database/repositories'
 import type { CustomCurrency } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 
 interface CurrencyFormProps {
   currency?: CustomCurrency | null
@@ -22,9 +22,8 @@ interface CurrencyFormProps {
 }
 
 export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
-  const refreshCustomCurrencies = useAppStore((state) => state.refreshCustomCurrencies)
+  const queryClient = useQueryClient()
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
 
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
@@ -46,27 +45,24 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
     e.preventDefault()
     if (!code.trim() || !name.trim()) return
 
-    setIsLoading(true)
     try {
       if (currency?.id) {
         await customCurrencyRepo.update(currency.id, {
           code: code.trim().toUpperCase(),
           name: name.trim(),
-          symbol: symbol.trim() || code.trim().toUpperCase(), // Use code as symbol if not provided
+          symbol: symbol.trim() || code.trim().toUpperCase(),
         })
       } else {
         await customCurrencyRepo.create({
           code: code.trim().toUpperCase(),
           name: name.trim(),
-          symbol: symbol.trim() || code.trim().toUpperCase(), // Use code as symbol if not provided
+          symbol: symbol.trim() || code.trim().toUpperCase(),
         })
       }
-      await refreshCustomCurrencies()
+      queryClient.invalidateQueries({ queryKey: ['customCurrencies'], refetchType: 'all' })
       onClose()
     } catch (error) {
       console.error('Failed to save currency:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -117,9 +113,7 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : currency ? t('update') : t('create')}
-            </Button>
+            <Button type="submit">{currency ? t('update') : t('create')}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

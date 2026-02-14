@@ -3,6 +3,14 @@ import { useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { MonthSelector } from '@/components/ui/MonthSelector'
+import type { Account, Transaction, Loan } from '@/database/types'
+import {
+  useAccounts,
+  useTransactions,
+  useCategories,
+  useLoans,
+  useSettings,
+} from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
@@ -10,12 +18,13 @@ import { formatCurrency, formatCurrencyWithSign, getAmountColorClass } from '@/u
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 
 export function ReportPage() {
-  const accounts = useAppStore((state) => state.accounts)
-  const transactions = useAppStore((state) => state.transactions)
-  const categories = useAppStore((state) => state.categories)
-  const loans = useAppStore((state) => state.loans)
+  const { data: accounts = [] } = useAccounts()
+  const { data: transactions = [] } = useTransactions()
+  const { data: categories = [] } = useCategories()
+  const { data: loans = [] } = useLoans()
+  const { data: settings } = useSettings()
   const selectedMonth = useAppStore((state) => state.selectedMonth)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t, language } = useLanguage()
 
   const stats = useMemo(() => {
@@ -23,31 +32,29 @@ export function ReportPage() {
     const endOfMonth = getEndOfMonth(selectedMonth)
 
     const monthlyTransactions = transactions.filter(
-      (t) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
+      (t: Transaction) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    const totalBalance = accounts.reduce((sum, a) => {
+    const totalBalance = accounts.reduce((sum: number, a: Account) => {
       if (a.currency === mainCurrency) return sum + a.balance
       return sum
     }, 0)
 
-    // Exclude transfers (they don't have incomeSourceId/categoryId)
     const monthlyIncome = monthlyTransactions
-      .filter((t) => t.type === 'income' && t.incomeSourceId)
-      .reduce((sum, t) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
+      .filter((t: Transaction) => t.type === 'income' && t.incomeSourceId)
+      .reduce((sum: number, t: Transaction) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
 
     const monthlyExpenses = monthlyTransactions
-      .filter((t) => t.type === 'expense' && t.categoryId)
-      .reduce((sum, t) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
+      .filter((t: Transaction) => t.type === 'expense' && t.categoryId)
+      .reduce((sum: number, t: Transaction) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
 
     const netFlow = monthlyIncome - monthlyExpenses
 
     return { totalBalance, monthlyIncome, monthlyExpenses, netFlow }
   }, [accounts, transactions, selectedMonth, mainCurrency])
 
-  // Calculate loan totals
   const loanStats = useMemo(() => {
-    const activeLoans = loans.filter((l) => l.status !== 'fully_paid')
+    const activeLoans = loans.filter((l: Loan) => l.status !== 'fully_paid')
     const givenTotal = activeLoans
       .filter((l) => l.type === 'given')
       .reduce((sum, l) => sum + (l.amount - l.paidAmount), 0)

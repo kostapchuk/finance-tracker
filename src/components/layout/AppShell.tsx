@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 
 import { BottomNav } from './BottomNav'
 
+import { useCustomCurrencies } from '@/hooks/useDataHooks'
 import { useAppStore } from '@/store/useAppStore'
 import { setCustomCurrencies } from '@/utils/currency'
 
@@ -17,8 +18,8 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const loadAllData = useAppStore((state) => state.loadAllData)
-  const customCurrencies = useAppStore((state) => state.customCurrencies)
   const onboardingStep = useAppStore((state) => state.onboardingStep)
+  const { data: customCurrencies = [] } = useCustomCurrencies()
 
   useEffect(() => {
     setCustomCurrencies(

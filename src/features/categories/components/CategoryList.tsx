@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react'
 import { useState } from 'react'
 
@@ -8,14 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { categoryRepo } from '@/database/repositories'
 import type { Category } from '@/database/types'
+import { useCategories, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 
 export function CategoryList() {
-  const categories = useAppStore((state) => state.categories)
-  const refreshCategories = useAppStore((state) => state.refreshCategories)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
+  const { data: categories = [] } = useCategories()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
+  const queryClient = useQueryClient()
   const { t } = useLanguage()
   const [formOpen, setFormOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -30,7 +32,7 @@ export function CategoryList() {
     if (!confirm(`Delete "${category.name}"? This cannot be undone.`)) return
 
     await categoryRepo.delete(category.id)
-    await refreshCategories()
+    await queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' })
   }
 
   const handleCloseForm = () => {

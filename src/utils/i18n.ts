@@ -365,6 +365,13 @@ const lazyTranslations = {
     importResume: 'Resume Import',
     importPauseHint: 'You can pause to create missing items, then resume',
     showingAllTransactions: 'Showing all {count} transactions',
+    syncing: 'Syncing...',
+    syncPending: '{count} pending',
+    syncOffline: 'Offline',
+    syncError: 'Sync failed',
+    syncComplete: 'Synced',
+    syncNow: 'Sync now',
+    syncStatus: 'Sync status',
   },
   ru: {
     goodExpenses: 'Хорошие расходы',
@@ -597,6 +604,13 @@ const lazyTranslations = {
     importResume: 'Продолжить импорт',
     importPauseHint: 'Вы можете приостановить, чтобы создать недостающие элементы',
     showingAllTransactions: 'Показаны все {count} транзакций',
+    syncing: 'Синхронизация...',
+    syncPending: '{count} ожидает',
+    syncOffline: 'Оффлайн',
+    syncError: 'Ошибка синхронизации',
+    syncComplete: 'Синхронизировано',
+    syncNow: 'Синхронизировать',
+    syncStatus: 'Статус синхронизации',
   },
 } as const
 
