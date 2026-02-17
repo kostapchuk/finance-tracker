@@ -103,6 +103,9 @@ export const accountRepo = {
 
     if (numericId) {
       syncService.queueOperation('delete', 'accounts', numericId)
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, remove the pending create operation from sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
     }
   },
 
@@ -191,6 +194,9 @@ export const incomeSourceRepo = {
 
     if (numericId) {
       syncService.queueOperation('delete', 'incomeSources', numericId)
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, remove the pending create operation from sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
     }
   },
 }
@@ -261,6 +267,9 @@ export const categoryRepo = {
 
     if (numericId) {
       syncService.queueOperation('delete', 'categories', numericId)
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, remove the pending create operation from sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
     }
   },
 }
@@ -464,9 +473,13 @@ export const transactionRepo = {
     // Delete from local cache using the original ID (can be number or temp string)
     await localCache.transactions.delete(id)
 
-    // Only queue sync operation for real (numeric) IDs
     if (numericId) {
+      // For real IDs, queue a delete operation to sync to remote
       syncService.queueOperation('delete', 'transactions', numericId)
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, remove the pending create operation from sync queue
+      // This prevents the transaction from being synced after it was deleted offline
+      await localCache.syncQueue.deleteByRecordId(id)
     }
 
     if (cached) {
@@ -618,6 +631,9 @@ export const loanRepo = {
     const numericId = getNumericId(id)
     if (numericId) {
       syncService.queueOperation('delete', 'loans', numericId)
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, remove the pending create operation from sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
     }
   },
 }
@@ -739,6 +755,9 @@ export const customCurrencyRepo = {
 
     if (numericId) {
       syncService.queueOperation('delete', 'customCurrencies', numericId)
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, remove the pending create operation from sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
     }
   },
 }

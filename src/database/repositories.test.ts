@@ -6,6 +6,7 @@ const mockTransactionDelete = vi.fn()
 const mockTransactionGetById = vi.fn()
 const mockReportCacheInvalidate = vi.fn()
 const mockReportCacheDeleteByPeriod = vi.fn()
+const mockSyncQueueDeleteByRecordId = vi.fn()
 
 vi.mock('./localCache', () => ({
   localCache: {
@@ -17,6 +18,9 @@ vi.mock('./localCache', () => ({
     reportCache: {
       invalidatePeriodsAfterDate: () => mockReportCacheInvalidate(),
       deleteByPeriod: () => mockReportCacheDeleteByPeriod(),
+    },
+    syncQueue: {
+      deleteByRecordId: (id: number | string) => mockSyncQueueDeleteByRecordId(id),
     },
   },
 }))
@@ -74,7 +78,7 @@ describe('repositories offline handling', () => {
   })
 
   describe('transactionRepo.delete', () => {
-    it('deletes transaction with temp ID (created offline)', async () => {
+    it('deletes transaction with temp ID and removes pending create from sync queue', async () => {
       const tempId = 'temp_12345_abc123'
 
       // Mock the transaction exists
@@ -96,6 +100,9 @@ describe('repositories offline handling', () => {
 
       // Should NOT queue sync operation for temp IDs
       expect(mockQueueOperation).not.toHaveBeenCalled()
+
+      // Should remove the pending create operation from sync queue
+      expect(mockSyncQueueDeleteByRecordId).toHaveBeenCalledWith(tempId)
     })
 
     it('deletes transaction with numeric ID and queues sync', async () => {
@@ -120,6 +127,9 @@ describe('repositories offline handling', () => {
 
       // Should queue sync operation for numeric IDs
       expect(mockQueueOperation).toHaveBeenCalledWith('delete', 'transactions', numericId)
+
+      // Should NOT remove from sync queue for numeric IDs
+      expect(mockSyncQueueDeleteByRecordId).not.toHaveBeenCalled()
     })
   })
 })

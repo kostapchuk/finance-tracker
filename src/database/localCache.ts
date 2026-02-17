@@ -26,7 +26,7 @@ const db = new Dexie('FinanceTrackerCache') as Dexie & {
   reportCache: EntityTable<ReportCache, 'id'>
 }
 
-db.version(3).stores({
+db.version(4).stores({
   accounts: 'id, userId, name, updatedAt',
   incomeSources: 'id, userId, name, updatedAt',
   categories: 'id, userId, name, updatedAt',
@@ -334,6 +334,10 @@ export const localCache = {
 
     async delete(id: number): Promise<void> {
       await db.syncQueue.delete(id)
+    },
+
+    async deleteByRecordId(recordId: number | string): Promise<void> {
+      await db.syncQueue.where('recordId').equals(recordId).delete()
     },
 
     async clear(): Promise<void> {
