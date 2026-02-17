@@ -926,6 +926,19 @@ export const supabaseApi = {
       if (error) throw error
     },
 
+    async deleteByPeriods(periodKeys: string[]): Promise<void> {
+      if (!isSupabaseConfigured() || !supabase) return
+      if (periodKeys.length === 0) return
+
+      const { error } = await supabase
+        .from('report_cache')
+        .delete()
+        .eq('user_id', getDeviceId())
+        .in('period_key', periodKeys)
+
+      if (error) throw error
+    },
+
     async deleteExpired(): Promise<void> {
       if (!isSupabaseConfigured() || !supabase) return
 

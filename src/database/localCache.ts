@@ -361,6 +361,11 @@ export const localCache = {
       }
     },
 
+    async deleteByPeriods(periodKeys: string[]): Promise<void> {
+      if (periodKeys.length === 0) return
+      await db.reportCache.where('periodKey').anyOf(periodKeys).delete()
+    },
+
     async invalidatePeriodsAfterDate(date: Date): Promise<void> {
       const allCache = await db.reportCache.toArray()
       for (const cache of allCache) {

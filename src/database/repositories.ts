@@ -515,16 +515,14 @@ export const transactionRepo = {
       }))
     )
 
-    const affectedDates = new Set(transactions.map((tx) => getPeriodKeyFromDate(tx.date)))
-    for (const periodKey of affectedDates) {
-      await localCache.reportCache.deleteByPeriod(periodKey)
-      // Only sync to remote when online - offline operations should succeed
-      if (isSupabaseConfigured() && navigator.onLine) {
-        try {
-          await supabaseApi.reportCache.deleteByPeriod(periodKey)
-        } catch {
-          // Ignore network errors in offline mode
-        }
+    const affectedPeriodKeys = [...new Set(transactions.map((tx) => getPeriodKeyFromDate(tx.date)))]
+    await localCache.reportCache.deleteByPeriods(affectedPeriodKeys)
+
+    if (isSupabaseConfigured() && navigator.onLine) {
+      try {
+        await supabaseApi.reportCache.deleteByPeriods(affectedPeriodKeys)
+      } catch {
+        // Ignore network errors in offline mode
       }
     }
 
