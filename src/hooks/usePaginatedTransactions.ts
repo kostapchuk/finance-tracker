@@ -196,19 +196,7 @@ export function usePaginatedTransactions(
       if (createdAtA !== createdAtB) {
         return createdAtB - createdAtA
       }
-      // DIAGNOSTIC: Check if IDs are strings and log NaN issue
-      const idA = a.id
-      const idB = b.id
-      const sortResult = (idB || 0) - (idA || 0)
-      if (Number.isNaN(sortResult)) {
-        console.log('[DIAG] sortTransactions NaN detected:', {
-          idA,
-          idB,
-          typeA: typeof idA,
-          typeB: typeof idB,
-        })
-      }
-      return sortResult
+      return (b.id || 0) - (a.id || 0)
     })
   }, [])
 
@@ -245,20 +233,7 @@ export function usePaginatedTransactions(
   useEffect(() => {
     // Combine filter key and transaction key to detect changes
     const combinedKey = `${filterKey}-${transactionKey}`
-
-    // DIAGNOSTIC: Log when effect runs
-    console.log('[DIAG] usePaginatedTransactions effect running:', {
-      combinedKey,
-      prevKey: loadedFilterKeyRef.current,
-      sameKey: loadedFilterKeyRef.current === combinedKey,
-      txCount: initialTransactions.length,
-      firstTxId: initialTransactions[0]?.id,
-      filterKey,
-      transactionKey,
-    })
-
     if (loadedFilterKeyRef.current === combinedKey) {
-      console.log('[DIAG] Skipping effect - same combinedKey')
       return
     }
 
@@ -269,7 +244,6 @@ export function usePaginatedTransactions(
     let cancelled = false
 
     const loadInitial = async () => {
-      console.log('[DIAG] loadInitial starting, initialTransactions:', initialTransactions.length)
       setIsLoading(true)
       setTransactions([])
       cursorRef.current = null

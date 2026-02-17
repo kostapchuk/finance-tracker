@@ -152,6 +152,20 @@ export class SyncHelper {
 
   private async handlePost(route: Route, tableName: string, postData: unknown): Promise<void> {
     const storageKey = this.tableNameToStorageKey(tableName)
+
+    // Handle bulk inserts (arrays)
+    if (Array.isArray(postData)) {
+      const records = postData.map((record) =>
+        mockStorage.insert(storageKey, record as Record<string, unknown>)
+      )
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(records),
+      })
+      return
+    }
+
     const record = mockStorage.insert(storageKey, postData as Record<string, unknown>)
     await route.fulfill({
       status: 201,
@@ -195,8 +209,16 @@ export class SyncHelper {
     const storageKey = this.tableNameToStorageKey(tableName)
     const id = this.extractIdFromPath(path)
 
+    // Handle bulk deletes (no ID in path, e.g., DELETE from report_cache with query params)
     if (id === null) {
-      await route.fulfill({ status: 400, body: 'ID required' })
+      // For report_cache and other tables, just clear all records for the user
+      const allRecords = mockStorage.getAll(storageKey)
+      for (const record of allRecords) {
+        if (record.id) {
+          mockStorage.delete(storageKey, record.id as number)
+        }
+      }
+      await route.fulfill({ status: 200, body: '[]' })
       return
     }
 

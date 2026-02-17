@@ -513,7 +513,9 @@ export const supabaseApi = {
       })
 
       if (transaction.date) {
-        record.date = transaction.date.toISOString()
+        // Handle both Date objects and string dates
+        record.date =
+          transaction.date instanceof Date ? transaction.date.toISOString() : transaction.date
       }
 
       const { data, error } = await supabase.from('transactions').insert(record).select().single()
@@ -536,7 +538,8 @@ export const supabaseApi = {
           updatedAt: now,
         })
         if (tx.date) {
-          record.date = tx.date.toISOString()
+          // Handle both Date objects and string dates
+          record.date = tx.date instanceof Date ? tx.date.toISOString() : tx.date
         }
         return record
       })
@@ -559,7 +562,8 @@ export const supabaseApi = {
       )
 
       if (updates.date) {
-        record.date = updates.date.toISOString()
+        // Handle both Date objects and string dates
+        record.date = updates.date instanceof Date ? updates.date.toISOString() : updates.date
       }
 
       const { data, error } = await supabase
@@ -647,7 +651,8 @@ export const supabaseApi = {
       })
 
       if (loan.dueDate) {
-        record.due_date = loan.dueDate.toISOString()
+        // Handle both Date objects and string dates
+        record.due_date = loan.dueDate instanceof Date ? loan.dueDate.toISOString() : loan.dueDate
         delete record.dueDate
       }
 
@@ -669,7 +674,9 @@ export const supabaseApi = {
       )
 
       if (updates.dueDate) {
-        record.due_date = updates.dueDate.toISOString()
+        // Handle both Date objects and string dates
+        record.due_date =
+          updates.dueDate instanceof Date ? updates.dueDate.toISOString() : updates.dueDate
         delete record.dueDate
       }
 

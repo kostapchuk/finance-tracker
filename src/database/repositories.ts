@@ -267,18 +267,6 @@ export const categoryRepo = {
 
 export const transactionRepo = {
   async getAll(): Promise<Transaction[]> {
-    // DIAGNOSTIC: Get all without limit to see what's in the DB
-    const allTransactions = await localCache.transactions.getAll()
-    console.log('[DIAG] transactionRepo.getAll:', {
-      count: allTransactions.length,
-      firstId: allTransactions[0]?.id,
-      firstDate: allTransactions[0]?.date,
-      lastId: allTransactions.at(-1)?.id,
-      lastDate: allTransactions.at(-1)?.date,
-      tempIdCount: allTransactions.filter(
-        (t) => typeof t.id === 'string' && String(t.id).startsWith('temp_')
-      ).length,
-    })
     return localCache.transactions.getRecent(50)
   },
 
@@ -423,25 +411,7 @@ export const transactionRepo = {
 
     const tempId = generateTempId()
     const tempTransaction = { ...fullTransaction, id: tempId as unknown as number }
-
-    // DIAGNOSTIC: Log transaction creation
-    console.log('[DIAG] transactionRepo.create:', {
-      tempId,
-      type: transaction.type,
-      amount: transaction.amount,
-      date: transaction.date,
-      accountId: transaction.accountId,
-    })
-
     await localCache.transactions.put(tempTransaction)
-
-    // DIAGNOSTIC: Verify transaction was stored
-    const verifyStored = await localCache.transactions.getById(tempId)
-    console.log(
-      '[DIAG] Transaction stored, verify:',
-      verifyStored ? 'FOUND' : 'NOT FOUND',
-      verifyStored?.id
-    )
 
     syncService.queueOperation(
       'create',

@@ -134,16 +134,6 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
 
 export function HistoryPage() {
   const { data: localTransactions = [] } = useTransactions()
-
-  // DIAGNOSTIC: Log when localTransactions changes
-  useEffect(() => {
-    console.log('[DIAG] HistoryPage localTransactions updated:', {
-      count: localTransactions.length,
-      firstId: localTransactions[0]?.id,
-      lastId: localTransactions[localTransactions.length - 1]?.id,
-    })
-  }, [localTransactions])
-
   const { data: accounts = [] } = useAccounts()
   const { data: categories = [] } = useCategories()
   const { data: incomeSources = [] } = useIncomeSources()

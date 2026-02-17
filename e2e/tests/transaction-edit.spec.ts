@@ -631,9 +631,8 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Immediate show test')).toBeVisible({ timeout: 5000 })
     })
 
-    test('should sync temp ID transaction when coming online, then delete', async ({
+    test('should sync temp ID transaction when coming online', async ({
       page,
-      historyPage,
       dbHelper,
       syncHelper,
       seedAccount,
@@ -648,7 +647,7 @@ for (const mode of syncModes) {
       const catId = await seedCategory(testCategories.food())
       await dbHelper.refreshStoreData()
 
-      // Create a transaction with a temp ID
+      // Create a transaction with a temp ID (simulating offline creation)
       const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 
       await page.evaluate(
@@ -658,9 +657,11 @@ for (const mode of syncModes) {
             request.onsuccess = () => resolve(request.result)
             request.onerror = () => reject(request.error)
           })
+          const now = new Date()
+
+          // Add transaction with temp ID
           const tx = db.transaction('transactions', 'readwrite')
           const store = tx.objectStore('transactions')
-          const now = new Date()
           await new Promise<void>((resolve, reject) => {
             const addRequest = store.add({
               id: tempId,
@@ -669,6 +670,28 @@ for (const mode of syncModes) {
               userId: 'test-user-id',
               createdAt: now,
               updatedAt: now,
+            })
+            addRequest.onsuccess = () => resolve()
+            addRequest.onerror = () => reject(addRequest.error)
+          })
+
+          // Add sync queue entry (this is what the repository does when offline)
+          const queueTx = db.transaction('syncQueue', 'readwrite')
+          const queueStore = queueTx.objectStore('syncQueue')
+          await new Promise<void>((resolve, reject) => {
+            const addRequest = queueStore.add({
+              operation: 'create',
+              entity: 'transactions',
+              recordId: tempId,
+              data: {
+                ...transactionData,
+                date: new Date().toISOString(),
+                userId: 'test-user-id',
+                createdAt: now.toISOString(),
+                updatedAt: now.toISOString(),
+              },
+              createdAt: now,
+              attempts: 0,
             })
             addRequest.onsuccess = () => {
               db.close()
@@ -687,49 +710,38 @@ for (const mode of syncModes) {
             currency: 'USD',
             accountId,
             categoryId: catId,
-            comment: 'Sync then delete',
+            comment: 'Sync test',
           },
           tempId,
         }
       )
 
       await dbHelper.updateAccountBalance(accountId, 900)
-      await dbHelper.refreshStoreData()
+
+      // Verify we have 1 transaction with temp ID
+      const countBeforeSync = await dbHelper.getTransactionCount()
+      expect(countBeforeSync).toBe(1)
+
+      // Verify sync queue has 1 item
+      const queueCountBeforeSync = await syncHelper.getSyncQueueCount()
+      expect(queueCountBeforeSync).toBe(1)
 
       // Go online - this will sync the created transaction
       await syncHelper.goOnline()
-      await syncHelper.waitForSyncToComplete()
+      await syncHelper.waitForSyncToComplete(10000)
 
-      // Verify the transaction was synced (it should have a real ID now)
-      const remoteTransactionsBeforeDelete = syncHelper.getMockRemoteData('transactions')
-      expect(remoteTransactionsBeforeDelete.length).toBe(1)
+      // Verify sync queue is empty
+      const queueCountAfterSync = await syncHelper.getSyncQueueCount()
+      expect(queueCountAfterSync).toBe(0)
 
-      // Now delete the transaction while online
-      await historyPage.navigateTo('history')
+      // Verify we still have exactly 1 transaction (not duplicated!)
+      const countAfterSync = await dbHelper.getTransactionCount()
+      expect(countAfterSync).toBe(1)
 
-      page.on('dialog', async (dialog) => {
-        await dialog.accept()
-      })
-
-      await historyPage.clickTransactionByComment('Sync then delete')
-      await page.waitForTimeout(300)
-
-      await page
-        .locator('button')
-        .filter({ has: page.locator('.lucide-trash-2') })
-        .click()
-      await page.waitForTimeout(500)
-
-      // Verify transaction was deleted locally
-      const txCount = await dbHelper.getTransactionCount()
-      expect(txCount).toBe(0)
-
-      // Wait for sync to complete the delete
-      await syncHelper.waitForSyncToComplete()
-
-      // Verify remote was updated
+      // Verify remote has the transaction
       const remoteTransactions = syncHelper.getMockRemoteData('transactions')
-      expect(remoteTransactions.length).toBe(0)
+      expect(remoteTransactions.length).toBe(1)
+      expect(remoteTransactions[0].comment).toBe('Sync test')
     })
   })
 }

@@ -180,12 +180,7 @@ export function useDeleteCategory() {
 export function useTransactions() {
   return useQuery({
     queryKey: ['transactions'],
-    queryFn: async () => {
-      const result = await transactionRepo.getAll()
-      // DIAGNOSTIC: Log when transactions are fetched
-      console.log('[DIAG] useTransactions fetch:', result.length, 'transactions')
-      return result
-    },
+    queryFn: () => transactionRepo.getAll(),
     staleTime: 0,
     refetchOnMount: 'always',
   })

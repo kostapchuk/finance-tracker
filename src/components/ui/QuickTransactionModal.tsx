@@ -535,14 +535,6 @@ export function QuickTransactionModal({
 
       const newTransactions = await transactionRepo.getAll()
       const newAccounts = await accountRepo.getAll()
-
-      // DIAGNOSTIC: Log setQueryData calls
-      console.log('[DIAG] QuickTransactionModal setQueryData:', {
-        transactionsCount: newTransactions.length,
-        firstTxId: newTransactions[0]?.id,
-        lastTxId: newTransactions[newTransactions.length - 1]?.id,
-      })
-
       queryClient.setQueryData(['transactions'], newTransactions)
       queryClient.setQueryData(['accounts'], newAccounts)
 

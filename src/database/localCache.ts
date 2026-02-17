@@ -160,16 +160,7 @@ export const localCache = {
     },
 
     async getById(id: number | string): Promise<Transaction | undefined> {
-      // DIAGNOSTIC: Check if the query works for both numeric and string IDs
-      const result = await db.transactions.get(id as number)
-      console.log('[DIAG] getById:', {
-        searchId: id,
-        searchType: typeof id,
-        found: !!result,
-        resultId: result?.id,
-        resultDate: result?.date,
-      })
-      return result
+      return db.transactions.get(id as number)
     },
 
     async getByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
