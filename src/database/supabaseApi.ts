@@ -22,7 +22,7 @@ function toSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
 }
 
-function toDbRecord<T extends { id?: number; createdAt?: Date; updatedAt?: Date }>(
+function toDbRecord<T extends { id?: number | string; createdAt?: Date; updatedAt?: Date }>(
   item: Partial<T>,
   includeUserId = true
 ): DbRecord<T> {
@@ -57,7 +57,7 @@ function toCamelCase(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
 }
 
-function fromDbRecord<T extends { id?: number; createdAt?: Date; updatedAt?: Date }>(
+function fromDbRecord<T extends { id?: number | string; createdAt?: Date; updatedAt?: Date }>(
   record: Record<string, unknown>
 ): T {
   const item: Record<string, unknown> = {}
@@ -69,7 +69,7 @@ function fromDbRecord<T extends { id?: number; createdAt?: Date; updatedAt?: Dat
   return item as T
 }
 
-function fromDbRecords<T extends { id?: number; createdAt?: Date; updatedAt?: Date }>(
+function fromDbRecords<T extends { id?: number | string; createdAt?: Date; updatedAt?: Date }>(
   records: Record<string, unknown>[]
 ): T[] {
   return records.map((r) => fromDbRecord<T>(r))

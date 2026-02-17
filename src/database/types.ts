@@ -73,14 +73,14 @@ export interface Transaction {
   categoryId?: number
 
   // For all types that involve accounts
-  accountId?: number
+  accountId?: number | string
 
   // For transfers
   toAccountId?: number
   toAmount?: number // Amount in target account currency (for multi-currency transfers)
 
   // For loan transactions
-  loanId?: number
+  loanId?: number | string
 
   // Amount in mainCurrency when account currency differs (for reporting/budgets)
   mainCurrencyAmount?: number
@@ -90,7 +90,7 @@ export interface Transaction {
 }
 
 export interface Loan {
-  id?: number
+  id?: number | string
   userId?: string
   type: LoanType
   personName: string
@@ -99,7 +99,7 @@ export interface Loan {
   currency: string
   paidAmount: number
   status: LoanStatus
-  accountId?: number
+  accountId?: number | string
   dueDate?: Date
   createdAt: Date
   updatedAt: Date

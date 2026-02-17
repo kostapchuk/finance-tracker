@@ -48,7 +48,12 @@ export const localCache = {
     },
 
     async getById(id: number | string): Promise<Account | undefined> {
-      return db.accounts.get(id as number)
+      // Dexie supports both number and string keys, but we need to pass the actual value
+      // without type coercion that could break temp IDs
+      return db.accounts
+        .where('id')
+        .equals(id as never)
+        .first()
     },
 
     async put(account: Account): Promise<void> {
@@ -59,8 +64,11 @@ export const localCache = {
       await db.accounts.bulkPut(accounts)
     },
 
-    async delete(id: number): Promise<void> {
-      await db.accounts.delete(id)
+    async delete(id: number | string): Promise<void> {
+      await db.accounts
+        .where('id')
+        .equals(id as never)
+        .delete()
     },
 
     async bulkUpdateBalance(deltas: { id: number; delta: number }[]): Promise<void> {
@@ -160,23 +168,38 @@ export const localCache = {
     },
 
     async getById(id: number | string): Promise<Transaction | undefined> {
-      return db.transactions.get(id as number)
+      return db.transactions
+        .where('id')
+        .equals(id as never)
+        .first()
     },
 
     async getByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
       return db.transactions.where('date').between(startDate, endDate).reverse().toArray()
     },
 
-    async getByAccount(accountId: number): Promise<Transaction[]> {
-      return db.transactions.where('accountId').equals(accountId).reverse().toArray()
+    async getByAccount(accountId: number | string): Promise<Transaction[]> {
+      return db.transactions
+        .where('accountId')
+        .equals(accountId as never)
+        .reverse()
+        .toArray()
     },
 
-    async getByCategory(categoryId: number): Promise<Transaction[]> {
-      return db.transactions.where('categoryId').equals(categoryId).reverse().toArray()
+    async getByCategory(categoryId: number | string): Promise<Transaction[]> {
+      return db.transactions
+        .where('categoryId')
+        .equals(categoryId as never)
+        .reverse()
+        .toArray()
     },
 
-    async getByLoan(loanId: number): Promise<Transaction[]> {
-      return db.transactions.where('loanId').equals(loanId).reverse().toArray()
+    async getByLoan(loanId: number | string): Promise<Transaction[]> {
+      return db.transactions
+        .where('loanId')
+        .equals(loanId as never)
+        .reverse()
+        .toArray()
     },
 
     async put(transaction: Transaction): Promise<void> {
@@ -208,7 +231,10 @@ export const localCache = {
     },
 
     async delete(id: number | string): Promise<void> {
-      await db.transactions.delete(id as number)
+      await db.transactions
+        .where('id')
+        .equals(id as never)
+        .delete()
     },
 
     async clear(): Promise<void> {
@@ -236,7 +262,10 @@ export const localCache = {
     },
 
     async getById(id: number | string): Promise<Loan | undefined> {
-      return db.loans.get(id as number)
+      return db.loans
+        .where('id')
+        .equals(id as never)
+        .first()
     },
 
     async getActive(): Promise<Loan[]> {
@@ -252,7 +281,10 @@ export const localCache = {
     },
 
     async delete(id: number | string): Promise<void> {
-      await db.loans.delete(id as number)
+      await db.loans
+        .where('id')
+        .equals(id as never)
+        .delete()
     },
 
     async clear(): Promise<void> {

@@ -243,14 +243,15 @@ export function HistoryPage() {
     loan_payment: { label: t('paid'), icon: ArrowLeftRight, color: 'text-loan' },
   }
 
-  const getAccountName = (id?: number) => {
-    const account = accounts.find((a) => a.id === id)
+  const getAccountName = (id?: number | string) => {
+    const account = accounts.find((a) => String(a.id) === String(id))
     return account ? `${account.name} (${account.currency})` : 'Unknown'
   }
   const getAccountNameWithCurrency = getAccountName
-  const getCategoryName = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-  const getIncomeSourceName = (id?: number) =>
-    incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+  const getCategoryName = (id?: number | string) =>
+    categories.find((c) => String(c.id) === String(id))?.name || 'Unknown'
+  const getIncomeSourceName = (id?: number | string) =>
+    incomeSources.find((s) => String(s.id) === String(id))?.name || 'Unknown'
 
   const groupedTransactions = useMemo(() => {
     const now = new Date()
@@ -368,7 +369,7 @@ export function HistoryPage() {
     setEditingLoan(null)
   }
 
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
+  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
     if (!isEdit || !loanId || !editingTransaction) return
 
     const oldTransaction = editingTransaction
@@ -386,7 +387,7 @@ export function HistoryPage() {
     })
 
     const newBalanceAmount = data.accountAmount ?? data.amount
-    const account = accounts.find((a) => a.id === data.accountId)
+    const account = accounts.find((a) => String(a.id) === String(data.accountId))
 
     await transactionRepo.update(oldTransaction.id!, {
       amount: newBalanceAmount,

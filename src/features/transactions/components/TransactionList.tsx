@@ -65,22 +65,24 @@ export function TransactionList() {
   const [accountFilter, setAccountFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const getAccountName = (id?: number) => {
-    const account = accounts.find((a) => a.id === id)
+  const getAccountName = (id?: number | string) => {
+    const account = accounts.find((a) => String(a.id) === String(id))
     return account ? `${account.name} (${account.currency})` : 'Unknown'
   }
-  const getCategoryName = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-  const getIncomeSourceName = (id?: number) =>
-    incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+  const getCategoryName = (id?: number | string) =>
+    categories.find((c) => String(c.id) === String(id))?.name || 'Unknown'
+  const getIncomeSourceName = (id?: number | string) =>
+    incomeSources.find((s) => String(s.id) === String(id))?.name || 'Unknown'
 
   const filteredTransactions = useMemo(() => {
-    const matchAccount = (id?: number) => {
-      const account = accounts.find((a) => a.id === id)
+    const matchAccount = (id?: number | string) => {
+      const account = accounts.find((a) => String(a.id) === String(id))
       return account ? `${account.name} (${account.currency})` : 'Unknown'
     }
-    const matchCategory = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-    const matchIncomeSource = (id?: number) =>
-      incomeSources.find((s) => s.id === id)?.name || 'Unknown'
+    const matchCategory = (id?: number | string) =>
+      categories.find((c) => String(c.id) === String(id))?.name || 'Unknown'
+    const matchIncomeSource = (id?: number | string) =>
+      incomeSources.find((s) => String(s.id) === String(id))?.name || 'Unknown'
 
     return transactions
       .filter((t) => {

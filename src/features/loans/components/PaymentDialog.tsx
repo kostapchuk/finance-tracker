@@ -47,7 +47,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
   const isEditMode = !!editTransaction
   const selectedAccount = selectedAccountId
-    ? accounts.find((a) => a.id === parseInt(selectedAccountId))
+    ? accounts.find((a) => String(a.id) === selectedAccountId)
     : null
   const isMultiCurrency = loan && selectedAccount && loan.currency !== selectedAccount.currency
 
@@ -111,8 +111,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     const acctAmount = isMultiCurrency ? parseFloat(accountAmount) : paymentAmount
     if (isMultiCurrency && (isNaN(acctAmount) || acctAmount <= 0)) return
 
-    const acctId = parseInt(selectedAccountId)
-
     try {
       if (isEditMode && editTransaction?.id) {
         const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
@@ -134,7 +132,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         await transactionRepo.update(editTransaction.id, {
           amount: acctAmount,
           currency: selectedAccount?.currency || loan.currency,
-          accountId: acctId,
+          accountId: selectedAccountId,
           mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
           comment:
             comment ||
@@ -142,9 +140,9 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         })
 
         if (loan.type === 'given') {
-          await accountRepo.updateBalance(acctId, acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, acctAmount)
         } else {
-          await accountRepo.updateBalance(acctId, -acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, -acctAmount)
         }
       } else {
         await loanRepo.recordPayment(loan.id, paymentAmount)
@@ -155,7 +153,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           currency: selectedAccount?.currency || loan.currency,
           date: new Date(),
           loanId: loan.id,
-          accountId: acctId,
+          accountId: selectedAccountId,
           mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
           comment:
             comment ||
@@ -163,9 +161,9 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         })
 
         if (loan.type === 'given') {
-          await accountRepo.updateBalance(acctId, acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, acctAmount)
         } else {
-          await accountRepo.updateBalance(acctId, -acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, -acctAmount)
         }
       }
 

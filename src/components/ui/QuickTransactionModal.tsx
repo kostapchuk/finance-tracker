@@ -20,14 +20,14 @@ import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 
 export type TransactionMode =
-  | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
-  | { type: 'expense'; category: Category; preselectedAccountId?: number }
+  | { type: 'income'; source: IncomeSource; preselectedAccountId?: number | string }
+  | { type: 'expense'; category: Category; preselectedAccountId?: number | string }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
 
 interface QuickTransactionModalProps {
   mode: TransactionMode
   accounts: Account[]
-  preselectedAccountId?: number
+  preselectedAccountId?: number | string
   editTransaction?: Transaction
   disableAutoFocus?: boolean
   onDelete?: (transaction: Transaction) => void
@@ -77,13 +77,13 @@ export function QuickTransactionModal({
   const [activeField, setActiveField] = useState<
     'source' | 'target' | 'account' | 'comment' | 'date' | null
   >('source')
-  const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(
+  const [selectedAccountId, setSelectedAccountId] = useState<number | string | undefined>(
     preselectedAccountId ?? accounts[0]?.id
   )
-  const [selectedSourceId, setSelectedSourceId] = useState<number | undefined>(
+  const [selectedSourceId, setSelectedSourceId] = useState<number | string | undefined>(
     mode.type === 'income' ? mode.source.id : undefined
   )
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | string | undefined>(
     mode.type === 'expense' ? mode.category.id : undefined
   )
   const [showAccountPicker, setShowAccountPicker] = useState(false)

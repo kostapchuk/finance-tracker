@@ -27,7 +27,7 @@ export interface LoanFormData {
   description?: string
   amount: number
   currency: string
-  accountId: number
+  accountId: number | string
   accountAmount?: number // set when account currency ≠ loan currency
   dueDate?: Date
 }
@@ -36,7 +36,7 @@ interface LoanFormProps {
   loan?: Loan | null
   open: boolean
   onClose: () => void
-  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number) => Promise<void>
+  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number | string) => Promise<void>
 }
 
 function LoanFormContent({
@@ -46,7 +46,7 @@ function LoanFormContent({
 }: {
   loan?: Loan | null
   onClose: () => void
-  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number) => Promise<void>
+  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number | string) => Promise<void>
 }) {
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()
@@ -67,7 +67,7 @@ function LoanFormContent({
     loan?.dueDate ? formatDateForInput(new Date(loan.dueDate)) : ''
   )
 
-  const selectedAccount = accountId ? accounts.find((a) => a.id === parseInt(accountId)) : null
+  const selectedAccount = accountId ? accounts.find((a) => String(a.id) === accountId) : null
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,7 +88,7 @@ function LoanFormContent({
         description: description.trim() || undefined,
         amount: parsedAmount,
         currency,
-        accountId: parseInt(accountId),
+        accountId,
         accountAmount: parsedAccountAmount,
         dueDate: dueDate ? new Date(dueDate) : undefined,
       }

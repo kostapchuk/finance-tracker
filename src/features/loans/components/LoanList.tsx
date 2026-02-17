@@ -60,8 +60,8 @@ export function LoanList() {
     setEditingLoan(null)
   }
 
-  const getAccountName = (id?: number) => {
-    const account = accounts.find((a) => a.id === id)
+  const getAccountName = (id?: number | string) => {
+    const account = accounts.find((a) => String(a.id) === String(id))
     return account ? `${account.name} (${account.currency})` : ''
   }
 

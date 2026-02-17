@@ -167,7 +167,9 @@ export function SettingsPage() {
         setCloudUnlockedState(true)
         setVersionClickCount(0)
         setFirstClickTime(null)
-        showMigrationDialogManually()
+        showMigrationDialogManually().then(() => {
+          setMigrationCompleteState(isMigrationComplete())
+        })
       }
     }
   }, [cloudUnlocked, firstClickTime, versionClickCount, showMigrationDialogManually])

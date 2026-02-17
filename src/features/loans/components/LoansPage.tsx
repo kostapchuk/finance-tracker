@@ -70,7 +70,7 @@ export function LoansPage() {
     return { givenByCurrency, receivedByCurrency }
   }, [activeGiven, activeReceived])
 
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
+  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
     if (isEdit && loanId) {
       await loanRepo.update(loanId, {
         type: data.type,
@@ -96,7 +96,7 @@ export function LoansPage() {
         dueDate: data.dueDate,
       })
 
-      const account = accounts.find((a) => a.id === data.accountId)
+      const account = accounts.find((a) => String(a.id) === String(data.accountId))
       const balanceAmount = data.accountAmount ?? data.amount
 
       const balanceChange = data.type === 'given' ? -balanceAmount : balanceAmount
@@ -109,7 +109,7 @@ export function LoansPage() {
         amount: balanceAmount,
         currency: account?.currency || data.currency,
         date: new Date(),
-        loanId: newLoanId as number,
+        loanId: newLoanId,
         accountId: data.accountId,
         mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,

@@ -350,7 +350,7 @@ export const transactionRepo = {
     return localCache.transactions.getByCategory(categoryId)
   },
 
-  async getByLoan(loanId: number): Promise<Transaction[]> {
+  async getByLoan(loanId: number | string): Promise<Transaction[]> {
     return localCache.transactions.getByLoan(loanId)
   },
 

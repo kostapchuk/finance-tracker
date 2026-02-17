@@ -748,7 +748,7 @@ class SyncService {
   private async updateTransactionReferences(
     field: 'accountId' | 'toAccountId' | 'categoryId' | 'incomeSourceId' | 'loanId',
     oldId: number | string,
-    newId: number
+    newId: number | string
   ): Promise<void> {
     const transactions = await localCache.transactions.getAll()
     const oldIdStr = typeof oldId === 'string' ? oldId : String(oldId)

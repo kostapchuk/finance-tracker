@@ -6,6 +6,7 @@ import {
   migrateLocalToSupabase,
   clearLocalData,
   isCloudUnlocked,
+  markMigrationComplete,
 } from '@/database/migration'
 import { settingsRepo } from '@/database/repositories'
 import { syncService } from '@/database/syncService'
@@ -212,6 +213,7 @@ export const useAppStore = create<AppState>((set) => ({
 
   skipMigration: async () => {
     await clearLocalData()
+    markMigrationComplete()
     set({
       migration: {
         showMigrationDialog: false,
@@ -242,6 +244,9 @@ export const useAppStore = create<AppState>((set) => ({
           migrationError: null,
         },
       })
+    } else {
+      // No local data to migrate, mark as complete so sync section appears
+      markMigrationComplete()
     }
   },
 }))
