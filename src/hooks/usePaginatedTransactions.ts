@@ -50,7 +50,7 @@ export function usePaginatedTransactions(
     outflows: 0,
     net: 0,
   })
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
