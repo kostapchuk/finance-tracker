@@ -97,8 +97,50 @@ class SyncService {
 
       if (transactionCreates.length > 0) {
         try {
-          const transactions = transactionCreates.map((item) => item.data as unknown as Transaction)
-          const results = await supabaseApi.transactions.bulkCreate(transactions)
+          const transactionsToSync: Transaction[] = []
+
+          for (const item of transactionCreates) {
+            const txData = item.data as Record<string, unknown>
+
+            if (typeof item.recordId === 'string' && item.recordId.startsWith('temp_')) {
+              const localTx = await localCache.transactions.getById(item.recordId)
+              if (localTx) {
+                transactionsToSync.push({
+                  ...(txData as unknown as Transaction),
+                  accountId: localTx.accountId,
+                  toAccountId: localTx.toAccountId,
+                  categoryId: localTx.categoryId,
+                  incomeSourceId: localTx.incomeSourceId,
+                  loanId: localTx.loanId,
+                })
+                continue
+              }
+            }
+
+            transactionsToSync.push(txData as unknown as Transaction)
+          }
+
+          const hasTempRefs = transactionsToSync.some((tx) => {
+            const fields = [
+              'accountId',
+              'toAccountId',
+              'categoryId',
+              'incomeSourceId',
+              'loanId',
+            ] as const
+            return fields.some((field) => {
+              const value = (tx as unknown as Record<string, unknown>)[field]
+              return typeof value === 'string' && value.startsWith('temp_')
+            })
+          })
+
+          if (hasTempRefs) {
+            throw new Error(
+              'Some transactions have temp references. Transaction sync will be retried.'
+            )
+          }
+
+          const results = await supabaseApi.transactions.bulkCreate(transactionsToSync)
 
           const tempIds = new Set(
             transactionCreates
@@ -246,6 +288,7 @@ class SyncService {
           await localCache.accounts.delete(recordId as unknown as number)
           await this.updateTransactionReferences('accountId', recordId, result.id!)
           await this.updateTransactionReferences('toAccountId', recordId, result.id!)
+          await this.updateLoanReferences('accountId', recordId, result.id!)
         }
         await localCache.accounts.put(result)
         break
@@ -332,14 +375,49 @@ class SyncService {
   ): Promise<void> {
     switch (operation) {
       case 'create': {
-        const result = await supabaseApi.transactions.create(data as unknown as Transaction)
+        if (!data) throw new Error('Transaction data is required for create operation')
+
+        let txData = data as Record<string, unknown>
+
+        if (typeof recordId === 'string' && recordId.startsWith('temp_')) {
+          const localTx = await localCache.transactions.getById(recordId)
+          if (localTx) {
+            txData = {
+              ...data,
+              accountId: localTx.accountId,
+              toAccountId: localTx.toAccountId,
+              categoryId: localTx.categoryId,
+              incomeSourceId: localTx.incomeSourceId,
+              loanId: localTx.loanId,
+            }
+          }
+        }
+
+        const tempRefChecks = [
+          { field: 'accountId', name: 'Account' },
+          { field: 'toAccountId', name: 'Account' },
+          { field: 'categoryId', name: 'Category' },
+          { field: 'incomeSourceId', name: 'Income source' },
+          { field: 'loanId', name: 'Loan' },
+        ]
+
+        for (const { field, name } of tempRefChecks) {
+          const value = txData[field as keyof typeof txData]
+          if (typeof value === 'string' && value.startsWith('temp_')) {
+            throw new Error(
+              `${name} with temp ID ${value} not yet synced. Transaction sync will be retried.`
+            )
+          }
+        }
+
+        const result = await supabaseApi.transactions.create(txData as unknown as Transaction)
         if (typeof recordId === 'string' && recordId.startsWith('temp_')) {
           await localCache.transactions.delete(recordId as unknown as number)
         }
         await localCache.transactions.put(result)
 
-        if (data?.date) {
-          await supabaseApi.reportCache.invalidatePeriodsAfterDate(new Date(data.date as string))
+        if (txData.date) {
+          await supabaseApi.reportCache.invalidatePeriodsAfterDate(new Date(txData.date as string))
         }
         break
       }
@@ -369,7 +447,27 @@ class SyncService {
   ): Promise<void> {
     switch (operation) {
       case 'create': {
-        const result = await supabaseApi.loans.create(data as unknown as Loan)
+        if (!data) throw new Error('Loan data is required for create operation')
+
+        let loanData = data as Record<string, unknown>
+
+        if (typeof recordId === 'string' && recordId.startsWith('temp_')) {
+          const localLoan = await localCache.loans.getById(recordId)
+          if (localLoan) {
+            loanData = {
+              ...data,
+              accountId: localLoan.accountId,
+            }
+          }
+        }
+
+        if (typeof loanData.accountId === 'string' && loanData.accountId.startsWith('temp_')) {
+          throw new Error(
+            `Account with temp ID ${loanData.accountId} not yet synced. Loan sync will be retried.`
+          )
+        }
+
+        const result = await supabaseApi.loans.create(loanData as unknown as Loan)
         if (typeof recordId === 'string' && recordId.startsWith('temp_')) {
           await localCache.loans.delete(recordId as unknown as number)
           await this.updateTransactionReferences('loanId', recordId, result.id!)
@@ -578,6 +676,30 @@ class SyncService {
       if (txFieldStr === oldIdStr || txFieldValue === oldId) {
         await localCache.transactions.put({
           ...tx,
+          [field]: newId,
+        })
+      }
+    }
+  }
+
+  private async updateLoanReferences(
+    field: 'accountId',
+    oldId: number | string,
+    newId: number
+  ): Promise<void> {
+    const loans = await localCache.loans.getAll()
+    const oldIdStr = typeof oldId === 'string' ? oldId : String(oldId)
+
+    for (const loan of loans) {
+      const loanFieldValue = loan[field]
+      if (loanFieldValue == null) continue
+
+      const loanFieldStr =
+        typeof loanFieldValue === 'string' ? loanFieldValue : String(loanFieldValue)
+
+      if (loanFieldStr === oldIdStr || loanFieldValue === oldId) {
+        await localCache.loans.put({
+          ...loan,
           [field]: newId,
         })
       }
