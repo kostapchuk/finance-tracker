@@ -1,105 +1,144 @@
-import type { Page, Locator } from '@playwright/test';
+import type { Page, Locator } from '@playwright/test'
 
 export class LoanForm {
   constructor(private page: Page) {}
 
   getDialog(): Locator {
-    // Custom dialog uses fixed positioning with shadow-lg class
-    return this.page.locator('.fixed .shadow-lg.rounded-lg');
+    return this.page.locator('[role="dialog"]')
   }
 
   async isVisible(): Promise<boolean> {
-    return this.getDialog().isVisible();
+    return this.getDialog().isVisible()
   }
 
-  // Type selector (given/received)
+  getTypeSelect(): Locator {
+    return this.getDialog()
+      .locator('div.space-y-2')
+      .filter({ hasText: /^type|тип/i })
+      .locator('button[class*="border"]')
+      .first()
+  }
+
+  getAccountSelect(): Locator {
+    return this.getDialog()
+      .locator('div.space-y-2')
+      .filter({ hasText: /related.*account|связан.*счет|account$/i })
+      .locator('button[class*="border"]')
+      .first()
+  }
+
+  getCurrencySelect(): Locator {
+    return this.getDialog()
+      .locator('div.space-y-2')
+      .filter({ hasText: /^currency|валют/i })
+      .locator('button[class*="border"]')
+      .first()
+  }
+
   async selectType(type: 'given' | 'received'): Promise<void> {
     const typeLabels: Record<string, string> = {
-      given: 'Given|Одолжено',
-      received: 'Received|Получено',
-    };
-    // First select in the form is type
-    const select = this.getDialog().locator('button.w-full.border').first();
-    await select.click();
-    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(typeLabels[type], 'i') }).click();
+      given: 'Given|Одолжено|moneyILent|одолжено',
+      received: 'Received|Получено|moneyIBorrowed|получено',
+    }
+    const select = this.getTypeSelect()
+    await select.click()
+    await this.page.waitForTimeout(200)
+    await this.page.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 3000 })
+    await this.page
+      .locator('[role="option"]')
+      .filter({ hasText: new RegExp(typeLabels[type], 'i') })
+      .click()
+    await this.page.waitForTimeout(200)
   }
 
-  // Person name
   async fillPersonName(name: string): Promise<void> {
-    const input = this.getDialog().locator('input').first();
-    await input.fill(name);
+    const input = this.getDialog().locator('input[type="text"], input:not([type])').first()
+    await input.fill(name)
   }
 
-  // Description
   async fillDescription(description: string): Promise<void> {
-    const textarea = this.getDialog().locator('textarea');
-    await textarea.fill(description);
+    const textarea = this.getDialog().locator('textarea')
+    await textarea.fill(description)
   }
 
-  // Amount
   async fillAmount(amount: string): Promise<void> {
-    const input = this.getDialog().locator('input[type="number"], input[inputmode="decimal"]').first();
-    await input.fill(amount);
+    const input = this.getDialog()
+      .locator('input[type="number"], input[inputmode="decimal"]')
+      .first()
+    await input.fill(amount)
   }
 
-  // Account amount (for multi-currency)
   async fillAccountAmount(amount: string): Promise<void> {
-    const input = this.getDialog().locator('input[type="number"], input[inputmode="decimal"]').nth(1);
-    await input.fill(amount);
+    const inputs = this.getDialog().locator('input[type="number"], input[inputmode="decimal"]')
+    await inputs.nth(1).fill(amount)
   }
 
-  // Account selector (second select, after Type)
   async selectAccount(accountName: string): Promise<void> {
-    const select = this.getDialog().locator('button.w-full.border').nth(1);
-    await select.click();
-    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: accountName }).click();
+    const select = this.getAccountSelect()
+    const currentText = await select.textContent()
+    if (currentText?.includes(accountName)) {
+      return
+    }
+    await select.click()
+    await this.page.waitForTimeout(200)
+    await this.page.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 3000 })
+    await this.page.locator('[role="option"]').filter({ hasText: accountName }).click()
+    await this.page.waitForTimeout(200)
   }
 
-  // Currency selector (third select, after Account)
   async selectCurrency(currency: string): Promise<void> {
-    const select = this.getDialog().locator('button.w-full.border').nth(2);
-    await select.click();
-    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(`${currency} -|${currency}$`, 'i') }).first().click();
+    const select = this.getCurrencySelect()
+    await select.click()
+    await this.page.waitForTimeout(200)
+    await this.page.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 3000 })
+    await this.page
+      .locator('[role="option"]')
+      .filter({ hasText: new RegExp(`${currency}\\s*-|${currency}$`, 'i') })
+      .first()
+      .click()
+    await this.page.waitForTimeout(200)
   }
 
-  // Due date
   async setDueDate(date: string): Promise<void> {
-    const input = this.getDialog().locator('input[type="date"]');
-    await input.fill(date);
+    const input = this.getDialog().locator('input[type="date"]')
+    await input.fill(date)
   }
 
-  // Check if multi-currency mode
   async isMultiCurrencyMode(): Promise<boolean> {
-    const inputs = this.getDialog().locator('input[type="number"], input[inputmode="decimal"]');
-    return (await inputs.count()) > 1;
+    const inputs = this.getDialog().locator('input[type="number"], input[inputmode="decimal"]')
+    return (await inputs.count()) > 1
   }
 
-  // Save/Cancel
   getSaveButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /save|add|create|update|сохранить|добавить|создать|обновить/i });
+    return this.getDialog()
+      .locator('button[type="submit"], button')
+      .filter({ hasText: /save|add|create|update|сохранить|добавить|создать|обновить/i })
   }
 
   getCancelButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /cancel|отмена/i });
+    return this.getDialog()
+      .locator('button')
+      .filter({ hasText: /cancel|отмена/i })
   }
 
   async save(): Promise<void> {
-    await this.getSaveButton().click();
-    await this.page.waitForTimeout(500);
+    await this.getSaveButton().click()
+    await this.page.waitForTimeout(500)
   }
 
   async cancel(): Promise<void> {
-    await this.getCancelButton().click();
-    await this.page.waitForTimeout(300);
+    await this.getCancelButton().click()
+    await this.page.waitForTimeout(300)
   }
 
-  // Delete (in edit mode)
   getDeleteButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /delete|удалить/i });
+    return this.getDialog()
+      .locator('button')
+      .filter({ hasText: /delete|удалить/i })
   }
 
   async delete(): Promise<void> {
-    await this.getDeleteButton().click();
-    await this.page.waitForTimeout(300);
+    await this.getDeleteButton().click()
+    await this.page.waitForTimeout(300)
   }
 }

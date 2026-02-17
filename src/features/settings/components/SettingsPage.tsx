@@ -32,7 +32,7 @@ import {
   Key,
   Copy,
 } from 'lucide-react'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 import { version } from '../../../../package.json'
 
@@ -56,6 +56,7 @@ import {
 } from '@/components/ui/select'
 import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
 import { localCache } from '@/database/localCache'
+import { isCloudUnlocked, setCloudUnlocked, isMigrationComplete } from '@/database/migration'
 import {
   accountRepo,
   categoryRepo,
@@ -90,6 +91,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useSync } from '@/hooks/useSync'
 import { getUserId } from '@/lib/deviceId'
 import { queryClient } from '@/lib/queryClient'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAllCurrencies } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
@@ -108,6 +110,7 @@ export function SettingsPage() {
   const blurFinancialFigures = useAppStore((state) => state.blurFinancialFigures)
   const setBlurFinancialFigures = useAppStore((state) => state.setBlurFinancialFigures)
   const loadAllData = useAppStore((state) => state.loadAllData)
+  const showMigrationDialogManually = useAppStore((state) => state.showMigrationDialogManually)
   const { language, setLanguage, t } = useLanguage()
   const { needRefresh, updateServiceWorker } = useServiceWorker()
   const { status, pendingCount, isOffline, sync } = useSync()
@@ -130,6 +133,39 @@ export function SettingsPage() {
   const [editingCurrency, setEditingCurrency] = useState<CustomCurrency | null>(null)
   const [importWizardOpen, setImportWizardOpen] = useState(false)
   const [savedImportState, setSavedImportState] = useState<SavedImportState | null>(null)
+
+  // Cloud unlock click tracking
+  const [versionClickCount, setVersionClickCount] = useState(0)
+  const [firstClickTime, setFirstClickTime] = useState<number | null>(null)
+  const [cloudUnlocked, setCloudUnlockedState] = useState(isCloudUnlocked())
+  const [migrationComplete, setMigrationCompleteState] = useState(isMigrationComplete())
+
+  useEffect(() => {
+    setCloudUnlockedState(isCloudUnlocked())
+    setMigrationCompleteState(isMigrationComplete())
+  }, [])
+
+  const handleVersionClick = useCallback(() => {
+    if (cloudUnlocked) return
+
+    const now = Date.now()
+
+    if (firstClickTime === null || now - firstClickTime > 5000) {
+      setVersionClickCount(1)
+      setFirstClickTime(now)
+    } else {
+      const newCount = versionClickCount + 1
+      setVersionClickCount(newCount)
+
+      if (newCount >= 5) {
+        setCloudUnlocked()
+        setCloudUnlockedState(true)
+        setVersionClickCount(0)
+        setFirstClickTime(null)
+        showMigrationDialogManually()
+      }
+    }
+  }, [cloudUnlocked, firstClickTime, versionClickCount, showMigrationDialogManually])
 
   // Drag-to-reorder sensors
   const reorderSensors = useSensors(
@@ -678,79 +714,85 @@ export function SettingsPage() {
       </div>
 
       {/* Sync Section */}
-      <div className="px-4 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          {t('syncStatus')}
-        </h3>
+      {cloudUnlocked && migrationComplete && (
+        <div className="px-4 py-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            {t('syncStatus')}
+          </h3>
 
-        <div className="space-y-2">
-          {/* Sync Status */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-secondary/50 rounded-xl">
-            <div className="flex items-center gap-3 min-w-0">
-              {isOffline ? (
-                <WifiOff className="h-5 w-5 text-amber-500 shrink-0" />
-              ) : status === 'error' ? (
-                <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
-              ) : status === 'syncing' ? (
-                <RefreshCw className="h-5 w-5 text-blue-500 animate-spin shrink-0" />
-              ) : pendingCount > 0 ? (
-                <RefreshCw className="h-5 w-5 text-amber-500 shrink-0" />
-              ) : (
-                <Check className="h-5 w-5 text-green-500 shrink-0" />
-              )}
-              <div className="min-w-0">
-                <span className="text-[17px] block">
-                  {isOffline
-                    ? t('syncOffline')
-                    : status === 'syncing'
-                      ? t('syncing')
-                      : status === 'error'
-                        ? t('syncError')
-                        : pendingCount > 0
-                          ? t('syncPending').replace('{count}', String(pendingCount))
-                          : t('syncComplete')}
-                </span>
-                {pendingCount > 0 && !isOffline && status !== 'syncing' && status !== 'error' && (
-                  <p className="text-sm text-muted-foreground">
-                    {pendingCount} {pendingCount === 1 ? 'item' : 'items'} waiting
-                  </p>
+          <div className="space-y-2">
+            {/* Sync Status */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-secondary/50 rounded-xl">
+              <div className="flex items-center gap-3 min-w-0">
+                {isOffline ? (
+                  <WifiOff className="h-5 w-5 text-amber-500 shrink-0" />
+                ) : status === 'error' ? (
+                  <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+                ) : status === 'syncing' ? (
+                  <RefreshCw className="h-5 w-5 text-blue-500 animate-spin shrink-0" />
+                ) : pendingCount > 0 ? (
+                  <RefreshCw className="h-5 w-5 text-amber-500 shrink-0" />
+                ) : (
+                  <Check className="h-5 w-5 text-green-500 shrink-0" />
                 )}
+                <div className="min-w-0">
+                  <span className="text-[17px] block">
+                    {isOffline
+                      ? t('syncOffline')
+                      : status === 'syncing'
+                        ? t('syncing')
+                        : status === 'error'
+                          ? t('syncError')
+                          : pendingCount > 0
+                            ? t('syncPending').replace('{count}', String(pendingCount))
+                            : t('syncComplete')}
+                  </span>
+                  {pendingCount > 0 && !isOffline && status !== 'syncing' && status !== 'error' && (
+                    <p className="text-sm text-muted-foreground">
+                      {pendingCount}{' '}
+                      {t(pendingCount === 1 ? 'itemsWaiting' : 'itemsWaiting_plural')}
+                    </p>
+                  )}
+                  {isOffline && (
+                    <p className="text-sm text-muted-foreground">{t('offlineDescription')}</p>
+                  )}
+                </div>
               </div>
+              <Button
+                size="sm"
+                onClick={() => sync()}
+                disabled={isOffline || status === 'syncing'}
+                variant="outline"
+                className="shrink-0"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-1.5 ${status === 'syncing' ? 'animate-spin' : ''}`}
+                />
+                {t('syncNow')}
+              </Button>
             </div>
-            <Button
-              size="sm"
-              onClick={() => sync()}
-              disabled={isOffline || status === 'syncing'}
-              variant="outline"
-              className="shrink-0"
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-1.5 ${status === 'syncing' ? 'animate-spin' : ''}`}
-              />
-              {t('syncNow')}
-            </Button>
-          </div>
 
-          {/* User ID */}
-          <button
-            className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl active:bg-secondary transition-colors"
-            onClick={() => {
-              navigator.clipboard.writeText(getUserId())
-            }}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <Key className="h-5 w-5 text-muted-foreground shrink-0" />
-              <div className="text-left min-w-0">
-                <span className="text-[17px] block">User ID</span>
-                <span className="text-sm text-muted-foreground font-mono block max-w-[180px] sm:max-w-[220px] truncate">
-                  {getUserId()}
-                </span>
+            {/* User ID */}
+            <button
+              className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl active:bg-secondary transition-colors"
+              onClick={() => {
+                navigator.clipboard.writeText(getUserId())
+              }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Key className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div className="text-left min-w-0">
+                  <span className="text-[17px] block">User ID</span>
+                  <span className="text-sm text-muted-foreground font-mono block max-w-[180px] sm:max-w-[220px] truncate">
+                    {getUserId()}
+                  </span>
+                </div>
               </div>
-            </div>
-            <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
-          </button>
+              <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Data Section */}
       <div className="px-4 py-4">
@@ -847,8 +889,18 @@ export function SettingsPage() {
 
       {/* Footer */}
       <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-        <p>Finance Tracker v{version}</p>
-        <p>{t('dataStoredLocally')}</p>
+        <button
+          type="button"
+          onClick={handleVersionClick}
+          className={`text-inherit ${cloudUnlocked ? 'text-primary' : ''}`}
+        >
+          Finance Tracker v{version}
+        </button>
+        <p>
+          {isSupabaseConfigured() && cloudUnlocked
+            ? t('dataStoredInCloud')
+            : t('dataStoredLocally')}
+        </p>
       </div>
 
       {/* Delete Confirmation Modal */}

@@ -137,3 +137,18 @@ export interface SyncQueueItem {
   lastAttemptAt?: Date
   error?: string
 }
+
+export interface ReportCache {
+  id?: number
+  userId?: string
+  periodKey: string
+  inflows: number
+  outflows: number
+  net: number
+  categoryBreakdown: { categoryId: number; amount: number }[]
+  incomeSourceBreakdown: { incomeSourceId: number; amount: number }[]
+  transactionCount: number
+  lastTransactionDate?: Date
+  updatedAt: Date
+  expiresAt?: Date
+}

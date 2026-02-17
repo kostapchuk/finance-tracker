@@ -76,10 +76,10 @@ src/
 │   ├── db.ts                # Dexie database schema (local cache)
 │   ├── types.ts             # TypeScript interfaces
 │   ├── repositories.ts      # CRUD operations with sync logic
-│   ├── supabaseApi.ts      # Supabase cloud API
-│   ├── localCache.ts       # IndexedDB cache (50 records)
-│   ├── syncService.ts      # Sync orchestration
-│   └── migration.ts        # Local-to-cloud migration
+│   ├── supabaseApi.ts       # Supabase cloud API
+│   ├── localCache.ts        # IndexedDB cache (50 transactions + report cache)
+│   ├── syncService.ts       # Sync orchestration
+│   └── migration.ts         # Local-to-cloud migration
 ├── features/
 │   ├── dashboard/           # Main drag-drop dashboard
 │   ├── transactions/        # History page with filters
@@ -110,8 +110,14 @@ The app uses an **offline-first** architecture with Supabase as the cloud backen
         │                       │                       │
         │                       │                       │
         ▼                       ▼                       ▼
-  TanStack Query          50 records            Full dataset
-  cache (memory)         max in IDB           in cloud
+  TanStack Query          50 transactions         Full dataset
+  cache (memory)         max in IDB              in cloud
+                                │                       │
+                                │                       │
+                                ▼                       ▼
+                         Report Cache           Report Cache
+                         (IndexedDB)            (Supabase)
+                         Period summaries       Period summaries
 ```
 
 ### How It Works
@@ -128,11 +134,13 @@ This allows future authentication - just replace the UUID with the auth user ID.
 
 #### 2. Local Cache (IndexedDB)
 
-The local cache stores up to **50 transactions** in IndexedDB via Dexie.js:
+The local cache stores data in IndexedDB via Dexie.js:
 
-- Accounts, categories, income sources, loans, settings, custom currencies - all stored
-- Transactions limited to 50 most recent
-- Used for instant loading and offline access
+- **Accounts, categories, income sources, loans, settings, custom currencies** - all stored
+- **Transactions** - limited to 50 most recent (for instant loading)
+- **Report cache** - period summaries (inflows, outflows, net) for historical periods
+
+Used for instant loading and offline access.
 
 #### 3. Sync Flow
 
@@ -198,6 +206,42 @@ On first launch or after clearing cache:
 2. Populates local IndexedDB cache
 3. Subsequent loads use cache, then background refresh
 
+#### 8. Report Cache
+
+To avoid querying all transactions for summary calculations, the app uses a **report_cache** table:
+
+**Period-based caching:**
+
+- Monthly periods: `2026-02` (year-month)
+- Custom ranges: `2025-11-14_2026-02-15` (start_end)
+- All time: `all`
+
+**Lazy evaluation:**
+
+1. Check local cache → return if valid
+2. Check Supabase cache → return if valid
+3. Calculate from transactions → cache result
+4. Return summary
+
+**Cache expiration:**
+
+- All cached data expires after 3 days
+- Expired entries deleted on sync completion
+
+**Invalidation triggers:**
+
+- Transaction created → invalidate periods ≥ transaction date
+- Transaction updated → invalidate periods ≥ old AND new date
+- Transaction deleted → invalidate periods ≥ transaction date
+- Current month never cached (always fresh)
+
+**Benefits:**
+
+- Single row query instead of aggregating thousands of transactions
+- Consistent cached data across devices after sync
+- Offline support for previous periods
+- Smaller payloads (one row vs all transactions)
+
 ### Data Isolation
 
 All Supabase queries include `user_id = getUserId()`:
@@ -214,6 +258,35 @@ VITE_SUPABASE_ANON_KEY=eyJxxx  # Use ANON key, not secret!
 ```
 
 **Important**: Use the **anon** (public) key, not the service-role secret key.
+
+### Supabase Tables
+
+Required tables in Supabase:
+
+```sql
+-- Core tables (accounts, categories, income_sources, loans, transactions, settings, custom_currencies)
+-- See database/types.ts for schema
+
+-- Report cache table (optional, for performance)
+CREATE TABLE report_cache (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  period_key TEXT NOT NULL,
+  inflows NUMERIC DEFAULT 0,
+  outflows NUMERIC DEFAULT 0,
+  net NUMERIC DEFAULT 0,
+  category_breakdown JSONB DEFAULT '[]',
+  income_source_breakdown JSONB DEFAULT '[]',
+  transaction_count INTEGER DEFAULT 0,
+  last_transaction_date TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,
+  UNIQUE(user_id, period_key)
+);
+
+CREATE INDEX idx_report_cache_user_period ON report_cache(user_id, period_key);
+CREATE INDEX idx_report_cache_expires ON report_cache(expires_at);
+```
 
 ## Deployment
 

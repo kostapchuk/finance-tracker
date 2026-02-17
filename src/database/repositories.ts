@@ -1,4 +1,5 @@
 import { localCache } from './localCache'
+import { supabaseApi } from './supabaseApi'
 import { syncService } from './syncService'
 import type {
   Account,
@@ -9,9 +10,11 @@ import type {
   AppSettings,
   CustomCurrency,
   LoanStatus,
+  ReportCache,
 } from './types'
 
 import { getDeviceId } from '@/lib/deviceId'
+import { isSupabaseConfigured } from '@/lib/supabase'
 
 function generateTempId(): string {
   return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
@@ -100,6 +103,24 @@ export const accountRepo = {
 
     if (numericId) {
       syncService.queueOperation('delete', 'accounts', numericId)
+    }
+  },
+
+  async bulkUpdateBalance(deltas: { id: number; delta: number }[]): Promise<void> {
+    if (deltas.length === 0) return
+
+    const validDeltas = deltas.filter((d) => getNumericId(d.id) !== null)
+    if (validDeltas.length === 0) return
+
+    await localCache.accounts.bulkUpdateBalance(validDeltas)
+
+    for (const { id, delta } of validDeltas) {
+      const numericId = getNumericId(id)
+      if (numericId) {
+        syncService.queueOperation('update', 'accounts', numericId, {
+          balance: delta,
+        } as unknown as Record<string, unknown>)
+      }
     }
   },
 }
@@ -246,7 +267,27 @@ export const categoryRepo = {
 
 export const transactionRepo = {
   async getAll(): Promise<Transaction[]> {
+    // DIAGNOSTIC: Get all without limit to see what's in the DB
+    const allTransactions = await localCache.transactions.getAll()
+    console.log('[DIAG] transactionRepo.getAll:', {
+      count: allTransactions.length,
+      firstId: allTransactions[0]?.id,
+      firstDate: allTransactions[0]?.date,
+      lastId: allTransactions.at(-1)?.id,
+      lastDate: allTransactions.at(-1)?.date,
+      tempIdCount: allTransactions.filter(
+        (t) => typeof t.id === 'string' && String(t.id).startsWith('temp_')
+      ).length,
+    })
     return localCache.transactions.getRecent(50)
+  },
+
+  async getAllUnlimited(): Promise<Transaction[]> {
+    return localCache.transactions.getAll()
+  },
+
+  async getRecent(limit = 50): Promise<Transaction[]> {
+    return localCache.transactions.getRecent(limit)
   },
 
   async getById(id: number): Promise<Transaction | undefined> {
@@ -269,8 +310,104 @@ export const transactionRepo = {
     return localCache.transactions.getByLoan(loanId)
   },
 
-  async getRecent(limit = 10): Promise<Transaction[]> {
-    return localCache.transactions.getRecent(limit)
+  async getPaginated(options?: {
+    beforeDate?: Date
+    beforeId?: number
+    limit?: number
+    startDate?: Date
+    endDate?: Date
+  }): Promise<Transaction[]> {
+    if (!isSupabaseConfigured()) {
+      return localCache.transactions.getAll()
+    }
+    return supabaseApi.transactions.getPaginated(options)
+  },
+
+  async getSummaryByDateRange(
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{ inflows: number; outflows: number; net: number }> {
+    const periodKey = getPeriodKey(startDate, endDate)
+    const isCurrentPeriod = isCurrentMonthPeriod(startDate, endDate)
+
+    if (!isCurrentPeriod) {
+      const localCached = await localCache.reportCache.getByPeriod(periodKey)
+      if (localCached && !isCacheExpired(localCached)) {
+        return {
+          inflows: localCached.inflows,
+          outflows: localCached.outflows,
+          net: localCached.net,
+        }
+      }
+
+      if (isSupabaseConfigured()) {
+        const remoteCache = await supabaseApi.reportCache.getByPeriod(periodKey)
+        if (remoteCache && !isCacheExpired(remoteCache)) {
+          await localCache.reportCache.put(remoteCache)
+          return {
+            inflows: remoteCache.inflows,
+            outflows: remoteCache.outflows,
+            net: remoteCache.net,
+          }
+        }
+      }
+    }
+
+    const summary = await this.calculateSummaryFromTransactions(startDate, endDate)
+
+    if (!isCurrentPeriod) {
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 3)
+
+      const cacheEntry: ReportCache = {
+        periodKey,
+        inflows: summary.inflows,
+        outflows: summary.outflows,
+        net: summary.net,
+        categoryBreakdown: [],
+        incomeSourceBreakdown: [],
+        transactionCount: 0,
+        lastTransactionDate: endDate,
+        updatedAt: new Date(),
+        expiresAt,
+      }
+
+      await localCache.reportCache.put(cacheEntry)
+
+      if (isSupabaseConfigured()) {
+        await supabaseApi.reportCache.upsert(cacheEntry)
+      }
+    }
+
+    return summary
+  },
+
+  async calculateSummaryFromTransactions(
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<{ inflows: number; outflows: number; net: number }> {
+    if (isSupabaseConfigured()) {
+      return supabaseApi.transactions.getSummaryByDateRange(startDate, endDate)
+    }
+
+    const all = await localCache.transactions.getAll()
+    let inflows = 0
+    let outflows = 0
+
+    for (const tx of all) {
+      if (startDate && new Date(tx.date) < startDate) continue
+      if (endDate && new Date(tx.date) > endDate) continue
+
+      const amount = tx.mainCurrencyAmount ?? tx.amount
+
+      if (tx.type === 'income' || tx.type === 'loan_received') {
+        inflows += amount
+      } else if (tx.type === 'expense' || tx.type === 'loan_given') {
+        outflows += amount
+      }
+    }
+
+    return { inflows, outflows, net: inflows - outflows }
   },
 
   async create(
@@ -286,8 +423,25 @@ export const transactionRepo = {
 
     const tempId = generateTempId()
     const tempTransaction = { ...fullTransaction, id: tempId as unknown as number }
+
+    // DIAGNOSTIC: Log transaction creation
+    console.log('[DIAG] transactionRepo.create:', {
+      tempId,
+      type: transaction.type,
+      amount: transaction.amount,
+      date: transaction.date,
+      accountId: transaction.accountId,
+    })
+
     await localCache.transactions.put(tempTransaction)
-    await localCache.transactions.trimToLimit()
+
+    // DIAGNOSTIC: Verify transaction was stored
+    const verifyStored = await localCache.transactions.getById(tempId)
+    console.log(
+      '[DIAG] Transaction stored, verify:',
+      verifyStored ? 'FOUND' : 'NOT FOUND',
+      verifyStored?.id
+    )
 
     syncService.queueOperation(
       'create',
@@ -295,6 +449,8 @@ export const transactionRepo = {
       tempId,
       fullTransaction as unknown as Record<string, unknown>
     )
+
+    await invalidateReportCache(fullTransaction.date)
 
     return tempId
   },
@@ -322,16 +478,74 @@ export const transactionRepo = {
       numericId,
       updates as unknown as Record<string, unknown>
     )
+
+    await invalidateReportCache(cached.date)
+    if (updates.date) {
+      await invalidateReportCache(updates.date)
+    }
   },
 
   async delete(id: number | string): Promise<void> {
     const numericId = getNumericId(id)
 
-    await localCache.transactions.delete(numericId || parseInt(String(id), 10))
+    // Get cached transaction before deleting (works for both numeric and temp IDs)
+    const cached = await localCache.transactions.getById(id)
 
+    // Delete from local cache using the original ID (can be number or temp string)
+    await localCache.transactions.delete(id)
+
+    // Only queue sync operation for real (numeric) IDs
     if (numericId) {
       syncService.queueOperation('delete', 'transactions', numericId)
     }
+
+    if (cached) {
+      await invalidateReportCache(cached.date)
+    }
+  },
+
+  async bulkCreate(
+    transactions: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[]
+  ): Promise<(number | string)[]> {
+    if (transactions.length === 0) return []
+
+    const now = new Date()
+    const userId = getDeviceId()
+
+    const tempIds = transactions.map(() => generateTempId())
+    const fullTransactions: Transaction[] = transactions.map((tx, i) => ({
+      ...tx,
+      id: tempIds[i] as unknown as number,
+      userId,
+      createdAt: now,
+      updatedAt: now,
+    }))
+
+    await localCache.transactions.putAll(fullTransactions)
+
+    syncService.queueBulkOperation(
+      'create',
+      'transactions',
+      tempIds.map((tempId, i) => ({
+        tempId,
+        data: fullTransactions[i] as unknown as Record<string, unknown>,
+      }))
+    )
+
+    const affectedDates = new Set(transactions.map((tx) => getPeriodKeyFromDate(tx.date)))
+    for (const periodKey of affectedDates) {
+      await localCache.reportCache.deleteByPeriod(periodKey)
+      // Only sync to remote when online - offline operations should succeed
+      if (isSupabaseConfigured() && navigator.onLine) {
+        try {
+          await supabaseApi.reportCache.deleteByPeriod(periodKey)
+        } catch {
+          // Ignore network errors in offline mode
+        }
+      }
+    }
+
+    return tempIds
   },
 }
 
@@ -557,4 +771,97 @@ export const customCurrencyRepo = {
       syncService.queueOperation('delete', 'customCurrencies', numericId)
     }
   },
+}
+
+export const reportCacheRepo = {
+  async getByPeriod(periodKey: string): Promise<ReportCache | undefined> {
+    return localCache.reportCache.getByPeriod(periodKey)
+  },
+
+  async put(cache: ReportCache): Promise<void> {
+    await localCache.reportCache.put(cache)
+  },
+
+  async invalidatePeriodsAfterDate(date: Date): Promise<void> {
+    await localCache.reportCache.invalidatePeriodsAfterDate(date)
+    // Only sync to remote when online - offline operations should succeed
+    if (isSupabaseConfigured() && navigator.onLine) {
+      try {
+        await supabaseApi.reportCache.invalidatePeriodsAfterDate(date)
+      } catch {
+        // Ignore network errors in offline mode
+      }
+    }
+  },
+
+  async clear(): Promise<void> {
+    await localCache.reportCache.clear()
+  },
+}
+
+function getPeriodKey(startDate?: Date, endDate?: Date): string {
+  if (!startDate || !endDate) return 'all'
+
+  const startY = startDate.getFullYear()
+  const startM = startDate.getMonth()
+  const startD = startDate.getDate()
+  const endY = endDate.getFullYear()
+  const endM = endDate.getMonth()
+  const lastDayOfEndMonth = new Date(endY, endM + 1, 0).getDate()
+
+  const isFullMonth =
+    startD === 1 && endDate.getDate() === lastDayOfEndMonth && startY === endY && startM === endM
+
+  if (isFullMonth) {
+    return `${startY}-${String(startM + 1).padStart(2, '0')}`
+  }
+
+  const formatDate = (d: Date) => d.toISOString().split('T')[0]
+  return `${formatDate(startDate)}_${formatDate(endDate)}`
+}
+
+function getPeriodKeyFromDate(date: Date): string {
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function isCurrentMonthPeriod(startDate?: Date, endDate?: Date): boolean {
+  if (!startDate || !endDate) return true
+
+  const now = new Date()
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+  return new Date(endDate) >= currentMonthStart && new Date(startDate) <= currentMonthEnd
+}
+
+function isCacheExpired(cache: ReportCache): boolean {
+  if (!cache.expiresAt) return false
+  return new Date(cache.expiresAt) < new Date()
+}
+
+async function invalidateReportCache(transactionDate?: Date): Promise<void> {
+  if (transactionDate) {
+    const date = new Date(transactionDate)
+    await localCache.reportCache.invalidatePeriodsAfterDate(date)
+    // Only sync to remote when online - offline operations should succeed
+    if (isSupabaseConfigured() && navigator.onLine) {
+      try {
+        await supabaseApi.reportCache.invalidatePeriodsAfterDate(date)
+      } catch {
+        // Ignore network errors in offline mode
+      }
+    }
+  }
+  const now = new Date()
+  const currentMonthKey = getPeriodKeyFromDate(now)
+  await localCache.reportCache.deleteByPeriod(currentMonthKey)
+  // Only sync to remote when online - offline operations should succeed
+  if (isSupabaseConfigured() && navigator.onLine) {
+    try {
+      await supabaseApi.reportCache.deleteByPeriod(currentMonthKey)
+    } catch {
+      // Ignore network errors in offline mode
+    }
+  }
 }

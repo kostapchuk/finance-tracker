@@ -5,6 +5,7 @@ import {
   hasLocalData,
   migrateLocalToSupabase,
   clearLocalData,
+  isCloudUnlocked,
 } from '@/database/migration'
 import { settingsRepo } from '@/database/repositories'
 import { syncService } from '@/database/syncService'
@@ -59,6 +60,7 @@ interface AppState {
   startMigration: () => Promise<void>
   skipMigration: () => Promise<void>
   dismissMigrationDialog: () => void
+  showMigrationDialogManually: () => Promise<void>
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -108,7 +110,12 @@ export const useAppStore = create<AppState>((set) => ({
       const migrationComplete = isMigrationComplete()
       const hasExistingLocalData = await hasLocalData()
 
-      if (!migrationComplete && hasExistingLocalData && isSupabaseConfigured()) {
+      if (
+        !migrationComplete &&
+        hasExistingLocalData &&
+        isSupabaseConfigured() &&
+        isCloudUnlocked()
+      ) {
         set({
           isLoading: false,
           mainCurrency,
@@ -127,7 +134,7 @@ export const useAppStore = create<AppState>((set) => ({
       const onboardingCompleted =
         localStorage.getItem('finance-tracker-onboarding-completed') === 'true'
 
-      if (isSupabaseConfigured()) {
+      if (isSupabaseConfigured() && isCloudUnlocked()) {
         await syncService.pullFromRemote()
         await syncService.syncAll()
       }
@@ -222,5 +229,19 @@ export const useAppStore = create<AppState>((set) => ({
         showMigrationDialog: false,
       },
     }))
+  },
+
+  showMigrationDialogManually: async () => {
+    const hasExistingLocalData = await hasLocalData()
+    if (hasExistingLocalData) {
+      set({
+        migration: {
+          showMigrationDialog: true,
+          isMigrating: false,
+          migrationProgress: null,
+          migrationError: null,
+        },
+      })
+    }
   },
 }))

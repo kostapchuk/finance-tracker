@@ -1,49 +1,81 @@
-import { test, expect } from '../fixtures/test-base';
+import { test, expect, type SyncMode } from '../fixtures/test-base'
 
-test.describe('PWA Update Notification', () => {
-  test('should not show dot badge on Settings tab when no update is available', async ({ page, setupCleanState }) => {
-    await setupCleanState();
+declare global {
+  interface Window {
+    __TEST_FORCE_SW_UPDATE__?: boolean
+  }
+}
 
-    // The settings nav button should not have a dot badge
-    const settingsButton = page.locator('nav button').filter({ hasText: /settings/i });
-    const badge = settingsButton.locator('.rounded-full.bg-primary');
-    await expect(badge).not.toBeVisible();
-  });
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
 
-  test('should show dot badge on Settings tab when update is available', async ({ page, setupCleanState }) => {
-    // Set the test flag before navigation
-    await page.addInitScript(() => {
-      window.__TEST_FORCE_SW_UPDATE__ = true;
-    });
-    await setupCleanState();
+for (const mode of syncModes) {
+  test.describe(`[${mode}] PWA Update Notification`, () => {
+    test.beforeEach(async ({ setupCleanState }) => {
+      await setupCleanState(mode)
+    })
 
-    // The settings nav button should have a dot badge
-    const settingsButton = page.locator('nav button').filter({ hasText: /settings/i });
-    const badge = settingsButton.locator('.rounded-full.bg-primary');
-    await expect(badge).toBeVisible();
-  });
+    test('should not show dot badge on Settings tab when no update is available', async ({
+      page,
+      syncHelper,
+    }) => {
+      const settingsButton = page.locator('nav button').filter({ hasText: /settings/i })
+      const badge = settingsButton.locator('.rounded-full.bg-primary')
+      await expect(badge).not.toBeVisible()
 
-  test('should show update card in Settings page when update is available', async ({ page, settingsPage, setupCleanState }) => {
-    // Set the test flag before navigation
-    await page.addInitScript(() => {
-      window.__TEST_FORCE_SW_UPDATE__ = true;
-    });
-    await setupCleanState();
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+      }
+    })
 
-    await settingsPage.navigateTo('settings');
+    test('should show dot badge on Settings tab when update is available', async ({
+      page,
+      syncHelper,
+    }) => {
+      await page.addInitScript(() => {
+        window.__TEST_FORCE_SW_UPDATE__ = true
+      })
 
-    // Should show update card with title and button
-    await expect(page.getByText('Update available')).toBeVisible();
-    await expect(page.getByText('A new version of the app is ready to install')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Update' })).toBeVisible();
-  });
+      const settingsButton = page.locator('nav button').filter({ hasText: /settings/i })
+      const badge = settingsButton.locator('.rounded-full.bg-primary')
+      await expect(badge).toBeVisible()
 
-  test('should not show update card in Settings page when no update is available', async ({ page, settingsPage, setupCleanState }) => {
-    await setupCleanState();
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+      }
+    })
 
-    await settingsPage.navigateTo('settings');
+    test('should show update card in Settings page when update is available', async ({
+      page,
+      settingsPage,
+      syncHelper,
+    }) => {
+      await page.addInitScript(() => {
+        window.__TEST_FORCE_SW_UPDATE__ = true
+      })
 
-    // Should not show update card text
-    await expect(page.getByText('A new version of the app is ready to install')).not.toBeVisible();
-  });
-});
+      await settingsPage.navigateTo('settings')
+
+      await expect(page.getByText('Update available')).toBeVisible()
+      await expect(page.getByText('A new version of the app is ready to install')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Update' })).toBeVisible()
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+      }
+    })
+
+    test('should not show update card in Settings page when no update is available', async ({
+      page,
+      settingsPage,
+      syncHelper,
+    }) => {
+      await settingsPage.navigateTo('settings')
+
+      await expect(page.getByText('A new version of the app is ready to install')).not.toBeVisible()
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+      }
+    })
+  })
+}

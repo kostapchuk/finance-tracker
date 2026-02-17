@@ -63,8 +63,16 @@ export function QuickTransactionModal({
 
   const isEditMode = !!editTransaction
 
-  const [amount, setAmount] = useState('')
-  const [targetAmount, setTargetAmount] = useState('') // mainCurrency amount for totals
+  const [amount, setAmount] = useState(editTransaction?.amount?.toString() ?? '')
+  const [targetAmount, setTargetAmount] = useState(() => {
+    if (editTransaction?.mainCurrencyAmount != null) {
+      return editTransaction.mainCurrencyAmount.toString()
+    }
+    if (editTransaction?.toAmount != null) {
+      return editTransaction.toAmount.toString()
+    }
+    return ''
+  }) // mainCurrency amount for totals
   const [accountAmount, setAccountAmount] = useState('') // account currency amount (for income when account != source)
   const [activeField, setActiveField] = useState<
     'source' | 'target' | 'account' | 'comment' | 'date' | null
@@ -89,8 +97,12 @@ export function QuickTransactionModal({
   const [toAccountId, setToAccountId] = useState<number | undefined>(
     mode.type === 'transfer' ? mode.toAccount.id : undefined
   )
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [comment, setComment] = useState('')
+  const [date, setDate] = useState(
+    editTransaction
+      ? new Date(editTransaction.date).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0]
+  )
+  const [comment, setComment] = useState(editTransaction?.comment ?? '')
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [buttonCovered, setButtonCovered] = useState(false)
   const amountInputRef = useRef<HTMLInputElement>(null)
@@ -212,21 +224,6 @@ export function QuickTransactionModal({
     viewport.addEventListener('resize', updateKeyboardHeight)
     return () => viewport.removeEventListener('resize', updateKeyboardHeight)
   }, [])
-
-  // Pre-populate form when editing
-  useEffect(() => {
-    if (editTransaction) {
-      setAmount(editTransaction.amount.toString())
-      setDate(new Date(editTransaction.date).toISOString().split('T')[0])
-      setComment(editTransaction.comment || '')
-      if (editTransaction.mainCurrencyAmount != null) {
-        setTargetAmount(editTransaction.mainCurrencyAmount.toString())
-      }
-      if (editTransaction.toAmount != null) {
-        setTargetAmount(editTransaction.toAmount.toString())
-      }
-    }
-  }, [editTransaction])
 
   useEffect(() => {
     if (disableAutoFocus) return
@@ -538,6 +535,14 @@ export function QuickTransactionModal({
 
       const newTransactions = await transactionRepo.getAll()
       const newAccounts = await accountRepo.getAll()
+
+      // DIAGNOSTIC: Log setQueryData calls
+      console.log('[DIAG] QuickTransactionModal setQueryData:', {
+        transactionsCount: newTransactions.length,
+        firstTxId: newTransactions[0]?.id,
+        lastTxId: newTransactions[newTransactions.length - 1]?.id,
+      })
+
       queryClient.setQueryData(['transactions'], newTransactions)
       queryClient.setQueryData(['accounts'], newAccounts)
 

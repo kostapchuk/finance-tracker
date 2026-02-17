@@ -19,7 +19,6 @@ import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
-
 const typeConfig: Record<string, { icon: ReactNode; color: string; label: string }> = {
   income: {
     icon: <ArrowUpCircle className="h-5 w-5 text-green-500" />,

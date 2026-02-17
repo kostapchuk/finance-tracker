@@ -1,44 +1,62 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface UseInfiniteScrollOptions {
   onLoadMore: () => void
   hasMore: boolean
   isLoading: boolean
-  rootMargin?: string
+  threshold?: number
 }
 
 export function useInfiniteScroll({
   onLoadMore,
   hasMore,
   isLoading,
-  rootMargin = '200px',
+  threshold = 300,
 }: UseInfiniteScrollOptions) {
-  const sentinelRef = useRef<HTMLDivElement>(null)
-
-  const handleIntersect = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const [entry] = entries
-      if (entry.isIntersecting && hasMore && !isLoading) {
-        onLoadMore()
-      }
-    },
-    [onLoadMore, hasMore, isLoading]
-  )
+  const containerRef = useRef<HTMLDivElement>(null)
+  const isLoadingRef = useRef(isLoading)
+  const hasMoreRef = useRef(hasMore)
+  const loadingTriggeredRef = useRef(false)
 
   useEffect(() => {
-    const sentinel = sentinelRef.current
-    if (!sentinel) return
+    isLoadingRef.current = isLoading
+    if (!isLoading) {
+      loadingTriggeredRef.current = false
+    }
+  }, [isLoading])
 
-    const observer = new IntersectionObserver(handleIntersect, {
-      rootMargin,
-    })
+  useEffect(() => {
+    hasMoreRef.current = hasMore
+  }, [hasMore])
 
-    observer.observe(sentinel)
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const mainElement = container.closest('main')
+    if (!mainElement) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = mainElement
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+
+      if (
+        distanceFromBottom < threshold &&
+        hasMoreRef.current &&
+        !isLoadingRef.current &&
+        !loadingTriggeredRef.current
+      ) {
+        loadingTriggeredRef.current = true
+        onLoadMore()
+      }
+    }
+
+    mainElement.addEventListener('scroll', handleScroll, { passive: true })
 
     return () => {
-      observer.disconnect()
+      mainElement.removeEventListener('scroll', handleScroll)
     }
-  }, [handleIntersect, rootMargin])
+  }, [onLoadMore, threshold])
 
-  return { sentinelRef }
+  return { scrollContainerRef: containerRef }
 }

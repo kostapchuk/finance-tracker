@@ -14,8 +14,8 @@ import type {
 import { getDeviceId } from '@/lib/deviceId'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
-
 const MIGRATION_KEY = 'finance-tracker-migration-complete'
+const CLOUD_UNLOCK_KEY = 'finance-tracker-cloud-unlocked'
 
 export function isMigrationComplete(): boolean {
   return localStorage.getItem(MIGRATION_KEY) === 'true'
@@ -23,6 +23,14 @@ export function isMigrationComplete(): boolean {
 
 export function markMigrationComplete(): void {
   localStorage.setItem(MIGRATION_KEY, 'true')
+}
+
+export function isCloudUnlocked(): boolean {
+  return localStorage.getItem(CLOUD_UNLOCK_KEY) === 'true'
+}
+
+export function setCloudUnlocked(): void {
+  localStorage.setItem(CLOUD_UNLOCK_KEY, 'true')
 }
 
 export async function hasLocalData(): Promise<boolean> {

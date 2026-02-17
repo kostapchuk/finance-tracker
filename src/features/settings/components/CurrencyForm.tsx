@@ -1,14 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { customCurrencyRepo } from '@/database/repositories'
@@ -21,25 +15,19 @@ interface CurrencyFormProps {
   onClose: () => void
 }
 
-export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
+function CurrencyFormContent({
+  currency,
+  onClose,
+}: {
+  currency?: CustomCurrency | null
+  onClose: () => void
+}) {
   const queryClient = useQueryClient()
   const { t } = useLanguage()
 
-  const [code, setCode] = useState('')
-  const [name, setName] = useState('')
-  const [symbol, setSymbol] = useState('')
-
-  useEffect(() => {
-    if (currency) {
-      setCode(currency.code)
-      setName(currency.name)
-      setSymbol(currency.symbol)
-    } else {
-      setCode('')
-      setName('')
-      setSymbol('')
-    }
-  }, [currency, open])
+  const [code, setCode] = useState(currency?.code ?? '')
+  const [name, setName] = useState(currency?.name ?? '')
+  const [symbol, setSymbol] = useState(currency?.symbol ?? '')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,55 +55,65 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="code">{t('currencyCode')}</Label>
+        <Input
+          id="code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder={t('egBYN')}
+          maxLength={5}
+          required
+        />
+        <p className="text-xs text-muted-foreground">{t('currencyCodeHint')}</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="name">{t('currencyName')}</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('egBelarusianRuble')}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="symbol">{t('symbolOptional')}</Label>
+        <Input
+          id="symbol"
+          value={symbol}
+          onChange={(e) => setSymbol(e.target.value)}
+          placeholder={t('egSymbolBr')}
+          maxLength={5}
+        />
+        <p className="text-xs text-muted-foreground">{t('symbolHint')}</p>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          {t('cancel')}
+        </Button>
+        <Button type="submit">{currency ? t('update') : t('create')}</Button>
+      </div>
+    </form>
+  )
+}
+
+export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
+  const { t } = useLanguage()
+  // Use key to force re-mount when currency changes, ensuring initial state is reset
+  const formKey = currency?.id ?? 'new'
+
+  return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{currency ? t('editCurrency') : t('addCurrency')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="code">{t('currencyCode')}</Label>
-            <Input
-              id="code"
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder={t('egBYN')}
-              maxLength={5}
-              required
-            />
-            <p className="text-xs text-muted-foreground">{t('currencyCodeHint')}</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name">{t('currencyName')}</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('egBelarusianRuble')}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="symbol">{t('symbolOptional')}</Label>
-            <Input
-              id="symbol"
-              value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
-              placeholder={t('egSymbolBr')}
-              maxLength={5}
-            />
-            <p className="text-xs text-muted-foreground">{t('symbolHint')}</p>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit">{currency ? t('update') : t('create')}</Button>
-          </DialogFooter>
-        </form>
+        <CurrencyFormContent key={formKey} currency={currency} onClose={onClose} />
       </DialogContent>
     </Dialog>
   )

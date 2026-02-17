@@ -6,6 +6,7 @@ import type {
   Loan,
   AppSettings,
   CustomCurrency,
+  ReportCache,
 } from './types'
 
 import { getDeviceId } from '@/lib/deviceId'
@@ -426,6 +427,79 @@ export const supabaseApi = {
       return fromDbRecords<Transaction>(data ?? [])
     },
 
+    async getPaginated(options?: {
+      beforeDate?: Date
+      beforeId?: number
+      limit?: number
+      startDate?: Date
+      endDate?: Date
+    }): Promise<Transaction[]> {
+      if (!isSupabaseConfigured() || !supabase) return []
+
+      const limit = options?.limit ?? 50
+      let query = supabase.from('transactions').select('*').eq('user_id', getDeviceId())
+
+      if (options?.startDate) {
+        query = query.gte('date', options.startDate.toISOString())
+      }
+      if (options?.endDate) {
+        query = query.lte('date', options.endDate.toISOString())
+      }
+
+      if (options?.beforeDate && options?.beforeId) {
+        query = query.or(
+          `date.lt.${options.beforeDate.toISOString()},and(date.eq.${options.beforeDate.toISOString()},id.lt.${options.beforeId})`
+        )
+      } else if (options?.beforeDate) {
+        query = query.lt('date', options.beforeDate.toISOString())
+      }
+
+      query = query.order('date', { ascending: false }).limit(limit)
+
+      const { data, error } = await query
+
+      if (error) throw error
+      return fromDbRecords<Transaction>(data ?? [])
+    },
+
+    async getSummaryByDateRange(
+      startDate?: Date,
+      endDate?: Date
+    ): Promise<{ inflows: number; outflows: number; net: number }> {
+      if (!isSupabaseConfigured() || !supabase) return { inflows: 0, outflows: 0, net: 0 }
+
+      let query = supabase
+        .from('transactions')
+        .select('type, amount, main_currency_amount')
+        .eq('user_id', getDeviceId())
+
+      if (startDate) {
+        query = query.gte('date', startDate.toISOString())
+      }
+      if (endDate) {
+        query = query.lte('date', endDate.toISOString())
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      let inflows = 0
+      let outflows = 0
+
+      for (const tx of data ?? []) {
+        const amount = tx.main_currency_amount ?? tx.amount
+
+        if (tx.type === 'income' || tx.type === 'loan_received') {
+          inflows += amount
+        } else if (tx.type === 'expense' || tx.type === 'loan_given') {
+          outflows += amount
+        }
+      }
+
+      return { inflows, outflows, net: inflows - outflows }
+    },
+
     async create(
       transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
     ): Promise<Transaction> {
@@ -446,6 +520,31 @@ export const supabaseApi = {
 
       if (error) throw error
       return fromDbRecord<Transaction>(data)
+    },
+
+    async bulkCreate(
+      transactions: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[]
+    ): Promise<Transaction[]> {
+      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
+      if (transactions.length === 0) return []
+
+      const now = new Date()
+      const records: Record<string, unknown>[] = transactions.map((tx) => {
+        const record: Record<string, unknown> = toDbRecord({
+          ...tx,
+          createdAt: now,
+          updatedAt: now,
+        })
+        if (tx.date) {
+          record.date = tx.date.toISOString()
+        }
+        return record
+      })
+
+      const { data, error } = await supabase.from('transactions').insert(records).select()
+
+      if (error) throw error
+      return fromDbRecords<Transaction>(data ?? [])
     },
 
     async update(
@@ -743,6 +842,91 @@ export const supabaseApi = {
         .from('custom_currencies')
         .delete()
         .eq('user_id', getDeviceId())
+
+      if (error) throw error
+    },
+  },
+
+  reportCache: {
+    async getByPeriod(periodKey: string): Promise<ReportCache | null> {
+      if (!isSupabaseConfigured() || !supabase) return null
+
+      const { data, error } = await supabase
+        .from('report_cache')
+        .select('*')
+        .eq('user_id', getDeviceId())
+        .eq('period_key', periodKey)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') return null
+        throw error
+      }
+      return data ? fromDbRecord<ReportCache>(data) : null
+    },
+
+    async upsert(cache: ReportCache): Promise<ReportCache> {
+      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
+
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 3)
+
+      const record = {
+        user_id: getDeviceId(),
+        period_key: cache.periodKey,
+        inflows: cache.inflows,
+        outflows: cache.outflows,
+        net: cache.net,
+        category_breakdown: cache.categoryBreakdown,
+        income_source_breakdown: cache.incomeSourceBreakdown,
+        transaction_count: cache.transactionCount,
+        last_transaction_date: cache.lastTransactionDate?.toISOString(),
+        updated_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+      }
+
+      const { data, error } = await supabase
+        .from('report_cache')
+        .upsert(record, { onConflict: 'user_id,period_key' })
+        .select()
+        .single()
+
+      if (error) throw error
+      return fromDbRecord<ReportCache>(data)
+    },
+
+    async invalidatePeriodsAfterDate(date: Date): Promise<void> {
+      if (!isSupabaseConfigured() || !supabase) return
+
+      const { error } = await supabase
+        .from('report_cache')
+        .delete()
+        .eq('user_id', getDeviceId())
+        .gte('last_transaction_date', date.toISOString())
+
+      if (error) throw error
+    },
+
+    async deleteByPeriod(periodKey: string): Promise<void> {
+      if (!isSupabaseConfigured() || !supabase) return
+
+      const { error } = await supabase
+        .from('report_cache')
+        .delete()
+        .eq('user_id', getDeviceId())
+        .eq('period_key', periodKey)
+
+      if (error) throw error
+    },
+
+    async deleteExpired(): Promise<void> {
+      if (!isSupabaseConfigured() || !supabase) return
+
+      const { error } = await supabase
+        .from('report_cache')
+        .delete()
+        .eq('user_id', getDeviceId())
+        .lt('expires_at', new Date().toISOString())
 
       if (error) throw error
     },

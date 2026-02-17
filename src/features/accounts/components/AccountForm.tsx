@@ -1,15 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ColorPicker } from '@/components/ui/color-picker'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -33,7 +27,13 @@ interface AccountFormProps {
   onClose: () => void
 }
 
-export function AccountForm({ account, open, onClose }: AccountFormProps) {
+function AccountFormContent({
+  account,
+  onClose,
+}: {
+  account?: Account | null
+  onClose: () => void
+}) {
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
   const queryClient = useQueryClient()
@@ -45,30 +45,14 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
     { value: 'credit_card', label: t('creditCard') },
   ]
 
-  const [name, setName] = useState('')
-  const [type, setType] = useState<AccountType>('bank')
-  const [currency, setCurrency] = useState(mainCurrency)
-  const [balance, setBalance] = useState('0')
-  const [color, setColor] = useState(getRandomColor())
-  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
-
-  useEffect(() => {
-    if (account) {
-      setName(account.name)
-      setType(account.type)
-      setCurrency(account.currency)
-      setBalance(account.balance.toString())
-      setColor(account.color)
-      setHiddenFromDashboard(account.hiddenFromDashboard || false)
-    } else {
-      setName('')
-      setType('bank')
-      setCurrency(mainCurrency)
-      setBalance('0')
-      setColor(getRandomColor())
-      setHiddenFromDashboard(false)
-    }
-  }, [account, open, mainCurrency])
+  const [name, setName] = useState(account?.name ?? '')
+  const [type, setType] = useState<AccountType>(account?.type ?? 'bank')
+  const [currency, setCurrency] = useState(account?.currency ?? mainCurrency)
+  const [balance, setBalance] = useState(account?.balance?.toString() ?? '0')
+  const [color, setColor] = useState(account?.color ?? getRandomColor())
+  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(
+    account?.hiddenFromDashboard ?? false
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -102,88 +86,98 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">{t('name')}</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('egMainChecking')}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="type">{t('type')}</Label>
+        <Select value={type} onValueChange={(v) => setType(v as AccountType)}>
+          <SelectTrigger>
+            <SelectValue placeholder={t('selectType')}>
+              {accountTypes.find((at) => at.value === type)?.label}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {accountTypes.map((at) => (
+              <SelectItem key={at.value} value={at.value}>
+                {at.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="currency">{t('currency')}</Label>
+        <Select value={currency} onValueChange={setCurrency}>
+          <SelectTrigger>
+            <SelectValue placeholder={t('selectCurrency')}>
+              {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {getAllCurrencies().map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                {c.symbol} {c.code} - {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="balance">{t('initialBalance')}</Label>
+        <Input
+          id="balance"
+          type="number"
+          step="0.01"
+          value={balance}
+          onChange={(e) => setBalance(e.target.value)}
+          placeholder="0.00"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('color')}</Label>
+        <ColorPicker value={color} onChange={setColor} />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label>{t('hideFromDashboard')}</Label>
+        <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          {t('cancel')}
+        </Button>
+        <Button type="submit">{account ? t('update') : t('create')}</Button>
+      </div>
+    </form>
+  )
+}
+
+export function AccountForm({ account, open, onClose }: AccountFormProps) {
+  const { t } = useLanguage()
+  // Use key to force re-mount when account changes, ensuring initial state is reset
+  const formKey = account?.id ?? 'new'
+
+  return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{account ? t('editAccount') : t('addAccount')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">{t('name')}</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('egMainChecking')}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="type">{t('type')}</Label>
-            <Select value={type} onValueChange={(v) => setType(v as AccountType)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectType')}>
-                  {accountTypes.find((at) => at.value === type)?.label}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {accountTypes.map((at) => (
-                  <SelectItem key={at.value} value={at.value}>
-                    {at.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="currency">{t('currency')}</Label>
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectCurrency')}>
-                  {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {getAllCurrencies().map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.symbol} {c.code} - {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="balance">{t('initialBalance')}</Label>
-            <Input
-              id="balance"
-              type="number"
-              step="0.01"
-              value={balance}
-              onChange={(e) => setBalance(e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t('color')}</Label>
-            <ColorPicker value={color} onChange={setColor} />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label>{t('hideFromDashboard')}</Label>
-            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit">{account ? t('update') : t('create')}</Button>
-          </DialogFooter>
-        </form>
+        <AccountFormContent key={formKey} account={account} onClose={onClose} />
       </DialogContent>
     </Dialog>
   )

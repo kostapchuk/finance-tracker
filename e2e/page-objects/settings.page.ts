@@ -1,26 +1,38 @@
-import type { Page, Locator } from '@playwright/test';
-import { BasePage } from './base.page';
+import type { Page, Locator } from '@playwright/test'
+import { BasePage } from './base.page'
 
 export class SettingsPage extends BasePage {
   constructor(page: Page) {
-    super(page);
+    super(page)
   }
 
-  // Section buttons
+  // Section buttons on main settings page
   getAccountsSection(): Locator {
-    return this.page.locator('button').filter({ hasText: /accounts|счета/i }).first();
+    return this.page
+      .locator('button')
+      .filter({ hasText: /accounts|счета/i })
+      .first()
   }
 
   getCategoriesSection(): Locator {
-    return this.page.locator('button').filter({ hasText: /categories|категории/i }).first();
+    return this.page
+      .locator('button')
+      .filter({ hasText: /categories|категории/i })
+      .first()
   }
 
   getIncomeSourcesSection(): Locator {
-    return this.page.locator('button').filter({ hasText: /income.*sources|источники.*дохода/i }).first();
+    return this.page
+      .locator('button')
+      .filter({ hasText: /income.*sources|источники.*дохода/i })
+      .first()
   }
 
   getCurrenciesSection(): Locator {
-    return this.page.locator('button').filter({ hasText: /currencies|валюты/i }).first();
+    return this.page
+      .locator('button')
+      .filter({ hasText: /currencies|валюты/i })
+      .first()
   }
 
   async openSection(section: 'accounts' | 'categories' | 'income' | 'currencies'): Promise<void> {
@@ -29,96 +41,141 @@ export class SettingsPage extends BasePage {
       categories: this.getCategoriesSection(),
       income: this.getIncomeSourcesSection(),
       currencies: this.getCurrenciesSection(),
-    };
-    await sectionMap[section].click();
-    await this.page.waitForTimeout(300);
+    }
+    await sectionMap[section].click()
+    await this.page
+      .locator('button[aria-label="Back"]')
+      .waitFor({ state: 'visible', timeout: 5000 })
+    await this.waitForDataOrEmpty()
   }
 
-  // Back button (when in a section)
+  async waitForDataOrEmpty(): Promise<void> {
+    const items = this.page
+      .locator('div[class*="rounded-xl"]')
+      .filter({ has: this.page.locator('p.font-medium') })
+    const emptyMessage = this.page.locator('text=/no.*yet|пока.*нет/i')
+    const spinner = this.page.locator('.animate-spin')
+
+    try {
+      await Promise.race([
+        items.first().waitFor({ state: 'visible', timeout: 5000 }),
+        emptyMessage.waitFor({ state: 'visible', timeout: 5000 }),
+        spinner.waitFor({ state: 'hidden', timeout: 5000 }).then(async () => {
+          await this.page.waitForTimeout(200)
+        }),
+      ])
+    } catch {
+      // Timeout - check if we have empty state or retry
+    }
+    await this.page.waitForTimeout(200)
+  }
+
+  // Back button (when in a section) - has aria-label="Back"
   getBackButton(): Locator {
-    return this.page.locator('button').filter({ has: this.page.locator('svg') }).first();
+    return this.page.locator('button[aria-label="Back"]')
   }
 
   async goBack(): Promise<void> {
-    await this.getBackButton().click();
-    await this.page.waitForTimeout(200);
+    await this.getBackButton().click()
+    await this.page.waitForTimeout(200)
   }
 
   // Add button (in management sections) - it's the blue rounded + button in header
   getAddButton(): Locator {
-    return this.page.locator('button.rounded-full.bg-primary');
+    return this.page.locator('button[aria-label="Add"]')
   }
 
   async clickAdd(): Promise<void> {
-    await this.getAddButton().click();
-    await this.page.waitForTimeout(300);
+    await this.getAddButton().click()
+    await this.page.waitForTimeout(300)
   }
 
-  // Items list in management sections
   getManagementItems(): Locator {
-    return this.page.locator('[class*="rounded-xl"]').filter({ has: this.page.locator('button') });
+    return this.page
+      .locator('div[class*="rounded-xl"]')
+      .filter({ has: this.page.locator('p.font-medium') })
   }
 
   getItemByName(name: string): Locator {
-    return this.page.locator('[class*="rounded-xl"]').filter({ hasText: name });
+    return this.page
+      .locator('div[class*="rounded-xl"]')
+      .filter({ has: this.page.locator('p.font-medium') })
+      .filter({ hasText: name })
+      .first()
   }
 
   async clickItem(name: string): Promise<void> {
-    await this.getItemByName(name).click();
-    await this.page.waitForTimeout(300);
+    await this.getItemByName(name).click()
+    await this.page.waitForTimeout(300)
   }
 
-  // Edit button for item - in the button group on the right (after drag handle)
-  getEditButton(itemName: string): Locator {
-    // Item has: drag handle button, then edit/delete buttons in a flex container
-    // Edit button is the one with p-2 class that's not the drag handle (cursor-grab)
-    return this.getItemByName(itemName).locator('button.p-2').first();
-  }
+  async waitForItem(name: string): Promise<void> {
+    const noItemsMessage = this.page.locator('text=/no.*yet|пока.*нет/i')
+    const itemLocator = this.page
+      .locator('div[class*="rounded-xl"]')
+      .filter({ has: this.page.locator('p.font-medium') })
+      .filter({ hasText: name })
+      .first()
 
-  // Delete button for item - second p-2 button (trash icon)
-  getDeleteButtonForItem(itemName: string): Locator {
-    return this.getItemByName(itemName).locator('button.p-2').nth(1);
+    try {
+      await itemLocator.waitFor({ state: 'visible', timeout: 10000 })
+    } catch {
+      if (await noItemsMessage.isVisible()) {
+        throw new Error(`Item "${name}" not found - the management list appears empty`)
+      }
+      throw new Error(`Item "${name}" not found after waiting 10s`)
+    }
+    await this.page.waitForTimeout(200)
   }
 
   async editItem(name: string): Promise<void> {
-    await this.getEditButton(name).click();
-    await this.page.waitForTimeout(300);
+    await this.waitForItem(name)
+    const item = this.getItemByName(name)
+    await item.waitFor({ state: 'visible', timeout: 5000 })
+    await item.locator('button[aria-label="Edit"]').click()
+    await this.page.waitForTimeout(300)
   }
 
   async deleteItem(name: string): Promise<void> {
-    await this.getDeleteButtonForItem(name).click();
-    await this.page.waitForTimeout(300);
+    await this.waitForItem(name)
+    const item = this.getItemByName(name)
+    await item.waitFor({ state: 'visible', timeout: 5000 })
+    await item.locator('button[aria-label="Delete"]').click()
+    await this.page.waitForTimeout(300)
   }
 
   // Language selector
   getLanguageSelector(): Locator {
-    return this.page.locator('button').filter({ hasText: /english|русский/i });
+    return this.page.locator('button').filter({ hasText: /english|русский/i })
   }
 
   async selectLanguage(language: 'en' | 'ru'): Promise<void> {
-    await this.getLanguageSelector().click();
-    await this.page.waitForTimeout(200);
-    const option = language === 'en' ? 'English' : 'Русский';
-    await this.page.locator('[role="option"]').filter({ hasText: option }).click();
-    await this.page.waitForTimeout(200);
+    await this.getLanguageSelector().click()
+    await this.page.waitForTimeout(200)
+    const option = language === 'en' ? 'English' : 'Русский'
+    await this.page.locator('[role="option"]').filter({ hasText: option }).click()
+    await this.page.waitForTimeout(200)
   }
 
   // Main currency selector
   getMainCurrencySelector(): Locator {
-    return this.page.locator('[class*="Select"]').filter({ hasText: /USD|EUR|RUB/ }).first();
+    return this.page
+      .locator('[class*="Select"]')
+      .filter({ hasText: /USD|EUR|RUB/ })
+      .first()
   }
 
   // Export/Import
   getExportButton(): Locator {
-    return this.page.locator('button').filter({ hasText: /export|экспорт/i });
+    return this.page.locator('button').filter({ hasText: /export|экспорт/i })
   }
 
   getImportButton(): Locator {
-    return this.page.locator('button').filter({ hasText: /import|импорт/i });
+    return this.page.locator('button').filter({ hasText: /import|импорт/i })
   }
 
   // Delete all data
   getDeleteAllButton(): Locator {
-    return this.page.locator('button').filter({ hasText: /delete.*all|удалить.*все/i });
+    return this.page.locator('button').filter({ hasText: /delete.*all|удалить.*все/i })
   }
 }

@@ -1,15 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -45,45 +39,36 @@ interface LoanFormProps {
   onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number) => Promise<void>
 }
 
-export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
+function LoanFormContent({
+  loan,
+  onClose,
+  onSave,
+}: {
+  loan?: Loan | null
+  onClose: () => void
+  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number) => Promise<void>
+}) {
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
   const queryClient = useQueryClient()
   const { t, language } = useLanguage()
 
-  const [type, setType] = useState<LoanType>('given')
-  const [personName, setPersonName] = useState('')
-  const [description, setDescription] = useState('')
-  const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState(mainCurrency)
-  const [accountId, setAccountId] = useState('')
+  const [type, setType] = useState<LoanType>(loan?.type ?? 'given')
+  const [personName, setPersonName] = useState(loan?.personName ?? '')
+  const [description, setDescription] = useState(loan?.description ?? '')
+  const [amount, setAmount] = useState(loan?.amount?.toString() ?? '')
+  const [currency, setCurrency] = useState(loan?.currency ?? mainCurrency)
+  const [accountId, setAccountId] = useState(
+    loan?.accountId?.toString() ?? (accounts.length > 0 ? accounts[0].id!.toString() : '')
+  )
   const [accountAmount, setAccountAmount] = useState('')
-  const [dueDate, setDueDate] = useState('')
+  const [dueDate, setDueDate] = useState(
+    loan?.dueDate ? formatDateForInput(new Date(loan.dueDate)) : ''
+  )
 
   const selectedAccount = accountId ? accounts.find((a) => a.id === parseInt(accountId)) : null
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
-
-  useEffect(() => {
-    if (loan) {
-      setType(loan.type)
-      setPersonName(loan.personName)
-      setDescription(loan.description || '')
-      setAmount(loan.amount.toString())
-      setCurrency(loan.currency)
-      setAccountId(loan.accountId?.toString() || '')
-      setDueDate(loan.dueDate ? formatDateForInput(new Date(loan.dueDate)) : '')
-    } else {
-      setType('given')
-      setPersonName('')
-      setDescription('')
-      setAmount('')
-      setCurrency(mainCurrency)
-      setAccountId(accounts.length > 0 ? accounts[0].id!.toString() : '')
-      setDueDate('')
-    }
-    setAccountAmount('')
-  }, [loan, open, mainCurrency, accounts])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -144,180 +129,190 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{loan ? t('editLoan') : t('addLoan')}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="type">{t('type')}</Label>
-            <Select value={type} onValueChange={(v) => setType(v as LoanType)}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectType')}>
-                  {type === 'given' ? t('moneyILent') : t('moneyIBorrowed')}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="given">{t('moneyILent')}</SelectItem>
-                <SelectItem value="received">{t('moneyIBorrowed')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="type">{t('type')}</Label>
+        <Select value={type} onValueChange={(v) => setType(v as LoanType)}>
+          <SelectTrigger>
+            <SelectValue placeholder={t('selectType')}>
+              {type === 'given' ? t('moneyILent') : t('moneyIBorrowed')}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="given">{t('moneyILent')}</SelectItem>
+            <SelectItem value="received">{t('moneyIBorrowed')}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="personName">
+          {type === 'given' ? t('whoDidYouLendTo') : t('whoDidYouBorrowFrom')}
+        </Label>
+        <Input
+          id="personName"
+          value={personName}
+          onChange={(e) => setPersonName(e.target.value)}
+          placeholder={t('personOrCompanyName')}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="account">{t('relatedAccount')}</Label>
+        <Select value={accountId} onValueChange={setAccountId}>
+          <SelectTrigger>
+            <SelectValue placeholder={t('selectAccount')}>
+              {selectedAccount
+                ? `${selectedAccount.name} (${selectedAccount.currency})`
+                : undefined}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {accounts.map((a) => (
+              <SelectItem key={a.id} value={a.id!.toString()}>
+                {a.name} ({a.currency})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Amount inputs — dual when multi-currency */}
+      {isMultiCurrency ? (
+        <div className="space-y-2">
+          <Label>{t('amount')}</Label>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 space-y-1">
+              <label className="text-xs text-muted-foreground">
+                {currency} ({t('amountOnLoan')})
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
+            <div className="flex-1 space-y-1">
+              <label className="text-xs text-muted-foreground">
+                {selectedAccount?.currency} ({t('amountOnAccount')})
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                value={accountAmount}
+                onChange={(e) => setAccountAmount(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="personName">
-              {type === 'given' ? t('whoDidYouLendTo') : t('whoDidYouBorrowFrom')}
-            </Label>
+            <Label htmlFor="amount">{t('amount')}</Label>
             <Input
-              id="personName"
-              value={personName}
-              onChange={(e) => setPersonName(e.target.value)}
-              placeholder={t('personOrCompanyName')}
+              id="amount"
+              type="number"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
               required
             />
           </div>
-
           <div className="space-y-2">
-            <Label htmlFor="account">{t('relatedAccount')}</Label>
-            <Select value={accountId} onValueChange={setAccountId}>
+            <Label htmlFor="currency">{t('currency')}</Label>
+            <Select value={currency} onValueChange={setCurrency}>
               <SelectTrigger>
-                <SelectValue placeholder={t('selectAccount')}>
-                  {selectedAccount
-                    ? `${selectedAccount.name} (${selectedAccount.currency})`
-                    : undefined}
+                <SelectValue placeholder={t('currency')}>
+                  {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id!.toString()}>
-                    {a.name} ({a.currency})
+                {getAllCurrencies().map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.symbol} {c.code}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+        </div>
+      )}
 
-          {/* Amount inputs — dual when multi-currency */}
-          {isMultiCurrency ? (
-            <div className="space-y-2">
-              <Label>{t('amount')}</Label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 space-y-1">
-                  <label className="text-xs text-muted-foreground">
-                    {currency} ({t('amountOnLoan')})
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
-                <div className="flex-1 space-y-1">
-                  <label className="text-xs text-muted-foreground">
-                    {selectedAccount?.currency} ({t('amountOnAccount')})
-                  </label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={accountAmount}
-                    onChange={(e) => setAccountAmount(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">{t('amount')}</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="currency">{t('currency')}</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('currency')}>
-                      {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getAllCurrencies().map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {c.symbol} {c.code}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
+      {/* Currency selector when multi-currency — show separately so user can still change loan currency */}
+      {isMultiCurrency && (
+        <div className="space-y-2">
+          <Label htmlFor="currency">{t('currency')}</Label>
+          <Select value={currency} onValueChange={setCurrency}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('currency')}>
+                {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {getAllCurrencies().map((c) => (
+                <SelectItem key={c.code} value={c.code}>
+                  {c.symbol} {c.code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-          {/* Currency selector when multi-currency — show separately so user can still change loan currency */}
-          {isMultiCurrency && (
-            <div className="space-y-2">
-              <Label htmlFor="currency">{t('currency')}</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('currency')}>
-                    {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {getAllCurrencies().map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.symbol} {c.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+      <div className="space-y-2">
+        <Label htmlFor="dueDate">{t('dueDate')}</Label>
+        <Input
+          id="dueDate"
+          type="date"
+          lang={language}
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dueDate">{t('dueDate')}</Label>
-            <Input
-              id="dueDate"
-              type="date"
-              lang={language}
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
+      <div className="space-y-2">
+        <Label htmlFor="description">{t('description')}</Label>
+        <Textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={t('addNotesAboutLoan')}
+          rows={2}
+        />
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">{t('description')}</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('addNotesAboutLoan')}
-              rows={2}
-            />
-          </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          {t('cancel')}
+        </Button>
+        <Button type="submit" disabled={!accountId}>
+          {loan ? t('update') : t('create')}
+        </Button>
+      </div>
+    </form>
+  )
+}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit" disabled={!accountId}>
-              {loan ? t('update') : t('create')}
-            </Button>
-          </DialogFooter>
-        </form>
+export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
+  const { t } = useLanguage()
+  // Use key to force re-mount when loan changes, ensuring initial state is reset
+  const formKey = loan?.id ?? 'new'
+
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{loan ? t('editLoan') : t('addLoan')}</DialogTitle>
+        </DialogHeader>
+        <LoanFormContent key={formKey} loan={loan} onClose={onClose} onSave={onSave} />
       </DialogContent>
     </Dialog>
   )

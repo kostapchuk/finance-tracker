@@ -9,6 +9,7 @@ import type {
   AppSettings,
   CustomCurrency,
   SyncQueueItem,
+  ReportCache,
 } from './types'
 
 const CACHE_LIMIT = 50
@@ -22,9 +23,10 @@ const db = new Dexie('FinanceTrackerCache') as Dexie & {
   settings: EntityTable<AppSettings, 'id'>
   customCurrencies: EntityTable<CustomCurrency, 'id'>
   syncQueue: EntityTable<SyncQueueItem, 'id'>
+  reportCache: EntityTable<ReportCache, 'id'>
 }
 
-db.version(2).stores({
+db.version(3).stores({
   accounts: 'id, userId, name, updatedAt',
   incomeSources: 'id, userId, name, updatedAt',
   categories: 'id, userId, name, updatedAt',
@@ -33,6 +35,7 @@ db.version(2).stores({
   settings: 'id, userId',
   customCurrencies: 'id, userId, code',
   syncQueue: '++id, operation, entity, recordId, createdAt',
+  reportCache: 'id, &periodKey, updatedAt',
 })
 
 export const localCache = {
@@ -58,6 +61,30 @@ export const localCache = {
 
     async delete(id: number): Promise<void> {
       await db.accounts.delete(id)
+    },
+
+    async bulkUpdateBalance(deltas: { id: number; delta: number }[]): Promise<void> {
+      if (deltas.length === 0) return
+
+      const ids = deltas.map((d) => d.id)
+      const accounts = await db.accounts.where('id').anyOf(ids).toArray()
+      const accountMap = new Map(accounts.map((a) => [a.id, a]))
+
+      const updates: Account[] = []
+      for (const { id, delta } of deltas) {
+        const account = accountMap.get(id)
+        if (account) {
+          updates.push({
+            ...account,
+            balance: account.balance + delta,
+            updatedAt: new Date(),
+          })
+        }
+      }
+
+      if (updates.length > 0) {
+        await db.accounts.bulkPut(updates)
+      }
     },
 
     async clear(): Promise<void> {
@@ -132,8 +159,17 @@ export const localCache = {
       return db.transactions.orderBy('date').reverse().toArray()
     },
 
-    async getById(id: number): Promise<Transaction | undefined> {
-      return db.transactions.get(id)
+    async getById(id: number | string): Promise<Transaction | undefined> {
+      // DIAGNOSTIC: Check if the query works for both numeric and string IDs
+      const result = await db.transactions.get(id as number)
+      console.log('[DIAG] getById:', {
+        searchId: id,
+        searchType: typeof id,
+        found: !!result,
+        resultId: result?.id,
+        resultDate: result?.date,
+      })
+      return result
     },
 
     async getByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
@@ -153,15 +189,35 @@ export const localCache = {
     },
 
     async put(transaction: Transaction): Promise<void> {
-      await db.transactions.put(transaction)
+      // Normalize date fields to Date objects for consistent indexing
+      const normalizedTransaction = {
+        ...transaction,
+        date: transaction.date instanceof Date ? transaction.date : new Date(transaction.date),
+        createdAt:
+          transaction.createdAt instanceof Date
+            ? transaction.createdAt
+            : new Date(transaction.createdAt),
+        updatedAt:
+          transaction.updatedAt instanceof Date
+            ? transaction.updatedAt
+            : new Date(transaction.updatedAt),
+      }
+      await db.transactions.put(normalizedTransaction)
     },
 
     async putAll(transactions: Transaction[]): Promise<void> {
-      await db.transactions.bulkPut(transactions)
+      // Normalize date fields to Date objects for consistent indexing
+      const normalizedTransactions = transactions.map((t) => ({
+        ...t,
+        date: t.date instanceof Date ? t.date : new Date(t.date),
+        createdAt: t.createdAt instanceof Date ? t.createdAt : new Date(t.createdAt),
+        updatedAt: t.updatedAt instanceof Date ? t.updatedAt : new Date(t.updatedAt),
+      }))
+      await db.transactions.bulkPut(normalizedTransactions)
     },
 
-    async delete(id: number): Promise<void> {
-      await db.transactions.delete(id)
+    async delete(id: number | string): Promise<void> {
+      await db.transactions.delete(id as number)
     },
 
     async clear(): Promise<void> {
@@ -264,6 +320,15 @@ export const localCache = {
       return id as number
     },
 
+    async bulkAdd(items: Omit<SyncQueueItem, 'id' | 'createdAt' | 'attempts'>[]): Promise<void> {
+      const fullItems = items.map((item) => ({
+        ...item,
+        createdAt: new Date(),
+        attempts: 0,
+      }))
+      await db.syncQueue.bulkAdd(fullItems)
+    },
+
     async getAll(): Promise<SyncQueueItem[]> {
       return db.syncQueue.orderBy('createdAt').toArray()
     },
@@ -282,6 +347,46 @@ export const localCache = {
 
     async clear(): Promise<void> {
       await db.syncQueue.clear()
+    },
+  },
+
+  reportCache: {
+    async getByPeriod(periodKey: string): Promise<ReportCache | undefined> {
+      return db.reportCache.where('periodKey').equals(periodKey).first()
+    },
+
+    async put(cache: ReportCache): Promise<void> {
+      await db.reportCache.put(cache)
+    },
+
+    async deleteByPeriod(periodKey: string): Promise<void> {
+      const cache = await db.reportCache.where('periodKey').equals(periodKey).first()
+      if (cache?.id) {
+        await db.reportCache.delete(cache.id)
+      }
+    },
+
+    async invalidatePeriodsAfterDate(date: Date): Promise<void> {
+      const allCache = await db.reportCache.toArray()
+      for (const cache of allCache) {
+        if (cache.lastTransactionDate && new Date(cache.lastTransactionDate) >= date && cache.id) {
+          await db.reportCache.delete(cache.id)
+        }
+      }
+    },
+
+    async deleteExpired(): Promise<void> {
+      const now = new Date()
+      const allCache = await db.reportCache.toArray()
+      for (const cache of allCache) {
+        if (cache.expiresAt && new Date(cache.expiresAt) < now && cache.id) {
+          await db.reportCache.delete(cache.id)
+        }
+      }
+    },
+
+    async clear(): Promise<void> {
+      await db.reportCache.clear()
     },
   },
 

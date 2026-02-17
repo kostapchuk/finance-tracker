@@ -1,407 +1,717 @@
-import type { Page } from '@playwright/test';
+import type { Page } from '@playwright/test'
 import type {
   TestAccount,
   TestCategory,
   TestIncomeSource,
   TestLoan,
   TestTransaction,
-} from '../fixtures/test-data';
+} from '../fixtures/test-data'
 
-const DB_NAME = 'FinanceTrackerDB';
+const DB_NAME = 'FinanceTrackerCache'
 
 export class IndexedDBHelper {
   constructor(private page: Page) {}
 
+  private async ensureDatabaseInitialized(): Promise<void> {
+    await this.page.evaluate(async () => {
+      await new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('FinanceTrackerCache')
+        request.onsuccess = () => {
+          request.result.close()
+          resolve()
+        }
+        request.onerror = () => reject(request.error)
+      })
+    })
+  }
+
+  async clearAllDatabases(): Promise<void> {
+    await this.page.evaluate(async () => {
+      const dbNames = ['FinanceTrackerDB', 'FinanceTrackerCache']
+      for (const dbName of dbNames) {
+        await new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open(dbName)
+          request.onsuccess = () => {
+            const db = request.result
+            const storeNames = Array.from(db.objectStoreNames)
+            if (storeNames.length === 0) {
+              db.close()
+              resolve()
+              return
+            }
+            const tx = db.transaction(storeNames, 'readwrite')
+            storeNames.forEach((store) => {
+              tx.objectStore(store).clear()
+            })
+            tx.oncomplete = () => {
+              db.close()
+              resolve()
+            }
+            tx.onerror = () => {
+              db.close()
+              reject(tx.error)
+            }
+          }
+          request.onerror = () => resolve()
+        })
+      }
+    })
+  }
+
   async clearDatabase(): Promise<void> {
+    await this.page.evaluate(async () => {
+      const dbNames = ['FinanceTrackerCache', 'FinanceTrackerDB']
+      for (const dbName of dbNames) {
+        await new Promise<void>((resolve) => {
+          const request = indexedDB.open(dbName)
+          request.onsuccess = () => {
+            const db = request.result
+            const storeNames = Array.from(db.objectStoreNames)
+            if (storeNames.length === 0) {
+              db.close()
+              resolve()
+              return
+            }
+            const tx = db.transaction(storeNames, 'readwrite')
+            storeNames.forEach((store) => {
+              tx.objectStore(store).clear()
+            })
+            tx.oncomplete = () => {
+              db.close()
+              resolve()
+            }
+            tx.onerror = () => {
+              db.close()
+              resolve()
+            }
+          }
+          request.onerror = () => resolve()
+          request.onblocked = () => resolve()
+        })
+      }
+    })
+  }
+
+  async getUserId(): Promise<string> {
+    return this.page.evaluate(() => {
+      let userId = localStorage.getItem('finance-tracker-user-id')
+      if (!userId) {
+        userId = crypto.randomUUID()
+        localStorage.setItem('finance-tracker-user-id', userId)
+      }
+      return userId
+    })
+  }
+
+  async ensureDatabase(): Promise<void> {
     await this.page.evaluate(async (dbName) => {
       return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
+        const request = indexedDB.open(dbName)
         request.onsuccess = () => {
-          const db = request.result;
-          const storeNames = Array.from(db.objectStoreNames);
-          if (storeNames.length === 0) {
-            db.close();
-            resolve();
-            return;
-          }
-          const tx = db.transaction(storeNames, 'readwrite');
-          storeNames.forEach((store) => {
-            tx.objectStore(store).clear();
-          });
-          tx.oncomplete = () => {
-            db.close();
-            resolve();
-          };
-          tx.onerror = () => {
-            db.close();
-            reject(tx.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, DB_NAME);
+          request.result.close()
+          resolve()
+        }
+        request.onerror = () => reject(request.error)
+      })
+    }, DB_NAME)
   }
 
   async seedAccount(account: TestAccount): Promise<number> {
-    return this.page.evaluate(async ({ dbName, acc }) => {
-      return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
-        request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('accounts', 'readwrite');
-          const store = tx.objectStore('accounts');
-          const now = new Date();
+    await this.ensureDatabaseInitialized()
+    const userId = await this.getUserId()
+
+    const result = await this.page.evaluate(
+      async ({ accountData, userId }) => {
+        const request = indexedDB.open('FinanceTrackerCache')
+
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+          request.onblocked = () => {
+            setTimeout(() => {
+              const retry = indexedDB.open('FinanceTrackerCache')
+              retry.onsuccess = () => resolve(retry.result)
+              retry.onerror = () => reject(retry.error)
+            }, 100)
+          }
+        })
+
+        if (!db.objectStoreNames.contains('accounts')) {
+          db.close()
+          throw new Error('accounts store does not exist')
+        }
+
+        const tx = db.transaction('accounts', 'readwrite')
+        const store = tx.objectStore('accounts')
+        const now = new Date()
+        const id = Date.now()
+
+        const resultId = await new Promise<number>((resolve, reject) => {
           const addRequest = store.add({
-            ...acc,
+            id,
+            ...accountData,
+            userId,
             createdAt: now,
             updatedAt: now,
-          });
+          })
           addRequest.onsuccess = () => {
-            db.close();
-            resolve(addRequest.result as number);
-          };
+            db.close()
+            resolve(id)
+          }
           addRequest.onerror = () => {
-            db.close();
-            reject(addRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, acc: account });
+            db.close()
+            reject(addRequest.error)
+          }
+        })
+
+        return resultId
+      },
+      { accountData: account, userId }
+    )
+
+    return result
   }
 
   async seedCategory(category: TestCategory): Promise<number> {
-    return this.page.evaluate(async ({ dbName, cat }) => {
-      return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
-        request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('categories', 'readwrite');
-          const store = tx.objectStore('categories');
-          const now = new Date();
+    await this.ensureDatabaseInitialized()
+    const userId = await this.getUserId()
+    const id = Date.now()
+
+    await this.page.evaluate(
+      async ({ categoryData, userId, id }) => {
+        const request = indexedDB.open('FinanceTrackerCache')
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        })
+        const tx = db.transaction('categories', 'readwrite')
+        const store = tx.objectStore('categories')
+        const now = new Date()
+        await new Promise<void>((resolve, reject) => {
           const addRequest = store.add({
-            ...cat,
+            id,
+            ...categoryData,
+            userId,
             createdAt: now,
             updatedAt: now,
-          });
+          })
           addRequest.onsuccess = () => {
-            db.close();
-            resolve(addRequest.result as number);
-          };
+            db.close()
+            resolve()
+          }
           addRequest.onerror = () => {
-            db.close();
-            reject(addRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, cat: category });
+            db.close()
+            reject(addRequest.error)
+          }
+        })
+      },
+      { categoryData: category, userId, id }
+    )
+
+    return id
   }
 
   async seedIncomeSource(incomeSource: TestIncomeSource): Promise<number> {
-    return this.page.evaluate(async ({ dbName, src }) => {
-      return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
-        request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('incomeSources', 'readwrite');
-          const store = tx.objectStore('incomeSources');
-          const now = new Date();
+    await this.ensureDatabaseInitialized()
+    const userId = await this.getUserId()
+    const id = Date.now()
+
+    await this.page.evaluate(
+      async ({ incomeSourceData, userId, id }) => {
+        const request = indexedDB.open('FinanceTrackerCache')
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        })
+        const tx = db.transaction('incomeSources', 'readwrite')
+        const store = tx.objectStore('incomeSources')
+        const now = new Date()
+        await new Promise<void>((resolve, reject) => {
           const addRequest = store.add({
-            ...src,
+            id,
+            ...incomeSourceData,
+            userId,
             createdAt: now,
             updatedAt: now,
-          });
+          })
           addRequest.onsuccess = () => {
-            db.close();
-            resolve(addRequest.result as number);
-          };
+            db.close()
+            resolve()
+          }
           addRequest.onerror = () => {
-            db.close();
-            reject(addRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, src: incomeSource });
+            db.close()
+            reject(addRequest.error)
+          }
+        })
+      },
+      { incomeSourceData: incomeSource, userId, id }
+    )
+
+    return id
   }
 
   async seedLoan(loan: TestLoan): Promise<number> {
-    const loanData = {
-      ...loan,
-      dueDate: loan.dueDate?.toISOString(),
-    };
-    return this.page.evaluate(async ({ dbName, l }) => {
-      return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
-        request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('loans', 'readwrite');
-          const store = tx.objectStore('loans');
-          const now = new Date();
+    await this.ensureDatabaseInitialized()
+    const userId = await this.getUserId()
+    const id = Date.now()
+
+    await this.page.evaluate(
+      async ({ loanData, userId, id }) => {
+        const request = indexedDB.open('FinanceTrackerCache')
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        })
+        const tx = db.transaction('loans', 'readwrite')
+        const store = tx.objectStore('loans')
+        const now = new Date()
+        await new Promise<void>((resolve, reject) => {
           const addRequest = store.add({
-            ...l,
-            dueDate: l.dueDate ? new Date(l.dueDate) : undefined,
+            id,
+            ...loanData,
+            dueDate: loanData.dueDate ? new Date(loanData.dueDate) : undefined,
+            userId,
             createdAt: now,
             updatedAt: now,
-          });
+          })
           addRequest.onsuccess = () => {
-            db.close();
-            resolve(addRequest.result as number);
-          };
+            db.close()
+            resolve()
+          }
           addRequest.onerror = () => {
-            db.close();
-            reject(addRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, l: loanData });
+            db.close()
+            reject(addRequest.error)
+          }
+        })
+      },
+      { loanData: loan, userId, id }
+    )
+
+    return id
   }
 
   async seedTransaction(transaction: TestTransaction): Promise<number> {
-    const txData = {
-      ...transaction,
-      date: transaction.date?.toISOString() || new Date().toISOString(),
-    };
-    return this.page.evaluate(async ({ dbName, tx }) => {
-      return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
-        request.onsuccess = () => {
-          const db = request.result;
-          const dbTx = db.transaction('transactions', 'readwrite');
-          const store = dbTx.objectStore('transactions');
-          const now = new Date();
+    await this.ensureDatabaseInitialized()
+    const userId = await this.getUserId()
+    const id = Date.now()
+
+    await this.page.evaluate(
+      async ({ transactionData, userId, id }) => {
+        const request = indexedDB.open('FinanceTrackerCache')
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        })
+        const tx = db.transaction('transactions', 'readwrite')
+        const store = tx.objectStore('transactions')
+        const now = new Date()
+        await new Promise<void>((resolve, reject) => {
           const addRequest = store.add({
-            ...tx,
-            date: new Date(tx.date),
+            id,
+            ...transactionData,
+            date: transactionData.date ? new Date(transactionData.date) : new Date(),
+            userId,
             createdAt: now,
             updatedAt: now,
-          });
+          })
           addRequest.onsuccess = () => {
-            db.close();
-            resolve(addRequest.result as number);
-          };
+            db.close()
+            resolve()
+          }
           addRequest.onerror = () => {
-            db.close();
-            reject(addRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, tx: txData });
+            db.close()
+            reject(addRequest.error)
+          }
+        })
+      },
+      { transactionData: transaction, userId, id }
+    )
+
+    return id
   }
 
   async updateAccountBalance(accountId: number, newBalance: number): Promise<void> {
-    await this.page.evaluate(async ({ dbName, id, balance }) => {
+    const data = { dbName: DB_NAME, id: accountId, balance: newBalance }
+
+    await this.page.evaluate((data: { dbName: string; id: number; balance: number }) => {
       return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
+        const request = indexedDB.open(data.dbName)
         request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('accounts', 'readwrite');
-          const store = tx.objectStore('accounts');
-          const getRequest = store.get(id);
+          const db = request.result
+          const tx = db.transaction('accounts', 'readwrite')
+          const store = tx.objectStore('accounts')
+          const getRequest = store.get(data.id)
           getRequest.onsuccess = () => {
-            const account = getRequest.result;
+            const account = getRequest.result
             if (account) {
-              account.balance = balance;
-              account.updatedAt = new Date();
-              const putRequest = store.put(account);
+              account.balance = data.balance
+              account.updatedAt = new Date()
+              const putRequest = store.put(account)
               putRequest.onsuccess = () => {
-                db.close();
-                resolve();
-              };
+                db.close()
+                resolve()
+              }
               putRequest.onerror = () => {
-                db.close();
-                reject(putRequest.error);
-              };
+                db.close()
+                reject(putRequest.error)
+              }
             } else {
-              db.close();
-              resolve();
+              db.close()
+              resolve()
             }
-          };
+          }
           getRequest.onerror = () => {
-            db.close();
-            reject(getRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, id: accountId, balance: newBalance });
+            db.close()
+            reject(getRequest.error)
+          }
+        }
+        request.onerror = () => reject(request.error)
+      })
+    }, data)
   }
 
   async getAccountBalance(accountId: number): Promise<number> {
-    return this.page.evaluate(async ({ dbName, id }) => {
+    const data = { dbName: DB_NAME, id: accountId }
+
+    return this.page.evaluate((data: { dbName: string; id: number }) => {
       return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
+        const request = indexedDB.open(data.dbName)
         request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('accounts', 'readonly');
-          const store = tx.objectStore('accounts');
-          const getRequest = store.get(id);
+          const db = request.result
+          const tx = db.transaction('accounts', 'readonly')
+          const store = tx.objectStore('accounts')
+          const getRequest = store.get(data.id)
           getRequest.onsuccess = () => {
-            db.close();
-            resolve(getRequest.result?.balance ?? 0);
-          };
+            db.close()
+            resolve(getRequest.result?.balance ?? 0)
+          }
           getRequest.onerror = () => {
-            db.close();
-            reject(getRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, id: accountId });
+            db.close()
+            reject(getRequest.error)
+          }
+        }
+        request.onerror = () => reject(request.error)
+      })
+    }, data)
   }
 
-  async getLoanStatus(
-    loanId: number
-  ): Promise<{ paidAmount: number; status: string } | null> {
-    return this.page.evaluate(async ({ dbName, id }) => {
+  async getLoanStatus(loanId: number): Promise<{ paidAmount: number; status: string } | null> {
+    const data = { dbName: DB_NAME, id: loanId }
+
+    return this.page.evaluate((data: { dbName: string; id: number }) => {
       return new Promise<{ paidAmount: number; status: string } | null>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
+        const request = indexedDB.open(data.dbName)
         request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('loans', 'readonly');
-          const store = tx.objectStore('loans');
-          const getRequest = store.get(id);
+          const db = request.result
+          const tx = db.transaction('loans', 'readonly')
+          const store = tx.objectStore('loans')
+          const getRequest = store.get(data.id)
           getRequest.onsuccess = () => {
-            db.close();
-            const loan = getRequest.result;
+            db.close()
+            const loan = getRequest.result
             if (!loan) {
-              resolve(null);
+              resolve(null)
             } else {
-              resolve({ paidAmount: loan.paidAmount, status: loan.status });
+              resolve({ paidAmount: loan.paidAmount, status: loan.status })
             }
-          };
+          }
           getRequest.onerror = () => {
-            db.close();
-            reject(getRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, id: loanId });
+            db.close()
+            reject(getRequest.error)
+          }
+        }
+        request.onerror = () => reject(request.error)
+      })
+    }, data)
   }
 
   async getTransactionCount(): Promise<number> {
-    return this.page.evaluate(async (dbName) => {
+    return this.page.evaluate((dbName: string) => {
       return new Promise<number>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
+        const request = indexedDB.open(dbName)
         request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('transactions', 'readonly');
-          const store = tx.objectStore('transactions');
-          const countRequest = store.count();
+          const db = request.result
+          const tx = db.transaction('transactions', 'readonly')
+          const store = tx.objectStore('transactions')
+          const countRequest = store.count()
           countRequest.onsuccess = () => {
-            db.close();
-            resolve(countRequest.result);
-          };
+            db.close()
+            resolve(countRequest.result)
+          }
           countRequest.onerror = () => {
-            db.close();
-            reject(countRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, DB_NAME);
+            db.close()
+            reject(countRequest.error)
+          }
+        }
+        request.onerror = () => reject(request.error)
+      })
+    }, DB_NAME)
+  }
+
+  async updateAccount(accountId: number, updates: Record<string, unknown>): Promise<void> {
+    const data = { dbName: DB_NAME, id: accountId, updates }
+
+    await this.page.evaluate(
+      (data: { dbName: string; id: number; updates: Record<string, unknown> }) => {
+        return new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open(data.dbName)
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction('accounts', 'readwrite')
+            const store = tx.objectStore('accounts')
+            const getRequest = store.get(data.id)
+            getRequest.onsuccess = () => {
+              const account = getRequest.result
+              if (account) {
+                Object.assign(account, data.updates, { updatedAt: new Date() })
+                const putRequest = store.put(account)
+                putRequest.onsuccess = () => {
+                  db.close()
+                  resolve()
+                }
+                putRequest.onerror = () => {
+                  db.close()
+                  reject(putRequest.error)
+                }
+              } else {
+                db.close()
+                resolve()
+              }
+            }
+            getRequest.onerror = () => {
+              db.close()
+              reject(getRequest.error)
+            }
+          }
+          request.onerror = () => reject(request.error)
+        })
+      },
+      data
+    )
+  }
+
+  async updateCategory(categoryId: number, updates: Record<string, unknown>): Promise<void> {
+    const data = { dbName: DB_NAME, id: categoryId, updates }
+
+    await this.page.evaluate(
+      (data: { dbName: string; id: number; updates: Record<string, unknown> }) => {
+        return new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open(data.dbName)
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction('categories', 'readwrite')
+            const store = tx.objectStore('categories')
+            const getRequest = store.get(data.id)
+            getRequest.onsuccess = () => {
+              const category = getRequest.result
+              if (category) {
+                Object.assign(category, data.updates, { updatedAt: new Date() })
+                const putRequest = store.put(category)
+                putRequest.onsuccess = () => {
+                  db.close()
+                  resolve()
+                }
+                putRequest.onerror = () => {
+                  db.close()
+                  reject(putRequest.error)
+                }
+              } else {
+                db.close()
+                resolve()
+              }
+            }
+            getRequest.onerror = () => {
+              db.close()
+              reject(getRequest.error)
+            }
+          }
+          request.onerror = () => reject(request.error)
+        })
+      },
+      data
+    )
+  }
+
+  async updateIncomeSource(
+    incomeSourceId: number,
+    updates: Record<string, unknown>
+  ): Promise<void> {
+    const data = { dbName: DB_NAME, id: incomeSourceId, updates }
+
+    await this.page.evaluate(
+      (data: { dbName: string; id: number; updates: Record<string, unknown> }) => {
+        return new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open(data.dbName)
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction('incomeSources', 'readwrite')
+            const store = tx.objectStore('incomeSources')
+            const getRequest = store.get(data.id)
+            getRequest.onsuccess = () => {
+              const incomeSource = getRequest.result
+              if (incomeSource) {
+                Object.assign(incomeSource, data.updates, { updatedAt: new Date() })
+                const putRequest = store.put(incomeSource)
+                putRequest.onsuccess = () => {
+                  db.close()
+                  resolve()
+                }
+                putRequest.onerror = () => {
+                  db.close()
+                  reject(putRequest.error)
+                }
+              } else {
+                db.close()
+                resolve()
+              }
+            }
+            getRequest.onerror = () => {
+              db.close()
+              reject(getRequest.error)
+            }
+          }
+          request.onerror = () => reject(request.error)
+        })
+      },
+      data
+    )
   }
 
   async setMainCurrency(currency: string): Promise<void> {
-    await this.page.evaluate(async ({ dbName, curr }) => {
+    const userId = await this.getUserId()
+    const data = { dbName: DB_NAME, currency, userId }
+
+    await this.page.evaluate((data: { dbName: string; currency: string; userId: string }) => {
       return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
+        const request = indexedDB.open(data.dbName)
         request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('settings', 'readwrite');
-          const store = tx.objectStore('settings');
-          // First check if settings already exist
-          const getAllRequest = store.getAll();
+          const db = request.result
+
+          if (!db.objectStoreNames.contains('settings')) {
+            db.close()
+            resolve()
+            return
+          }
+
+          const tx = db.transaction('settings', 'readwrite')
+          const store = tx.objectStore('settings')
+          const getAllRequest = store.getAll()
           getAllRequest.onsuccess = () => {
-            const existing = getAllRequest.result[0];
-            const now = new Date();
+            const existing = getAllRequest.result[0]
+            const now = new Date()
             const settingsData = {
-              ...(existing || {}),
-              defaultCurrency: curr,
+              id: existing?.id || 1,
+              defaultCurrency: data.currency,
+              userId: data.userId,
               createdAt: existing?.createdAt || now,
               updatedAt: now,
-            };
-            // Use put with id if exists, or add if new
-            const saveRequest = existing?.id
-              ? store.put({ ...settingsData, id: existing.id })
-              : store.add(settingsData);
+            }
+            const saveRequest = store.put(settingsData)
             saveRequest.onsuccess = () => {
-              db.close();
-              resolve();
-            };
+              db.close()
+              resolve()
+            }
             saveRequest.onerror = () => {
-              db.close();
-              reject(saveRequest.error);
-            };
-          };
+              db.close()
+              reject(saveRequest.error)
+            }
+          }
           getAllRequest.onerror = () => {
-            db.close();
-            reject(getAllRequest.error);
-          };
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, curr: currency });
+            db.close()
+            reject(getAllRequest.error)
+          }
+        }
+        request.onerror = () => reject(request.error)
+      })
+    }, data)
   }
 
   async setOnboardingComplete(): Promise<void> {
-    // Onboarding state is stored in localStorage, not IndexedDB
     await this.page.evaluate(() => {
-      localStorage.setItem('finance-tracker-onboarding-completed', 'true');
-    });
+      localStorage.setItem('finance-tracker-onboarding-completed', 'true')
+    })
   }
 
   async refreshStoreData(): Promise<void> {
-    // Trigger a page reload to refresh Zustand store from IndexedDB
-    // This is simpler and more reliable than trying to call store methods
-    await this.page.reload();
-    await this.page.waitForLoadState('networkidle');
+    await this.page.reload()
+    await this.page.waitForLoadState('networkidle')
+    await this.page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+    await this.page.waitForFunction(
+      () => {
+        const nav = document.querySelector('nav')
+        return nav && nav.querySelectorAll('button').length >= 4
+      },
+      { timeout: 10000 }
+    )
+    await this.page.waitForTimeout(300)
+  }
+
+  async waitForAppReady(): Promise<void> {
+    await this.page.waitForLoadState('networkidle')
+    await this.page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+    await this.page.waitForFunction(
+      () => {
+        const loadingState = document.querySelector('[data-loading="true"]')
+        return !loadingState
+      },
+      { timeout: 10000 }
+    )
+    await this.page.waitForTimeout(500)
+    await this.ensureDatabaseInitialized()
+  }
+
+  async waitForDataToLoad(): Promise<void> {
+    await this.page.waitForTimeout(300)
+    await this.page.waitForLoadState('domcontentloaded')
+    await this.page.waitForTimeout(200)
   }
 
   async seedTransactions(count: number, accountId: number, categoryId: number): Promise<void> {
-    await this.page.evaluate(async ({ dbName, count, accountId, categoryId }) => {
-      return new Promise<void>((resolve, reject) => {
-        const request = indexedDB.open(dbName);
-        request.onsuccess = () => {
-          const db = request.result;
-          const tx = db.transaction('transactions', 'readwrite');
-          const store = tx.objectStore('transactions');
-          const now = new Date();
-          let completed = 0;
+    await this.ensureDatabaseInitialized()
+    const userId = await this.getUserId()
 
-          for (let i = 0; i < count; i++) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i); // Spread across days
-            const addRequest = store.add({
-              type: 'expense',
-              amount: 10 + i,
-              currency: 'USD',
-              date,
-              accountId,
-              categoryId,
-              comment: `Transaction ${i + 1}`,
-              createdAt: now,
-              updatedAt: now,
-            });
-            addRequest.onsuccess = () => {
-              completed++;
-              if (completed === count) {
-                db.close();
-                resolve();
-              }
-            };
-            addRequest.onerror = () => {
-              db.close();
-              reject(addRequest.error);
-            };
+    await this.page.evaluate(
+      async ({ count, accountId, categoryId, userId }) => {
+        const request = indexedDB.open('FinanceTrackerCache')
+        const db = await new Promise<IDBDatabase>((resolve, reject) => {
+          request.onsuccess = () => resolve(request.result)
+          request.onerror = () => reject(request.error)
+        })
+        const tx = db.transaction('transactions', 'readwrite')
+        const store = tx.objectStore('transactions')
+        const now = new Date()
+        const baseId = Date.now()
+
+        for (let i = 0; i < count; i++) {
+          const date = new Date(now)
+          date.setDate(date.getDate() - i)
+          store.add({
+            id: baseId + i,
+            type: 'expense',
+            amount: 10 + i,
+            currency: 'USD',
+            date,
+            accountId,
+            categoryId,
+            userId,
+            comment: `Transaction ${i + 1}`,
+            createdAt: now,
+            updatedAt: now,
+          })
+        }
+
+        await new Promise<void>((resolve, reject) => {
+          tx.oncomplete = () => {
+            db.close()
+            resolve()
           }
-        };
-        request.onerror = () => reject(request.error);
-      });
-    }, { dbName: DB_NAME, count, accountId, categoryId });
+          tx.onerror = () => {
+            db.close()
+            reject(tx.error)
+          }
+        })
+      },
+      { count, accountId, categoryId, userId }
+    )
   }
 }

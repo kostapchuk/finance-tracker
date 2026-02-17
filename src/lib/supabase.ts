@@ -22,5 +22,12 @@ export const supabase =
     : null
 
 export function isSupabaseConfigured(): boolean {
+  if (
+    typeof globalThis !== 'undefined' &&
+    (globalThis as unknown as { __TEST_SUPABASE_CONFIGURED__?: boolean })
+      .__TEST_SUPABASE_CONFIGURED__ === true
+  ) {
+    return true
+  }
   return supabase !== null
 }

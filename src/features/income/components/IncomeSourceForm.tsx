@@ -1,15 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ColorPicker } from '@/components/ui/color-picker'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -33,30 +27,24 @@ interface IncomeSourceFormProps {
   onClose: () => void
 }
 
-export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProps) {
+function IncomeSourceFormContent({
+  source,
+  onClose,
+}: {
+  source?: IncomeSource | null
+  onClose: () => void
+}) {
   const queryClient = useQueryClient()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t } = useLanguage()
 
-  const [name, setName] = useState('')
-  const [currency, setCurrency] = useState(mainCurrency)
-  const [color, setColor] = useState(getRandomColor())
-  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
-
-  useEffect(() => {
-    if (source) {
-      setName(source.name)
-      setCurrency(source.currency || mainCurrency)
-      setColor(source.color)
-      setHiddenFromDashboard(source.hiddenFromDashboard || false)
-    } else {
-      setName('')
-      setCurrency(mainCurrency)
-      setColor(getRandomColor())
-      setHiddenFromDashboard(false)
-    }
-  }, [source, open, mainCurrency])
+  const [name, setName] = useState(source?.name ?? '')
+  const [currency, setCurrency] = useState(source?.currency ?? mainCurrency)
+  const [color, setColor] = useState(source?.color ?? getRandomColor())
+  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(
+    source?.hiddenFromDashboard ?? false
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,58 +74,68 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
   }
 
   return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">{t('name')}</Label>
+        <Input
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('egSalaryFreelance')}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="currency">{t('currency')}</Label>
+        <Select value={currency} onValueChange={setCurrency}>
+          <SelectTrigger>
+            <SelectValue placeholder={t('selectCurrency')}>
+              {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {getAllCurrencies().map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                {c.symbol} {c.code} - {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t('color')}</Label>
+        <ColorPicker value={color} onChange={setColor} />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Label>{t('hideFromDashboard')}</Label>
+        <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          {t('cancel')}
+        </Button>
+        <Button type="submit">{source ? t('update') : t('create')}</Button>
+      </div>
+    </form>
+  )
+}
+
+export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProps) {
+  const { t } = useLanguage()
+  // Use key to force re-mount when source changes, ensuring initial state is reset
+  const formKey = source?.id ?? 'new'
+
+  return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{source ? t('editIncomeSource') : t('addIncomeSource')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">{t('name')}</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('egSalaryFreelance')}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="currency">{t('currency')}</Label>
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectCurrency')}>
-                  {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {getAllCurrencies().map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.symbol} {c.code} - {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t('color')}</Label>
-            <ColorPicker value={color} onChange={setColor} />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label>{t('hideFromDashboard')}</Label>
-            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit">{source ? t('update') : t('create')}</Button>
-          </DialogFooter>
-        </form>
+        <IncomeSourceFormContent key={formKey} source={source} onClose={onClose} />
       </DialogContent>
     </Dialog>
   )
