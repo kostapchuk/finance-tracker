@@ -96,7 +96,6 @@ function LoanFormContent({
       if (onSave) {
         await onSave(formData, !!loan?.id, loan?.id)
       } else {
-        // Fallback: save directly (for backward compatibility with LoanList)
         if (loan?.id) {
           await loanRepo.update(loan.id, {
             type: formData.type,
@@ -120,7 +119,7 @@ function LoanFormContent({
             dueDate: formData.dueDate,
           })
         }
-        queryClient.setQueryData(['loans'], await loanRepo.getAll())
+        queryClient.invalidateQueries({ queryKey: ['loans'] })
       }
       onClose()
     } catch (error) {

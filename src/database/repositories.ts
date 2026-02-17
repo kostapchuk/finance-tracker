@@ -830,27 +830,34 @@ function isCacheExpired(cache: ReportCache): boolean {
 }
 
 async function invalidateReportCache(transactionDate?: Date): Promise<void> {
+  const invalidateRemote = async () => {
+    if (!isSupabaseConfigured() || !navigator.onLine) return
+
+    try {
+      const promises: Promise<void>[] = []
+
+      if (transactionDate) {
+        promises.push(supabaseApi.reportCache.invalidatePeriodsAfterDate(new Date(transactionDate)))
+      }
+
+      const now = new Date()
+      const currentMonthKey = getPeriodKeyFromDate(now)
+      promises.push(supabaseApi.reportCache.deleteByPeriod(currentMonthKey))
+
+      await Promise.all(promises)
+    } catch {
+      // Ignore network errors
+    }
+  }
+
+  invalidateRemote()
+
   if (transactionDate) {
     const date = new Date(transactionDate)
     await localCache.reportCache.invalidatePeriodsAfterDate(date)
-    // Only sync to remote when online - offline operations should succeed
-    if (isSupabaseConfigured() && navigator.onLine) {
-      try {
-        await supabaseApi.reportCache.invalidatePeriodsAfterDate(date)
-      } catch {
-        // Ignore network errors in offline mode
-      }
-    }
   }
+
   const now = new Date()
   const currentMonthKey = getPeriodKeyFromDate(now)
   await localCache.reportCache.deleteByPeriod(currentMonthKey)
-  // Only sync to remote when online - offline operations should succeed
-  if (isSupabaseConfigured() && navigator.onLine) {
-    try {
-      await supabaseApi.reportCache.deleteByPeriod(currentMonthKey)
-    } catch {
-      // Ignore network errors in offline mode
-    }
-  }
 }

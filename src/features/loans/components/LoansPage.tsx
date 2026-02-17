@@ -72,7 +72,6 @@ export function LoansPage() {
 
   const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
     if (isEdit && loanId) {
-      // Edit: just update loan fields, no transaction/balance changes
       await loanRepo.update(loanId, {
         type: data.type,
         personName: data.personName,
@@ -82,8 +81,9 @@ export function LoansPage() {
         accountId: data.accountId,
         dueDate: data.dueDate,
       })
+
+      queryClient.invalidateQueries({ queryKey: ['loans'] })
     } else {
-      // Create: save loan, create transaction, update account balance
       const newLoanId = await loanRepo.create({
         type: data.type,
         personName: data.personName,
@@ -97,15 +97,11 @@ export function LoansPage() {
       })
 
       const account = accounts.find((a) => a.id === data.accountId)
-      // Amount to use for account balance update
       const balanceAmount = data.accountAmount ?? data.amount
 
-      // loan_given: you give money out → balance decreases
-      // loan_received: you receive money → balance increases
       const balanceChange = data.type === 'given' ? -balanceAmount : balanceAmount
       await accountRepo.updateBalance(data.accountId, balanceChange)
 
-      // Create transaction record
       const transactionType =
         data.type === 'given' ? ('loan_given' as const) : ('loan_received' as const)
       await transactionRepo.create({
@@ -119,11 +115,10 @@ export function LoansPage() {
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })
 
-      queryClient.setQueryData(['accounts'], await accountRepo.getAll())
-      queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
+      queryClient.invalidateQueries({ queryKey: ['loans'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
     }
-
-    queryClient.setQueryData(['loans'], await loanRepo.getAll())
   }
 
   const handleAddNew = () => {

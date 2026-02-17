@@ -43,8 +43,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
   const [amount, setAmount] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
   const [comment, setComment] = useState('')
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [selectedAccountId, setSelectedAccountId] = useState('')
 
   const isEditMode = !!editTransaction
   const selectedAccount = selectedAccountId
@@ -114,7 +113,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
     const acctId = parseInt(selectedAccountId)
 
-    setIsLoading(true)
     try {
       if (isEditMode && editTransaction?.id) {
         const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
@@ -171,14 +169,13 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         }
       }
 
-      queryClient.setQueryData(['loans'], await loanRepo.getAll())
-      queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
-      queryClient.setQueryData(['accounts'], await accountRepo.getAll())
       handleClose()
+
+      queryClient.invalidateQueries({ queryKey: ['loans'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     } catch (error) {
       console.error('Failed to record payment:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -194,17 +191,16 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     if (!loan?.id) return
     if (!confirm(t('deleteLoan'))) return
 
-    setIsLoading(true)
     try {
       await deleteLoanWithTransactions(loan)
-      queryClient.setQueryData(['loans'], await loanRepo.getAll())
-      queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
-      queryClient.setQueryData(['accounts'], await accountRepo.getAll())
+
       handleClose()
+
+      queryClient.invalidateQueries({ queryKey: ['loans'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     } catch (error) {
       console.error('Failed to delete loan:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -224,7 +220,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           </DialogHeader>
           <button
             onClick={handleDelete}
-            disabled={isLoading}
             className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
             aria-label={t('delete')}
           >
@@ -374,7 +369,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             <Button
               type="submit"
               disabled={
-                isLoading ||
                 !amount ||
                 !selectedAccountId ||
                 (!!isMultiCurrency && !accountAmount) ||
@@ -382,7 +376,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
               }
               className="flex-1 sm:flex-none"
             >
-              {isLoading ? t('recording') : isEditMode ? t('update') : t('recordPayment')}
+              {isEditMode ? t('update') : t('recordPayment')}
             </Button>
           </DialogFooter>
         </form>

@@ -400,35 +400,29 @@ export function QuickTransactionModal({
     const today = new Date().toISOString().split('T')[0]
     const transactionDate = date === today ? new Date() : new Date(date + 'T12:00:00')
 
-    // For multi-currency transfer, also need target amount
     if (isMultiCurrencyTransfer) {
       const numTargetAmount = parseFloat(targetAmount)
       if (isNaN(numTargetAmount) || numTargetAmount <= 0) return
     }
 
-    // For multi-currency income/expense, also need mainCurrency amount
     if (isMultiCurrencyIncomeExpense) {
       const numTargetAmount = parseFloat(targetAmount)
       if (isNaN(numTargetAmount) || numTargetAmount <= 0) return
     }
 
-    // For income with different account currency, also need account amount
     if (needsAccountConversion) {
       const numAccountAmount = parseFloat(accountAmount)
       if (isNaN(numAccountAmount) || numAccountAmount <= 0) return
     }
 
-    // For income/expense, we need a selected account
     if (mode.type !== 'transfer' && !selectedAccountId) return
 
     try {
-      // If editing, first reverse the old transaction's balance effects
       if (isEditMode && editTransaction) {
         await reverseTransactionBalance(editTransaction, loans)
       }
 
       if (mode.type === 'transfer') {
-        // Handle transfer between accounts - single transaction record
         const numTargetAmount = isMultiCurrencyTransfer ? parseFloat(targetAmount) : numAmount
 
         const transactionData = {
@@ -448,44 +442,32 @@ export function QuickTransactionModal({
           await transactionRepo.create(transactionData)
         }
 
-        // Update balances
         await accountRepo.updateBalance(fromAccountId!, -numAmount)
         await accountRepo.updateBalance(toAccountId!, numTargetAmount)
       } else {
-        // Handle income/expense
         const account = accounts.find((a) => a.id === selectedAccountId)
         if (!account) return
 
         if (mode.type === 'income') {
-          // Income handling:
-          // - amount = source currency (what you earned, for tile display)
-          // - mainCurrencyAmount = main currency (for totals)
-          // - account balance = accountAmount if account != source, else use amount
           const incomeSource = selectedSource || mode.source
-          const sourceAmount = numAmount // source currency
-          const balanceAmount = needsAccountConversion
-            ? parseFloat(accountAmount) // account currency if different from source
-            : numAmount // same as source if currencies match
+          const sourceAmount = numAmount
+          const balanceAmount = needsAccountConversion ? parseFloat(accountAmount) : numAmount
 
-          // Determine mainCurrencyAmount:
-          // - If source == mainCurrency: no conversion needed (undefined)
-          // - If account == mainCurrency: balanceAmount IS the mainCurrency amount
-          // - Otherwise: use the separate targetAmount field
           const sourceIsMain = incomeSource.currency === mainCurrency
           const accountIsMain = account.currency === mainCurrency
           let storedMainCurrencyAmount: number | undefined
           if (sourceIsMain) {
-            storedMainCurrencyAmount = undefined // source is already main currency
+            storedMainCurrencyAmount = undefined
           } else if (accountIsMain) {
-            storedMainCurrencyAmount = balanceAmount // account amount = main currency amount
+            storedMainCurrencyAmount = balanceAmount
           } else if (isMultiCurrencyIncome) {
-            storedMainCurrencyAmount = parseFloat(targetAmount) // separate field
+            storedMainCurrencyAmount = parseFloat(targetAmount)
           }
 
           const transactionData = {
             type: 'income' as const,
-            amount: sourceAmount, // source currency amount for display
-            currency: incomeSource.currency, // income source currency
+            amount: sourceAmount,
+            currency: incomeSource.currency,
             date: transactionDate,
             comment: comment || undefined,
             accountId: selectedAccountId,
@@ -499,12 +481,8 @@ export function QuickTransactionModal({
             await transactionRepo.create(transactionData)
           }
 
-          // Update account balance
           await accountRepo.updateBalance(selectedAccountId!, balanceAmount)
         } else {
-          // Expense handling:
-          // - amount = account currency
-          // - mainCurrencyAmount = main currency (for budgets)
           const expenseCategory = selectedCategory || mode.category
           const transactionAmount = numAmount
           const storedMainCurrencyAmount = isMultiCurrencyExpense
@@ -528,17 +506,14 @@ export function QuickTransactionModal({
             await transactionRepo.create(transactionData)
           }
 
-          // Update account balance
           await accountRepo.updateBalance(selectedAccountId!, -transactionAmount)
         }
       }
 
-      const newTransactions = await transactionRepo.getAll()
-      const newAccounts = await accountRepo.getAll()
-      queryClient.setQueryData(['transactions'], newTransactions)
-      queryClient.setQueryData(['accounts'], newAccounts)
-
       onClose()
+
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     } catch (error) {
       console.error('Failed to save transaction:', error)
     }

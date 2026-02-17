@@ -52,7 +52,7 @@ export function LoanList() {
     if (!confirm(`Delete loan for "${loan.personName}"? This cannot be undone.`)) return
 
     await loanRepo.delete(loan.id)
-    queryClient.setQueryData(['loans'], await loanRepo.getAll())
+    queryClient.invalidateQueries({ queryKey: ['loans'] })
   }
 
   const handleCloseForm = () => {
