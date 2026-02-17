@@ -1,3 +1,4 @@
+import { QueryClient } from '@tanstack/react-query'
 import React from 'react'
 
 import { localCache } from './localCache'
@@ -17,7 +18,16 @@ import type {
 
 import { isSupabaseConfigured } from '@/lib/supabase'
 
+// QueryClient instance for invalidating React Query cache after sync
+let queryClient: QueryClient | null = null
+
+export function setSyncQueryClient(client: QueryClient): void {
+  queryClient = client
+}
+
 const MAX_RETRIES = 3
+const INITIAL_RETRY_DELAY = 5000
+const MAX_RETRY_DELAY = 300000
 
 type SyncStatus = 'idle' | 'syncing' | 'error' | 'success'
 
@@ -39,11 +49,16 @@ class SyncService {
   }
 
   private listeners = new Set<SyncListener>()
+  private retryTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor() {
     if (typeof globalThis !== 'undefined') {
       globalThis.addEventListener('online', () => this.syncAll())
+      globalThis.addEventListener('focus', () => {
+        if (navigator.onLine) this.syncAll()
+      })
       this.loadLastSyncTime()
+      this.scheduleBackgroundSync()
     }
   }
 
@@ -56,6 +71,58 @@ class SyncService {
 
   private saveLastSyncTime() {
     localStorage.setItem('finance-tracker-last-sync', new Date().toISOString())
+  }
+
+  private calculateBackoffDelay(attempts: number): number {
+    const delay = Math.min(INITIAL_RETRY_DELAY * 2 ** attempts, MAX_RETRY_DELAY)
+    return delay + Math.random() * 1000
+  }
+
+  private scheduleBackgroundSync(): void {
+    if (this.retryTimer) {
+      clearTimeout(this.retryTimer)
+      this.retryTimer = null
+    }
+
+    const checkAndSync = async () => {
+      if (!navigator.onLine) {
+        this.scheduleBackgroundSync()
+        return
+      }
+
+      const pendingCount = await this.getPendingCount()
+      if (pendingCount > 0) {
+        this.syncAll()
+      }
+    }
+
+    this.getPendingCount().then((count) => {
+      if (count === 0) {
+        this.retryTimer = setTimeout(checkAndSync, MAX_RETRY_DELAY)
+        return
+      }
+
+      localCache.syncQueue.getAll().then((items) => {
+        const now = new Date()
+        let minDelay = MAX_RETRY_DELAY
+
+        for (const item of items) {
+          if (item.attempts >= MAX_RETRIES) continue
+
+          const lastAttempt = item.lastAttemptAt ? new Date(item.lastAttemptAt) : null
+          const elapsed = lastAttempt ? now.getTime() - lastAttempt.getTime() : MAX_RETRY_DELAY
+
+          const backoffDelay = this.calculateBackoffDelay(item.attempts)
+          const remainingDelay = Math.max(0, backoffDelay - elapsed)
+
+          if (remainingDelay < minDelay) {
+            minDelay = remainingDelay
+          }
+        }
+
+        this.retryTimer = setTimeout(checkAndSync, minDelay)
+      })
+    })
   }
 
   getState(): SyncState {
@@ -72,6 +139,19 @@ class SyncService {
   private updateState(updates: Partial<SyncState>) {
     this.state = { ...this.state, ...updates }
     this.listeners.forEach((listener) => listener(this.state))
+  }
+
+  private invalidateQueries(): void {
+    if (!queryClient) return
+
+    // Invalidate all relevant query keys to refresh UI after sync
+    queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    queryClient.invalidateQueries({ queryKey: ['incomeSources'] })
+    queryClient.invalidateQueries({ queryKey: ['categories'] })
+    queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    queryClient.invalidateQueries({ queryKey: ['loans'] })
+    queryClient.invalidateQueries({ queryKey: ['settings'] })
+    queryClient.invalidateQueries({ queryKey: ['customCurrencies'] })
   }
 
   async syncAll(): Promise<void> {
@@ -211,10 +291,16 @@ class SyncService {
       const remainingCount = await localCache.syncQueue.getCount()
       this.updateState({ status: 'success', lastSyncAt: new Date(), pendingCount: remainingCount })
 
+      // Invalidate React Query cache so UI reflects sync changes
+      this.invalidateQueries()
+
       await supabaseApi.reportCache.deleteExpired()
+
+      this.scheduleBackgroundSync()
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       this.updateState({ status: 'error', error: errorMessage })
+      this.scheduleBackgroundSync()
     }
   }
 

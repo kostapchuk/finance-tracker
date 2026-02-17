@@ -98,6 +98,11 @@ import type { Language } from '@/utils/i18n'
 
 type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | null
 
+// Helper to generate temp IDs for imported data (matches repositories.ts pattern)
+function generateTempId(): string {
+  return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+}
+
 export function SettingsPage() {
   const { data: accounts = [] } = useAccounts()
   const { data: incomeSources = [] } = useIncomeSources()
@@ -253,57 +258,121 @@ export function SettingsPage() {
 
       await localCache.clearAll()
 
+      const userId = getUserId()
+
+      // Generate ID mappings (old ID → new temp ID)
+      const accountIdMap = new Map<number | undefined, string>()
+      const incomeSourceIdMap = new Map<number | undefined, string>()
+      const categoryIdMap = new Map<number | undefined, string>()
+      const loanIdMap = new Map<number | undefined, string>()
+
+      // Import accounts with new IDs
       if (data.accounts?.length) {
-        await localCache.accounts.putAll(
-          data.accounts.map((a: Record<string, unknown>) => ({
+        const accountsToImport = data.accounts.map((a: Record<string, unknown>) => {
+          const oldId = a.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            accountIdMap.set(oldId, newId)
+          }
+          return {
             ...a,
-            id: undefined,
+            id: newId as unknown as number,
+            userId,
             createdAt: new Date(a.createdAt as string),
             updatedAt: new Date(a.updatedAt as string),
-          })) as Account[]
-        )
+          } as Account
+        })
+        await localCache.accounts.putAll(accountsToImport)
       }
+
+      // Import income sources with new IDs
       if (data.incomeSources?.length) {
-        await localCache.incomeSources.putAll(
-          data.incomeSources.map((s: Record<string, unknown>) => ({
+        const sourcesToImport = data.incomeSources.map((s: Record<string, unknown>) => {
+          const oldId = s.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            incomeSourceIdMap.set(oldId, newId)
+          }
+          return {
             ...s,
-            id: undefined,
+            id: newId as unknown as number,
+            userId,
             createdAt: new Date(s.createdAt as string),
             updatedAt: new Date(s.updatedAt as string),
-          })) as IncomeSource[]
-        )
+          } as IncomeSource
+        })
+        await localCache.incomeSources.putAll(sourcesToImport)
       }
+
+      // Import categories with new IDs
       if (data.categories?.length) {
-        await localCache.categories.putAll(
-          data.categories.map((c: Record<string, unknown>) => ({
+        const categoriesToImport = data.categories.map((c: Record<string, unknown>) => {
+          const oldId = c.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            categoryIdMap.set(oldId, newId)
+          }
+          return {
             ...c,
-            id: undefined,
+            id: newId as unknown as number,
+            userId,
             createdAt: new Date(c.createdAt as string),
             updatedAt: new Date(c.updatedAt as string),
-          })) as Category[]
-        )
+          } as Category
+        })
+        await localCache.categories.putAll(categoriesToImport)
       }
-      if (data.transactions?.length) {
-        await localCache.transactions.putAll(
-          data.transactions.map((t: Record<string, unknown>) => ({
-            ...t,
-            id: undefined,
-            date: new Date(t.date as string),
-            createdAt: new Date(t.createdAt as string),
-            updatedAt: new Date(t.updatedAt as string),
-          })) as Transaction[]
-        )
-      }
+
+      // Import loans with new IDs
       if (data.loans?.length) {
-        await localCache.loans.putAll(
-          data.loans.map((l: Record<string, unknown>) => ({
+        const loansToImport = data.loans.map((l: Record<string, unknown>) => {
+          const oldId = l.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            loanIdMap.set(oldId, newId)
+          }
+          return {
             ...l,
-            id: undefined,
+            id: newId as unknown as number,
+            userId,
+            accountId: l.accountId
+              ? (accountIdMap.get(l.accountId as number) as unknown as number)
+              : undefined,
             dueDate: l.dueDate ? new Date(l.dueDate as string) : undefined,
             createdAt: new Date(l.createdAt as string),
             updatedAt: new Date(l.updatedAt as string),
-          })) as Loan[]
-        )
+          } as Loan
+        })
+        await localCache.loans.putAll(loansToImport)
+      }
+
+      // Import transactions with new IDs and updated references
+      if (data.transactions?.length) {
+        const transactionsToImport = data.transactions.map((t: Record<string, unknown>) => {
+          const newId = generateTempId()
+          return {
+            ...t,
+            id: newId as unknown as number,
+            userId,
+            accountId: t.accountId
+              ? (accountIdMap.get(t.accountId as number) as unknown as number)
+              : undefined,
+            toAccountId: t.toAccountId
+              ? (accountIdMap.get(t.toAccountId as number) as unknown as number)
+              : undefined,
+            categoryId: t.categoryId
+              ? (categoryIdMap.get(t.categoryId as number) as unknown as number)
+              : undefined,
+            incomeSourceId: t.incomeSourceId
+              ? (incomeSourceIdMap.get(t.incomeSourceId as number) as unknown as number)
+              : undefined,
+            loanId: t.loanId ? (loanIdMap.get(t.loanId as number) as unknown as number) : undefined,
+            date: new Date(t.date as string),
+            createdAt: new Date(t.createdAt as string),
+            updatedAt: new Date(t.updatedAt as string),
+          } as Transaction
+        })
+        await localCache.transactions.putAll(transactionsToImport)
       }
 
       await loadAllData()
