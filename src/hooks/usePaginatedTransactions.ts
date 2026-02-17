@@ -196,21 +196,20 @@ export function usePaginatedTransactions(
 
   const filterKey = useMemo(() => JSON.stringify(filterOptions), [filterOptions])
 
-  // Track transactions by their IDs to detect changes
-  // Use count + first ID + last ID to efficiently detect additions/deletions
-  // This avoids truncation issues with many transactions or long temp IDs
+  // Track transactions by their content to detect ANY changes
+  // This includes IDs, amounts, comments, dates, etc.
   const transactionKey = useMemo(() => {
     const count = initialTransactions.length
-    const firstId = count > 0 ? initialTransactions[0].id : ''
-    const lastId = count > 0 ? initialTransactions[count - 1].id : ''
-    // Also include a hash of all IDs to detect reordering or middle insertions
-    const allIds = initialTransactions.map((t) => t.id).join(',')
+    // Hash all transaction content, not just IDs
+    const content = initialTransactions
+      .map((t) => `${t.id}:${t.amount}:${t.comment}:${t.date}:${t.mainCurrencyAmount}`)
+      .join('|')
     let hash = 0
-    for (let i = 0; i < allIds.length; i++) {
-      const char = allIds.codePointAt(i) ?? 0
+    for (let i = 0; i < content.length; i++) {
+      const char = content.codePointAt(i) ?? 0
       hash = Math.trunc((hash << 5) - hash + char)
     }
-    return `${count}-${firstId}-${lastId}-${hash}`
+    return `${count}-${hash}`
   }, [initialTransactions])
 
   useEffect(() => {

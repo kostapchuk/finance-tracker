@@ -4,6 +4,7 @@ import { reportCacheRepo, transactionRepo } from './repositories'
 
 const mockTransactionDelete = vi.fn()
 const mockTransactionGetById = vi.fn()
+const mockTransactionPut = vi.fn()
 const mockReportCacheInvalidate = vi.fn()
 const mockReportCacheDeleteByPeriod = vi.fn()
 const mockSyncQueueDeleteByRecordId = vi.fn()
@@ -11,7 +12,7 @@ const mockSyncQueueDeleteByRecordId = vi.fn()
 vi.mock('./localCache', () => ({
   localCache: {
     transactions: {
-      put: vi.fn(),
+      put: (tx: unknown) => mockTransactionPut(tx),
       delete: (id: number | string) => mockTransactionDelete(id),
       getById: (id: number | string) => mockTransactionGetById(id),
     },
@@ -127,6 +128,85 @@ describe('repositories offline handling', () => {
 
       // Should queue sync operation for numeric IDs
       expect(mockQueueOperation).toHaveBeenCalledWith('delete', 'transactions', numericId)
+
+      // Should NOT remove from sync queue for numeric IDs
+      expect(mockSyncQueueDeleteByRecordId).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('transactionRepo.update', () => {
+    it('updates transaction with temp ID in local cache', async () => {
+      const tempId = 'temp_12345_abc123'
+      const originalDate = new Date('2024-01-15')
+
+      // Mock the transaction exists
+      mockTransactionGetById.mockResolvedValue({
+        id: tempId,
+        type: 'expense',
+        amount: 100,
+        currency: 'USD',
+        date: originalDate,
+        accountId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      const updates = { amount: 200, comment: 'Updated' }
+      await transactionRepo.update(tempId, updates)
+
+      // Should update the transaction in local cache
+      expect(mockTransactionPut).toHaveBeenCalled()
+      const putArg = mockTransactionPut.mock.calls[0][0]
+      expect(putArg.amount).toBe(200)
+      expect(putArg.comment).toBe('Updated')
+      expect(putArg.id).toBe(tempId)
+
+      // Should remove old pending create and queue new one with updated data
+      expect(mockSyncQueueDeleteByRecordId).toHaveBeenCalledWith(tempId)
+      expect(mockQueueOperation).toHaveBeenCalledWith(
+        'create',
+        'transactions',
+        tempId,
+        expect.objectContaining({ amount: 200 })
+      )
+
+      // Should NOT call queueOperation with 'update' for temp IDs
+      expect(mockQueueOperation).not.toHaveBeenCalledWith(
+        'update',
+        expect.anything(),
+        expect.anything(),
+        expect.anything()
+      )
+    })
+
+    it('updates transaction with numeric ID and queues sync update', async () => {
+      const numericId = 42
+      const originalDate = new Date('2024-01-15')
+
+      // Mock the transaction exists
+      mockTransactionGetById.mockResolvedValue({
+        id: numericId,
+        type: 'expense',
+        amount: 100,
+        currency: 'USD',
+        date: originalDate,
+        accountId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+
+      const updates = { amount: 200, comment: 'Updated' }
+      await transactionRepo.update(numericId, updates)
+
+      // Should update the transaction in local cache
+      expect(mockTransactionPut).toHaveBeenCalled()
+      const putArg = mockTransactionPut.mock.calls[0][0]
+      expect(putArg.amount).toBe(200)
+      expect(putArg.comment).toBe('Updated')
+      expect(putArg.id).toBe(numericId)
+
+      // Should queue sync operation for numeric IDs
+      expect(mockQueueOperation).toHaveBeenCalledWith('update', 'transactions', numericId, updates)
 
       // Should NOT remove from sync queue for numeric IDs
       expect(mockSyncQueueDeleteByRecordId).not.toHaveBeenCalled()

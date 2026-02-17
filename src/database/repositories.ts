@@ -66,9 +66,9 @@ export const accountRepo = {
     updates: Partial<Omit<Account, 'id' | 'createdAt' | 'userId'>>
   ): Promise<void> {
     const numericId = getNumericId(id)
-    if (!numericId) return
 
-    const cached = await localCache.accounts.getById(numericId)
+    // Get cached account (works for both numeric and temp IDs)
+    const cached = await localCache.accounts.getById(id)
     if (!cached) return
 
     const updatedAccount: Account = {
@@ -78,22 +78,45 @@ export const accountRepo = {
     }
     await localCache.accounts.put(updatedAccount)
 
-    syncService.queueOperation(
-      'update',
-      'accounts',
-      numericId,
-      updates as unknown as Record<string, unknown>
-    )
+    if (numericId) {
+      // For real IDs, queue an update operation to sync to remote
+      syncService.queueOperation(
+        'update',
+        'accounts',
+        numericId,
+        updates as unknown as Record<string, unknown>
+      )
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, update the pending create operation in sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
+      syncService.queueOperation(
+        'create',
+        'accounts',
+        id,
+        updatedAccount as unknown as Record<string, unknown>
+      )
+    }
   },
 
   async updateBalance(id: number | string, amount: number): Promise<void> {
-    const numericId = getNumericId(id)
-    if (!numericId) return
-
-    const account = await localCache.accounts.getById(numericId)
+    const account = await localCache.accounts.getById(id)
     if (!account) return
 
-    await this.update(numericId, { balance: account.balance + amount })
+    const updatedAccount: Account = {
+      ...account,
+      balance: account.balance + amount,
+      updatedAt: new Date(),
+    }
+    await localCache.accounts.put(updatedAccount)
+
+    const numericId = getNumericId(id)
+    if (numericId) {
+      syncService.queueOperation('update', 'accounts', numericId, {
+        balance: account.balance + amount,
+      } as unknown as Record<string, unknown>)
+    }
+    // For temp IDs, the balance is already updated locally
+    // No need to sync since sync is either disabled or the account will be synced later
   },
 
   async delete(id: number | string): Promise<void> {
@@ -167,9 +190,9 @@ export const incomeSourceRepo = {
     updates: Partial<Omit<IncomeSource, 'id' | 'createdAt' | 'userId'>>
   ): Promise<void> {
     const numericId = getNumericId(id)
-    if (!numericId) return
 
-    const cached = await localCache.incomeSources.getById(numericId)
+    // Get cached income source (works for both numeric and temp IDs)
+    const cached = await localCache.incomeSources.getById(id as number)
     if (!cached) return
 
     const updatedSource: IncomeSource = {
@@ -179,12 +202,24 @@ export const incomeSourceRepo = {
     }
     await localCache.incomeSources.put(updatedSource)
 
-    syncService.queueOperation(
-      'update',
-      'incomeSources',
-      numericId,
-      updates as unknown as Record<string, unknown>
-    )
+    if (numericId) {
+      // For real IDs, queue an update operation to sync to remote
+      syncService.queueOperation(
+        'update',
+        'incomeSources',
+        numericId,
+        updates as unknown as Record<string, unknown>
+      )
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, update the pending create operation in sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
+      syncService.queueOperation(
+        'create',
+        'incomeSources',
+        id,
+        updatedSource as unknown as Record<string, unknown>
+      )
+    }
   },
 
   async delete(id: number | string): Promise<void> {
@@ -240,9 +275,9 @@ export const categoryRepo = {
     updates: Partial<Omit<Category, 'id' | 'createdAt' | 'userId'>>
   ): Promise<void> {
     const numericId = getNumericId(id)
-    if (!numericId) return
 
-    const cached = await localCache.categories.getById(numericId)
+    // Get cached category (works for both numeric and temp IDs)
+    const cached = await localCache.categories.getById(id as number)
     if (!cached) return
 
     const updatedCategory: Category = {
@@ -252,12 +287,24 @@ export const categoryRepo = {
     }
     await localCache.categories.put(updatedCategory)
 
-    syncService.queueOperation(
-      'update',
-      'categories',
-      numericId,
-      updates as unknown as Record<string, unknown>
-    )
+    if (numericId) {
+      // For real IDs, queue an update operation to sync to remote
+      syncService.queueOperation(
+        'update',
+        'categories',
+        numericId,
+        updates as unknown as Record<string, unknown>
+      )
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, update the pending create operation in sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
+      syncService.queueOperation(
+        'create',
+        'categories',
+        id,
+        updatedCategory as unknown as Record<string, unknown>
+      )
+    }
   },
 
   async delete(id: number | string): Promise<void> {
@@ -439,9 +486,9 @@ export const transactionRepo = {
     updates: Partial<Omit<Transaction, 'id' | 'createdAt' | 'userId'>>
   ): Promise<void> {
     const numericId = getNumericId(id)
-    if (!numericId) return
 
-    const cached = await localCache.transactions.getById(numericId)
+    // Get cached transaction (works for both numeric and temp IDs)
+    const cached = await localCache.transactions.getById(id)
     if (!cached) return
 
     const updatedTransaction: Transaction = {
@@ -451,12 +498,24 @@ export const transactionRepo = {
     }
     await localCache.transactions.put(updatedTransaction)
 
-    syncService.queueOperation(
-      'update',
-      'transactions',
-      numericId,
-      updates as unknown as Record<string, unknown>
-    )
+    if (numericId) {
+      // For real IDs, queue an update operation to sync to remote
+      syncService.queueOperation(
+        'update',
+        'transactions',
+        numericId,
+        updates as unknown as Record<string, unknown>
+      )
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, update the pending create operation in sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
+      syncService.queueOperation(
+        'create',
+        'transactions',
+        id,
+        updatedTransaction as unknown as Record<string, unknown>
+      )
+    }
 
     await invalidateReportCache(cached.date)
     if (updates.date) {
@@ -726,9 +785,9 @@ export const customCurrencyRepo = {
     updates: Partial<Omit<CustomCurrency, 'id' | 'createdAt' | 'userId'>>
   ): Promise<void> {
     const numericId = getNumericId(id)
-    if (!numericId) return
 
-    const cached = await localCache.customCurrencies.getById(numericId)
+    // Get cached currency (works for both numeric and temp IDs)
+    const cached = await localCache.customCurrencies.getById(id as number)
     if (!cached) return
 
     const updatedCurrency: CustomCurrency = {
@@ -738,12 +797,24 @@ export const customCurrencyRepo = {
     }
     await localCache.customCurrencies.put(updatedCurrency)
 
-    syncService.queueOperation(
-      'update',
-      'customCurrencies',
-      numericId,
-      updates as unknown as Record<string, unknown>
-    )
+    if (numericId) {
+      // For real IDs, queue an update operation to sync to remote
+      syncService.queueOperation(
+        'update',
+        'customCurrencies',
+        numericId,
+        updates as unknown as Record<string, unknown>
+      )
+    } else if (typeof id === 'string' && id.startsWith('temp_')) {
+      // For temp IDs, update the pending create operation in sync queue
+      await localCache.syncQueue.deleteByRecordId(id)
+      syncService.queueOperation(
+        'create',
+        'customCurrencies',
+        id,
+        updatedCurrency as unknown as Record<string, unknown>
+      )
+    }
   },
 
   async delete(id: number | string): Promise<void> {

@@ -47,8 +47,8 @@ export const localCache = {
       )
     },
 
-    async getById(id: number): Promise<Account | undefined> {
-      return db.accounts.get(id)
+    async getById(id: number | string): Promise<Account | undefined> {
+      return db.accounts.get(id as number)
     },
 
     async put(account: Account): Promise<void> {

@@ -840,6 +840,7 @@ export function HistoryPage() {
       {/* Edit Modals */}
       {editModalType === 'quick' && editTransactionMode && editingTransaction && (
         <QuickTransactionModal
+          key={editingTransaction.id}
           mode={editTransactionMode}
           accounts={accounts}
           preselectedAccountId={editingTransaction.accountId}
@@ -852,6 +853,7 @@ export function HistoryPage() {
 
       {editModalType === 'loan' && editingLoan && (
         <LoanForm
+          key={editingLoan.id}
           loan={editingLoan}
           open={true}
           onClose={handleCloseEditModal}
@@ -861,6 +863,7 @@ export function HistoryPage() {
 
       {editModalType === 'payment' && editingLoan && editingTransaction && (
         <PaymentDialog
+          key={editingTransaction.id}
           loan={editingLoan}
           open={true}
           onClose={handleCloseEditModal}
