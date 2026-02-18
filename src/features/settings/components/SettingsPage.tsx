@@ -151,7 +151,8 @@ export function SettingsPage() {
   }, [])
 
   const handleVersionClick = useCallback(() => {
-    if (cloudUnlocked) return
+    // If both cloud is unlocked and migration is complete, no action needed
+    if (cloudUnlocked && migrationComplete) return
 
     const now = Date.now()
 
@@ -163,8 +164,11 @@ export function SettingsPage() {
       setVersionClickCount(newCount)
 
       if (newCount >= 5) {
-        setCloudUnlocked()
-        setCloudUnlockedState(true)
+        // Only set cloud unlocked if not already
+        if (!cloudUnlocked) {
+          setCloudUnlocked()
+          setCloudUnlockedState(true)
+        }
         setVersionClickCount(0)
         setFirstClickTime(null)
         showMigrationDialogManually().then(() => {
@@ -172,7 +176,13 @@ export function SettingsPage() {
         })
       }
     }
-  }, [cloudUnlocked, firstClickTime, versionClickCount, showMigrationDialogManually])
+  }, [
+    cloudUnlocked,
+    migrationComplete,
+    firstClickTime,
+    versionClickCount,
+    showMigrationDialogManually,
+  ])
 
   // Drag-to-reorder sensors
   const reorderSensors = useSensors(
@@ -963,12 +973,12 @@ export function SettingsPage() {
         <button
           type="button"
           onClick={handleVersionClick}
-          className={`text-inherit ${cloudUnlocked ? 'text-primary' : ''}`}
+          className={`text-inherit ${cloudUnlocked && migrationComplete ? 'text-primary' : ''}`}
         >
           Finance Tracker v{version}
         </button>
         <p>
-          {isSupabaseConfigured() && cloudUnlocked
+          {isSupabaseConfigured() && cloudUnlocked && migrationComplete
             ? t('dataStoredInCloud')
             : t('dataStoredLocally')}
         </p>

@@ -98,6 +98,10 @@ export const localCache = {
     async clear(): Promise<void> {
       await db.accounts.clear()
     },
+
+    async count(): Promise<number> {
+      return db.accounts.count()
+    },
   },
 
   incomeSources: {
@@ -126,6 +130,10 @@ export const localCache = {
 
     async clear(): Promise<void> {
       await db.incomeSources.clear()
+    },
+
+    async count(): Promise<number> {
+      return db.incomeSources.count()
     },
   },
 
@@ -253,6 +261,10 @@ export const localCache = {
 
       const idsToKeep = new Set(itemsToKeep.map((t) => t.id))
       await db.transactions.filter((t) => !idsToKeep.has(t.id)).delete()
+    },
+
+    async count(): Promise<number> {
+      return db.transactions.count()
     },
   },
 

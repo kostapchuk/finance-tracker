@@ -77,10 +77,12 @@ function DialogTrigger({ children, asChild }: DialogTriggerProps) {
 interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
   hideClose?: boolean
+  /** When true, prevents closing by clicking backdrop or pressing Escape */
+  modal?: boolean
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, hideClose, ...props }, ref) => {
+  ({ className, children, hideClose, modal = false, ...props }, ref) => {
     const { open, onOpenChange, titleId } = useDialog()
     const dialogRef = React.useRef<HTMLDivElement>(null)
     const previousActiveElement = React.useRef<Element | null>(null)
@@ -108,6 +110,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     // Escape key handler
     React.useEffect(() => {
+      if (modal) return // Don't add escape handler for modal dialogs
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape' && open) {
           onOpenChange(false)
@@ -117,7 +120,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       return () => {
         document.removeEventListener('keydown', handleKeyDown)
       }
-    }, [open, onOpenChange])
+    }, [open, onOpenChange, modal])
 
     // Focus trap handler
     const handleTabTrap = (e: React.KeyboardEvent) => {
@@ -144,7 +147,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div className="fixed inset-0 z-[60]">
         {/* Backdrop - click to close */}
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-        <div className="fixed inset-0 bg-black/80" onClick={() => onOpenChange(false)} />
+        <div className="fixed inset-0 bg-black/80" onClick={() => !modal && onOpenChange(false)} />
         <div className="fixed inset-x-4 top-[50%] z-[60] translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div

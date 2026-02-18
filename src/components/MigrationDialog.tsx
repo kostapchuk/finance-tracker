@@ -10,7 +10,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 
 export function MigrationDialog() {
-  const { migration, startMigration, skipMigration, dismissMigrationDialog } = useAppStore()
+  const { migration, startMigration, dismissMigrationDialog } = useAppStore()
   const { t } = useLanguage()
 
   if (!migration.showMigrationDialog) return null
@@ -20,18 +20,13 @@ export function MigrationDialog() {
     startMigration()
   }
 
-  const handleStartFresh = () => {
-    if (!confirm(`${t('startFreshConfirmTitle')}\n\n${t('startFreshConfirmMessage')}`)) return
-    skipMigration()
-  }
-
   const handleDismiss = () => {
     dismissMigrationDialog()
   }
 
   return (
-    <Dialog open={migration.showMigrationDialog} onOpenChange={() => handleDismiss()}>
-      <DialogContent className="max-w-md">
+    <Dialog open={migration.showMigrationDialog} onOpenChange={() => {}}>
+      <DialogContent className="max-w-md" hideClose modal>
         <DialogHeader>
           <DialogTitle>{t('migrateDialogTitle')}</DialogTitle>
         </DialogHeader>
@@ -82,36 +77,26 @@ export function MigrationDialog() {
         </div>
 
         {!migration.isMigrating && !migration.migrationError && (
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
-            <button
-              onClick={handleDismiss}
-              className={cn(
-                'inline-flex items-center justify-center rounded-md text-sm font-medium',
-                'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-                'h-10 px-4 py-2 w-full sm:w-auto'
-              )}
-            >
-              {t('migrateLater')}
-            </button>
-            <button
-              onClick={handleStartFresh}
-              className={cn(
-                'inline-flex items-center justify-center rounded-md text-sm font-medium',
-                'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-                'h-10 px-4 py-2 w-full sm:w-auto'
-              )}
-            >
-              {t('startFresh')}
-            </button>
+          <DialogFooter className="flex-col gap-4">
             <button
               onClick={handleMigrate}
               className={cn(
                 'inline-flex items-center justify-center rounded-md text-sm font-medium',
                 'bg-primary text-primary-foreground hover:bg-primary/90',
-                'h-10 px-4 py-2 w-full sm:w-auto'
+                'h-10 px-4 py-2 w-full'
               )}
             >
               {t('migrateData')}
+            </button>
+            <button
+              onClick={handleDismiss}
+              className={cn(
+                'inline-flex items-center justify-center rounded-md text-sm font-medium',
+                'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+                'h-10 px-4 py-2 w-full'
+              )}
+            >
+              {t('migrateLater')}
             </button>
           </DialogFooter>
         )}

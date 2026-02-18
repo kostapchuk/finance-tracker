@@ -380,8 +380,7 @@ const lazyTranslations = {
     retry: 'Retry',
     migrationFoundData:
       'We found existing data on your device. Would you like to migrate it to the cloud for syncing across devices?',
-    migrationNote:
-      'Note: This will upload your data to Supabase. You can also start fresh if preferred.',
+    migrationNote: 'Note: This will upload your data to Supabase for cloud syncing.',
     startFresh: 'Start Fresh',
     migrateData: 'Migrate Data',
     migrateLater: 'Not now',
@@ -640,8 +639,7 @@ const lazyTranslations = {
     retry: 'Повторить',
     migrationFoundData:
       'Мы нашли существующие данные на вашем устройстве. Хотите перенести их в облако для синхронизации между устройствами?',
-    migrationNote:
-      'Примечание: Это загрузит ваши данные в Supabase. Вы также можете начать сначала.',
+    migrationNote: 'Примечание: Это загрузит ваши данные в Supabase для облачной синхронизации.',
     startFresh: 'Начать сначала',
     migrateData: 'Перенести данные',
     migrateLater: 'Не сейчас',

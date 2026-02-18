@@ -108,34 +108,10 @@ export const useAppStore = create<AppState>((set) => ({
       const mainCurrency = settings?.defaultCurrency || 'BYN'
       const blurFinancialFigures = settings?.blurFinancialFigures || false
 
-      const migrationComplete = isMigrationComplete()
-      const hasExistingLocalData = await hasLocalData()
-
-      if (
-        !migrationComplete &&
-        hasExistingLocalData &&
-        isSupabaseConfigured() &&
-        isCloudUnlocked()
-      ) {
-        set({
-          isLoading: false,
-          mainCurrency,
-          blurFinancialFigures,
-          migration: {
-            showMigrationDialog: true,
-            isMigrating: false,
-            migrationProgress: null,
-            migrationError: null,
-          },
-        })
-        isInitializing = false
-        return
-      }
-
       const onboardingCompleted =
         localStorage.getItem('finance-tracker-onboarding-completed') === 'true'
 
-      if (isSupabaseConfigured() && isCloudUnlocked()) {
+      if (isSupabaseConfigured() && isCloudUnlocked() && isMigrationComplete()) {
         await syncService.pullFromRemote()
         await syncService.syncAll()
       }

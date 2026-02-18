@@ -34,10 +34,25 @@ export function setCloudUnlocked(): void {
 }
 
 export async function hasLocalData(): Promise<boolean> {
-  const accounts = await db.accounts.count()
-  const transactions = await db.transactions.count()
-  const incomeSources = await db.incomeSources.count()
-  return accounts > 0 || transactions > 0 || incomeSources > 0
+  // Check both the old database (FinanceTrackerDB) and the new cache (FinanceTrackerCache)
+  const [oldAccounts, oldTransactions, oldIncomeSources] = await Promise.all([
+    db.accounts.count(),
+    db.transactions.count(),
+    db.incomeSources.count(),
+  ])
+
+  if (oldAccounts > 0 || oldTransactions > 0 || oldIncomeSources > 0) {
+    return true
+  }
+
+  // Also check the new localCache database
+  const [cacheAccounts, cacheTransactions, cacheIncomeSources] = await Promise.all([
+    localCache.accounts.count(),
+    localCache.transactions.count(),
+    localCache.incomeSources.count(),
+  ])
+
+  return cacheAccounts > 0 || cacheTransactions > 0 || cacheIncomeSources > 0
 }
 
 export async function migrateLocalToSupabase(
