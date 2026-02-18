@@ -1,4 +1,5 @@
 import { localCache } from './localCache'
+import { isCloudReady } from './migration'
 import { supabaseApi } from './supabaseApi'
 import { syncService } from './syncService'
 import type {
@@ -14,7 +15,6 @@ import type {
 } from './types'
 
 import { getDeviceId } from '@/lib/deviceId'
-import { isSupabaseConfigured } from '@/lib/supabase'
 
 function generateTempId(): string {
   return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
@@ -361,7 +361,7 @@ export const transactionRepo = {
     startDate?: Date
     endDate?: Date
   }): Promise<Transaction[]> {
-    if (!isSupabaseConfigured()) {
+    if (!isCloudReady()) {
       return localCache.transactions.getAll()
     }
     return supabaseApi.transactions.getPaginated(options)
@@ -384,7 +384,7 @@ export const transactionRepo = {
         }
       }
 
-      if (isSupabaseConfigured()) {
+      if (isCloudReady()) {
         const remoteCache = await supabaseApi.reportCache.getByPeriod(periodKey)
         if (remoteCache && !isCacheExpired(remoteCache)) {
           await localCache.reportCache.put(remoteCache)
@@ -418,7 +418,7 @@ export const transactionRepo = {
 
       await localCache.reportCache.put(cacheEntry)
 
-      if (isSupabaseConfigured()) {
+      if (isCloudReady()) {
         await supabaseApi.reportCache.upsert(cacheEntry)
       }
     }
@@ -430,7 +430,7 @@ export const transactionRepo = {
     startDate?: Date,
     endDate?: Date
   ): Promise<{ inflows: number; outflows: number; net: number }> {
-    if (isSupabaseConfigured()) {
+    if (isCloudReady()) {
       return supabaseApi.transactions.getSummaryByDateRange(startDate, endDate)
     }
 
@@ -577,7 +577,7 @@ export const transactionRepo = {
     const affectedPeriodKeys = [...new Set(transactions.map((tx) => getPeriodKeyFromDate(tx.date)))]
     await localCache.reportCache.deleteByPeriods(affectedPeriodKeys)
 
-    if (isSupabaseConfigured() && navigator.onLine) {
+    if (isCloudReady() && navigator.onLine) {
       try {
         await supabaseApi.reportCache.deleteByPeriods(affectedPeriodKeys)
       } catch {
@@ -843,7 +843,7 @@ export const reportCacheRepo = {
   async invalidatePeriodsAfterDate(date: Date): Promise<void> {
     await localCache.reportCache.invalidatePeriodsAfterDate(date)
     // Only sync to remote when online - offline operations should succeed
-    if (isSupabaseConfigured() && navigator.onLine) {
+    if (isCloudReady() && navigator.onLine) {
       try {
         await supabaseApi.reportCache.invalidatePeriodsAfterDate(date)
       } catch {
@@ -900,7 +900,7 @@ function isCacheExpired(cache: ReportCache): boolean {
 
 async function invalidateReportCache(transactionDate?: Date): Promise<void> {
   const invalidateRemote = async () => {
-    if (!isSupabaseConfigured() || !navigator.onLine) return
+    if (!isCloudReady() || !navigator.onLine) return
 
     try {
       const promises: Promise<void>[] = []

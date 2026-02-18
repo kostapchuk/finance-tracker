@@ -33,6 +33,14 @@ export function setCloudUnlocked(): void {
   localStorage.setItem(CLOUD_UNLOCK_KEY, 'true')
 }
 
+/**
+ * Checks if the app is ready to use cloud storage.
+ * Requires: 1) Supabase configured, 2) Cloud unlocked, 3) Migration complete
+ */
+export function isCloudReady(): boolean {
+  return isSupabaseConfigured() && isCloudUnlocked() && isMigrationComplete()
+}
+
 export async function hasLocalData(): Promise<boolean> {
   // Check both the old database (FinanceTrackerDB) and the new cache (FinanceTrackerCache)
   const [oldAccounts, oldTransactions, oldIncomeSources] = await Promise.all([

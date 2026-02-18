@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import React from 'react'
 
 import { localCache } from './localCache'
-import { isCloudUnlocked } from './migration'
+import { isCloudReady } from './migration'
 import { supabaseApi } from './supabaseApi'
 import type {
   SyncQueueItem,
@@ -15,8 +15,6 @@ import type {
   CustomCurrency,
   AppSettings,
 } from './types'
-
-import { isSupabaseConfigured } from '@/lib/supabase'
 
 // QueryClient instance for invalidating React Query cache after sync
 let queryClient: QueryClient | null = null
@@ -155,7 +153,7 @@ class SyncService {
   }
 
   async syncAll(): Promise<void> {
-    if (!isSupabaseConfigured() || !isCloudUnlocked()) {
+    if (!isCloudReady()) {
       return
     }
 
@@ -675,7 +673,7 @@ class SyncService {
   }
 
   async pullFromRemote(): Promise<void> {
-    if (!isSupabaseConfigured() || !isCloudUnlocked()) {
+    if (!isCloudReady()) {
       return
     }
 
