@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
   Pencil,
@@ -21,6 +20,7 @@ import { loanRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
 import { useLoans, useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
@@ -36,7 +36,6 @@ export function LoanList() {
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
-  const queryClient = useQueryClient()
   const [formOpen, setFormOpen] = useState(false)
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
   const [paymentLoan, setPaymentLoan] = useState<Loan | null>(null)
@@ -52,7 +51,9 @@ export function LoanList() {
     if (!confirm(`Delete loan for "${loan.personName}"? This cannot be undone.`)) return
 
     await loanRepo.delete(loan.id)
-    queryClient.invalidateQueries({ queryKey: ['loans'] })
+    // Update query cache directly
+    const updatedLoans = await loanRepo.getAll()
+    queryClient.setQueryData(['loans'], updatedLoans)
   }
 
   const handleCloseForm = () => {

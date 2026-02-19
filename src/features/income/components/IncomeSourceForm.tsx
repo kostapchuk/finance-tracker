@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -18,6 +17,7 @@ import { incomeSourceRepo } from '@/database/repositories'
 import type { IncomeSource } from '@/database/types'
 import { useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { getRandomColor } from '@/utils/colors'
 import { getAllCurrencies } from '@/utils/currency'
 
@@ -34,7 +34,6 @@ function IncomeSourceFormContent({
   source?: IncomeSource | null
   onClose: () => void
 }) {
-  const queryClient = useQueryClient()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t } = useLanguage()
@@ -66,7 +65,9 @@ function IncomeSourceFormContent({
           hiddenFromDashboard,
         })
       }
-      queryClient.invalidateQueries({ queryKey: ['incomeSources'], refetchType: 'all' })
+      // Update query cache directly
+      const updatedSources = await incomeSourceRepo.getAll()
+      queryClient.setQueryData(['incomeSources'], updatedSources)
       onClose()
     } catch (error) {
       console.error('Failed to save income source:', error)

@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -17,6 +16,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { accountRepo } from '@/database/repositories'
 import type { Account, AccountType } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
 import { getAllCurrencies } from '@/utils/currency'
@@ -36,7 +36,6 @@ function AccountFormContent({
 }) {
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
-  const queryClient = useQueryClient()
 
   const accountTypes: { value: AccountType; label: string }[] = [
     { value: 'cash', label: t('cash') },
@@ -78,7 +77,9 @@ function AccountFormContent({
           hiddenFromDashboard,
         })
       }
-      queryClient.invalidateQueries({ queryKey: ['accounts'], refetchType: 'all' })
+      // Update query cache directly
+      const updatedAccounts = await accountRepo.getAll()
+      queryClient.setQueryData(['accounts'], updatedAccounts)
       onClose()
     } catch (error) {
       console.error('Failed to save account:', error)

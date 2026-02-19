@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Trash2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -24,6 +23,7 @@ import { loanRepo, transactionRepo, accountRepo } from '@/database/repositories'
 import type { Loan, Transaction } from '@/database/types'
 import { useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
 import { deleteLoanWithTransactions } from '@/utils/transactionBalance'
 
@@ -38,7 +38,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
-  const queryClient = useQueryClient()
   const { t } = useLanguage()
   const [amount, setAmount] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
@@ -169,9 +168,15 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
       handleClose()
 
-      queryClient.invalidateQueries({ queryKey: ['loans'] })
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      // Update query cache directly
+      const [updatedLoans, updatedTransactions, updatedAccounts] = await Promise.all([
+        loanRepo.getAll(),
+        transactionRepo.getAll(),
+        accountRepo.getAll(),
+      ])
+      queryClient.setQueryData(['loans'], updatedLoans)
+      queryClient.setQueryData(['transactions'], updatedTransactions)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
     } catch (error) {
       console.error('Failed to record payment:', error)
     }
@@ -194,9 +199,15 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
       handleClose()
 
-      queryClient.invalidateQueries({ queryKey: ['loans'] })
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      // Update query cache directly
+      const [updatedLoans, updatedTransactions, updatedAccounts] = await Promise.all([
+        loanRepo.getAll(),
+        transactionRepo.getAll(),
+        accountRepo.getAll(),
+      ])
+      queryClient.setQueryData(['loans'], updatedLoans)
+      queryClient.setQueryData(['transactions'], updatedTransactions)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
     } catch (error) {
       console.error('Failed to delete loan:', error)
     }

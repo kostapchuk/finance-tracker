@@ -56,14 +56,22 @@ import {
 } from '@/components/ui/select'
 import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
 import { localCache } from '@/database/localCache'
-import { isCloudUnlocked, setCloudUnlocked, isMigrationComplete } from '@/database/migration'
+import {
+  isCloudUnlocked,
+  setCloudUnlocked,
+  isMigrationComplete,
+  isCloudReady,
+} from '@/database/migration'
 import {
   accountRepo,
   categoryRepo,
   incomeSourceRepo,
   customCurrencyRepo,
+  transactionRepo,
+  loanRepo,
 } from '@/database/repositories'
 import { supabaseApi } from '@/database/supabaseApi'
+import { syncService } from '@/database/syncService'
 import type {
   Account,
   Category,
@@ -103,6 +111,25 @@ function generateTempId(): string {
   return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 }
 
+// Helper to format time until next retry
+function formatTimeUntil(date: Date | null): string {
+  if (!date) return ''
+  const now = new Date()
+  const diff = Math.max(0, date.getTime() - now.getTime())
+
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`
+  }
+  return `${seconds}s`
+}
+
 export function SettingsPage() {
   const { data: accounts = [] } = useAccounts()
   const { data: incomeSources = [] } = useIncomeSources()
@@ -114,11 +141,10 @@ export function SettingsPage() {
   const setMainCurrency = useAppStore((state) => state.setMainCurrency)
   const blurFinancialFigures = useAppStore((state) => state.blurFinancialFigures)
   const setBlurFinancialFigures = useAppStore((state) => state.setBlurFinancialFigures)
-  const loadAllData = useAppStore((state) => state.loadAllData)
   const showMigrationDialogManually = useAppStore((state) => state.showMigrationDialogManually)
   const { language, setLanguage, t } = useLanguage()
   const { needRefresh, updateServiceWorker } = useServiceWorker()
-  const { status, pendingCount, isOffline, sync } = useSync()
+  const { status, pendingCount, isOffline, sync, nextRetryAt } = useSync()
 
   const [activeSection, setActiveSection] = useState<ManagementSection>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -145,9 +171,20 @@ export function SettingsPage() {
   const [cloudUnlocked, setCloudUnlockedState] = useState(isCloudUnlocked())
   const [migrationComplete, setMigrationCompleteState] = useState(isMigrationComplete())
 
+  // Timer tick for updating next retry time display
+  const [, setTick] = useState(0)
+
   useEffect(() => {
     setCloudUnlockedState(isCloudUnlocked())
     setMigrationCompleteState(isMigrationComplete())
+  }, [])
+
+  // Update timer every second for next retry display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1)
+    }, 1000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleVersionClick = useCallback(() => {
@@ -271,12 +308,20 @@ export function SettingsPage() {
       await localCache.clearAll()
 
       const userId = getUserId()
+      const cloudReady = isCloudReady()
 
       // Generate ID mappings (old ID → new temp ID)
       const accountIdMap = new Map<number | undefined, string>()
       const incomeSourceIdMap = new Map<number | undefined, string>()
       const categoryIdMap = new Map<number | undefined, string>()
       const loanIdMap = new Map<number | undefined, string>()
+
+      // Collect items for sync queue
+      const syncQueueAccounts: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueIncomeSources: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueCategories: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueLoans: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueTransactions: { tempId: string; data: Record<string, unknown> }[] = []
 
       // Import accounts with new IDs
       if (data.accounts?.length) {
@@ -286,13 +331,20 @@ export function SettingsPage() {
           if (oldId !== undefined) {
             accountIdMap.set(oldId, newId)
           }
-          return {
+          const account = {
             ...a,
             id: newId as unknown as number,
             userId,
             createdAt: new Date(a.createdAt as string),
             updatedAt: new Date(a.updatedAt as string),
           } as Account
+          if (cloudReady) {
+            syncQueueAccounts.push({
+              tempId: newId,
+              data: { ...account, id: newId },
+            })
+          }
+          return account
         })
         await localCache.accounts.putAll(accountsToImport)
       }
@@ -305,13 +357,20 @@ export function SettingsPage() {
           if (oldId !== undefined) {
             incomeSourceIdMap.set(oldId, newId)
           }
-          return {
+          const source = {
             ...s,
             id: newId as unknown as number,
             userId,
             createdAt: new Date(s.createdAt as string),
             updatedAt: new Date(s.updatedAt as string),
           } as IncomeSource
+          if (cloudReady) {
+            syncQueueIncomeSources.push({
+              tempId: newId,
+              data: { ...source, id: newId },
+            })
+          }
+          return source
         })
         await localCache.incomeSources.putAll(sourcesToImport)
       }
@@ -324,13 +383,20 @@ export function SettingsPage() {
           if (oldId !== undefined) {
             categoryIdMap.set(oldId, newId)
           }
-          return {
+          const category = {
             ...c,
             id: newId as unknown as number,
             userId,
             createdAt: new Date(c.createdAt as string),
             updatedAt: new Date(c.updatedAt as string),
           } as Category
+          if (cloudReady) {
+            syncQueueCategories.push({
+              tempId: newId,
+              data: { ...category, id: newId },
+            })
+          }
+          return category
         })
         await localCache.categories.putAll(categoriesToImport)
       }
@@ -343,7 +409,7 @@ export function SettingsPage() {
           if (oldId !== undefined) {
             loanIdMap.set(oldId, newId)
           }
-          return {
+          const loan = {
             ...l,
             id: newId as unknown as number,
             userId,
@@ -354,6 +420,13 @@ export function SettingsPage() {
             createdAt: new Date(l.createdAt as string),
             updatedAt: new Date(l.updatedAt as string),
           } as Loan
+          if (cloudReady) {
+            syncQueueLoans.push({
+              tempId: newId,
+              data: { ...loan, id: newId },
+            })
+          }
+          return loan
         })
         await localCache.loans.putAll(loansToImport)
       }
@@ -362,7 +435,7 @@ export function SettingsPage() {
       if (data.transactions?.length) {
         const transactionsToImport = data.transactions.map((t: Record<string, unknown>) => {
           const newId = generateTempId()
-          return {
+          const transaction = {
             ...t,
             id: newId as unknown as number,
             userId,
@@ -383,11 +456,44 @@ export function SettingsPage() {
             createdAt: new Date(t.createdAt as string),
             updatedAt: new Date(t.updatedAt as string),
           } as Transaction
+          if (cloudReady) {
+            syncQueueTransactions.push({
+              tempId: newId,
+              data: { ...transaction, id: newId },
+            })
+          }
+          return transaction
         })
         await localCache.transactions.putAll(transactionsToImport)
       }
 
-      await loadAllData()
+      // Queue all imported data for sync
+      if (cloudReady) {
+        await syncService.queueBulkOperation('create', 'accounts', syncQueueAccounts)
+        await syncService.queueBulkOperation('create', 'incomeSources', syncQueueIncomeSources)
+        await syncService.queueBulkOperation('create', 'categories', syncQueueCategories)
+        await syncService.queueBulkOperation('create', 'loans', syncQueueLoans)
+        await syncService.queueBulkOperation('create', 'transactions', syncQueueTransactions)
+      }
+
+      // Directly set query data from database to ensure UI updates
+      const [accounts, incomeSources, categories, transactions, loans, currencies] =
+        await Promise.all([
+          accountRepo.getAll(),
+          incomeSourceRepo.getAll(),
+          categoryRepo.getAll(),
+          transactionRepo.getAll(),
+          loanRepo.getAll(),
+          customCurrencyRepo.getAll(),
+        ])
+
+      queryClient.setQueryData(['accounts'], accounts)
+      queryClient.setQueryData(['incomeSources'], incomeSources)
+      queryClient.setQueryData(['categories'], categories)
+      queryClient.setQueryData(['transactions'], transactions)
+      queryClient.setQueryData(['loans'], loans)
+      queryClient.setQueryData(['customCurrencies'], currencies)
+
       setImportSuccess(true)
     } catch (error) {
       console.error('Import failed:', error)
@@ -408,13 +514,15 @@ export function SettingsPage() {
     try {
       await localCache.clearAll()
 
-      // Delete from Supabase cloud
-      await supabaseApi.accounts.deleteAll()
-      await supabaseApi.incomeSources.deleteAll()
-      await supabaseApi.categories.deleteAll()
-      await supabaseApi.transactions.deleteAll()
-      await supabaseApi.loans.deleteAll()
-      await supabaseApi.customCurrencies.deleteAll()
+      // Delete from Supabase cloud only if sync is enabled
+      if (isCloudReady()) {
+        await supabaseApi.accounts.deleteAll()
+        await supabaseApi.incomeSources.deleteAll()
+        await supabaseApi.categories.deleteAll()
+        await supabaseApi.transactions.deleteAll()
+        await supabaseApi.loans.deleteAll()
+        await supabaseApi.customCurrencies.deleteAll()
+      }
 
       // Invalidate queries to refresh UI
       await queryClient.invalidateQueries()
@@ -832,6 +940,11 @@ export function SettingsPage() {
                     <p className="text-sm text-muted-foreground">
                       {pendingCount}{' '}
                       {t(pendingCount === 1 ? 'itemsWaiting' : 'itemsWaiting_plural')}
+                    </p>
+                  )}
+                  {nextRetryAt && !isOffline && status !== 'syncing' && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('nextRetryIn').replace('{time}', formatTimeUntil(nextRetryAt))}
                     </p>
                   )}
                   {isOffline && (

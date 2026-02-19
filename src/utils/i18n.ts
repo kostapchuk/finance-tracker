@@ -375,6 +375,7 @@ const lazyTranslations = {
     syncComplete: 'Synced',
     syncNow: 'Sync now',
     syncStatus: 'Sync status',
+    nextRetryIn: 'Next retry in {time}',
     migrateDialogTitle: 'Migrate Your Data',
     migratingToCloud: 'Migrating your data to the cloud...',
     retry: 'Retry',
@@ -390,6 +391,9 @@ const lazyTranslations = {
     startFreshConfirmTitle: 'Start fresh?',
     startFreshConfirmMessage:
       'This will delete all your local data and start with an empty account. This action cannot be undone.',
+    cloudSyncEnabled: 'Cloud Sync Enabled',
+    cloudSyncEnabledMessage:
+      'Your account is now connected to the cloud. Data will sync automatically across devices.',
     olderDataUnavailableOffline: 'Older transactions unavailable offline',
     offlineDescription: 'Connect to internet to sync and access older transactions',
   },
@@ -634,6 +638,7 @@ const lazyTranslations = {
     syncComplete: 'Синхронизировано',
     syncNow: 'Синхронизировать',
     syncStatus: 'Статус синхронизации',
+    nextRetryIn: 'Повтор через {time}',
     migrateDialogTitle: 'Перенос данных',
     migratingToCloud: 'Перенос данных в облако...',
     retry: 'Повторить',
@@ -649,6 +654,9 @@ const lazyTranslations = {
     startFreshConfirmTitle: 'Начать сначала?',
     startFreshConfirmMessage:
       'Это удалит все ваши локальные данные и начнёт с пустого аккаунта. Это действие нельзя отменить.',
+    cloudSyncEnabled: 'Облачная синхронизация включена',
+    cloudSyncEnabledMessage:
+      'Ваш аккаунт теперь подключён к облаку. Данные будут автоматически синхронизироваться между устройствами.',
     olderDataUnavailableOffline: 'Старые транзакции недоступны оффлайн',
     offlineDescription: 'Подключитесь к интернету для синхронизации и доступа к старым транзакциям',
   },

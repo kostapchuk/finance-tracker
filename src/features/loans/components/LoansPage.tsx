@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, useMemo } from 'react'
 
@@ -12,6 +11,7 @@ import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
 import { useLoans, useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 
 export function LoansPage() {
@@ -19,7 +19,6 @@ export function LoansPage() {
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
-  const queryClient = useQueryClient()
   const { t } = useLanguage()
 
   const [loanFormOpen, setLoanFormOpen] = useState(false)
@@ -82,7 +81,9 @@ export function LoansPage() {
         dueDate: data.dueDate,
       })
 
-      queryClient.invalidateQueries({ queryKey: ['loans'] })
+      // Update query cache directly
+      const updatedLoans = await loanRepo.getAll()
+      queryClient.setQueryData(['loans'], updatedLoans)
     } else {
       const newLoanId = await loanRepo.create({
         type: data.type,
@@ -115,9 +116,15 @@ export function LoansPage() {
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })
 
-      queryClient.invalidateQueries({ queryKey: ['loans'] })
-      queryClient.invalidateQueries({ queryKey: ['accounts'] })
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      // Update query cache directly
+      const [updatedLoans2, updatedAccounts, updatedTransactions] = await Promise.all([
+        loanRepo.getAll(),
+        accountRepo.getAll(),
+        transactionRepo.getAll(),
+      ])
+      queryClient.setQueryData(['loans'], updatedLoans2)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
+      queryClient.setQueryData(['transactions'], updatedTransactions)
     }
   }
 

@@ -19,6 +19,7 @@ interface MigrationState {
   isMigrating: boolean
   migrationProgress: { current: number; total: number; entity: string } | null
   migrationError: string | null
+  showCloudSyncEnabledDialog: boolean
 }
 
 interface AppState {
@@ -61,6 +62,7 @@ interface AppState {
   startMigration: () => Promise<void>
   skipMigration: () => Promise<void>
   dismissMigrationDialog: () => void
+  dismissCloudSyncEnabledDialog: () => void
   showMigrationDialogManually: () => Promise<void>
 }
 
@@ -73,6 +75,7 @@ export const useAppStore = create<AppState>((set) => ({
     isMigrating: false,
     migrationProgress: null,
     migrationError: null,
+    showCloudSyncEnabledDialog: false,
   },
   activeView: 'dashboard',
   selectedMonth: new Date(),
@@ -126,6 +129,7 @@ export const useAppStore = create<AppState>((set) => ({
           isMigrating: false,
           migrationProgress: null,
           migrationError: null,
+          showCloudSyncEnabledDialog: false,
         },
       })
     } catch (error) {
@@ -155,6 +159,7 @@ export const useAppStore = create<AppState>((set) => ({
         isMigrating: true,
         migrationProgress: null,
         migrationError: null,
+        showCloudSyncEnabledDialog: false,
       },
     })
 
@@ -174,6 +179,7 @@ export const useAppStore = create<AppState>((set) => ({
           isMigrating: false,
           migrationProgress: null,
           migrationError: null,
+          showCloudSyncEnabledDialog: true,
         },
       })
     } else {
@@ -196,6 +202,7 @@ export const useAppStore = create<AppState>((set) => ({
         isMigrating: false,
         migrationProgress: null,
         migrationError: null,
+        showCloudSyncEnabledDialog: true,
       },
     })
   },
@@ -218,11 +225,30 @@ export const useAppStore = create<AppState>((set) => ({
           isMigrating: false,
           migrationProgress: null,
           migrationError: null,
+          showCloudSyncEnabledDialog: false,
         },
       })
     } else {
-      // No local data to migrate, mark as complete so sync section appears
+      // No local data to migrate, mark as complete and show confirmation
       markMigrationComplete()
+      set({
+        migration: {
+          showMigrationDialog: false,
+          isMigrating: false,
+          migrationProgress: null,
+          migrationError: null,
+          showCloudSyncEnabledDialog: true,
+        },
+      })
     }
+  },
+
+  dismissCloudSyncEnabledDialog: () => {
+    set((state) => ({
+      migration: {
+        ...state.migration,
+        showCloudSyncEnabledDialog: false,
+      },
+    }))
   },
 }))

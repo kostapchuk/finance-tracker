@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Tags } from 'lucide-react'
 import { useState } from 'react'
 
@@ -11,13 +10,13 @@ import { categoryRepo } from '@/database/repositories'
 import type { Category } from '@/database/types'
 import { useCategories, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { formatCurrency } from '@/utils/currency'
 
 export function CategoryList() {
   const { data: categories = [] } = useCategories()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
-  const queryClient = useQueryClient()
   const { t } = useLanguage()
   const [formOpen, setFormOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -32,7 +31,9 @@ export function CategoryList() {
     if (!confirm(`Delete "${category.name}"? This cannot be undone.`)) return
 
     await categoryRepo.delete(category.id)
-    await queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' })
+    // Update query cache directly
+    const updatedCategories = await categoryRepo.getAll()
+    queryClient.setQueryData(['categories'], updatedCategories)
   }
 
   const handleCloseForm = () => {

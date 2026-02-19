@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -17,6 +16,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { categoryRepo } from '@/database/repositories'
 import type { Category } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { getRandomColor } from '@/utils/colors'
 
 interface CategoryFormProps {
@@ -32,7 +32,6 @@ function CategoryFormContent({
   category?: Category | null
   onClose: () => void
 }) {
-  const queryClient = useQueryClient()
   const { t } = useLanguage()
 
   const [name, setName] = useState(category?.name ?? '')
@@ -70,7 +69,9 @@ function CategoryFormContent({
           hiddenFromDashboard,
         })
       }
-      queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' })
+      // Update query cache directly
+      const updatedCategories = await categoryRepo.getAll()
+      queryClient.setQueryData(['categories'], updatedCategories)
       onClose()
     } catch (error) {
       console.error('Failed to save category:', error)

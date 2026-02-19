@@ -34,6 +34,7 @@ interface SyncState {
   lastSyncAt: Date | null
   pendingCount: number
   error: string | null
+  nextRetryAt: Date | null
 }
 
 type SyncListener = (state: SyncState) => void
@@ -44,6 +45,7 @@ class SyncService {
     lastSyncAt: null,
     pendingCount: 0,
     error: null,
+    nextRetryAt: null,
   }
 
   private listeners = new Set<SyncListener>()
@@ -96,6 +98,7 @@ class SyncService {
 
     this.getPendingCount().then((count) => {
       if (count === 0) {
+        this.updateState({ nextRetryAt: null })
         this.retryTimer = setTimeout(checkAndSync, MAX_RETRY_DELAY)
         return
       }
@@ -118,6 +121,8 @@ class SyncService {
           }
         }
 
+        const nextRetryAt = new Date(now.getTime() + minDelay)
+        this.updateState({ nextRetryAt })
         this.retryTimer = setTimeout(checkAndSync, minDelay)
       })
     })
@@ -161,7 +166,7 @@ class SyncService {
       return
     }
 
-    this.updateState({ status: 'syncing', error: null })
+    this.updateState({ status: 'syncing', error: null, nextRetryAt: null })
 
     try {
       const items = await localCache.syncQueue.getAll()
@@ -287,7 +292,12 @@ class SyncService {
 
       this.saveLastSyncTime()
       const remainingCount = await localCache.syncQueue.getCount()
-      this.updateState({ status: 'success', lastSyncAt: new Date(), pendingCount: remainingCount })
+      this.updateState({
+        status: 'success',
+        lastSyncAt: new Date(),
+        pendingCount: remainingCount,
+        nextRetryAt: remainingCount > 0 ? this.state.nextRetryAt : null,
+      })
 
       // Invalidate React Query cache so UI reflects sync changes
       this.invalidateQueries()

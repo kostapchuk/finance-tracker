@@ -257,8 +257,20 @@ export function BudgetOkImportWizard({
       setImportResult(result)
 
       if (result.success) {
-        // Refresh all data after successful import
-        await queryClient.invalidateQueries()
+        // Directly set query data from database to ensure UI updates
+        const [accounts, incomeSources, categories, transactions, loans] = await Promise.all([
+          (await import('@/database/repositories')).accountRepo.getAll(),
+          (await import('@/database/repositories')).incomeSourceRepo.getAll(),
+          (await import('@/database/repositories')).categoryRepo.getAll(),
+          (await import('@/database/repositories')).transactionRepo.getAll(),
+          (await import('@/database/repositories')).loanRepo.getAll(),
+        ])
+
+        queryClient.setQueryData(['accounts'], accounts)
+        queryClient.setQueryData(['incomeSources'], incomeSources)
+        queryClient.setQueryData(['categories'], categories)
+        queryClient.setQueryData(['transactions'], transactions)
+        queryClient.setQueryData(['loans'], loans)
       }
     } catch (error) {
       setImportResult({

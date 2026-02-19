@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 
@@ -13,6 +12,7 @@ import {
   useSettings,
 } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
@@ -58,8 +58,6 @@ export function QuickTransactionModal({
   const transactions = transactionsData
   const loans = loansData
   const mainCurrency = settingsData?.defaultCurrency || mainCurrencyFromStore
-
-  const queryClient = useQueryClient()
 
   const isEditMode = !!editTransaction
 
@@ -512,8 +510,13 @@ export function QuickTransactionModal({
 
       onClose()
 
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      // Update query cache directly
+      const [updatedTransactions, updatedAccounts] = await Promise.all([
+        transactionRepo.getAll(),
+        accountRepo.getAll(),
+      ])
+      queryClient.setQueryData(['transactions'], updatedTransactions)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
     } catch (error) {
       console.error('Failed to save transaction:', error)
     }

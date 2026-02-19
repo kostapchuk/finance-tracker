@@ -301,9 +301,15 @@ export function HistoryPage() {
     await reverseTransactionBalance(transaction, loans)
     await transactionRepo.delete(transaction.id)
 
-    queryClient.invalidateQueries({ queryKey: ['transactions'] })
-    queryClient.invalidateQueries({ queryKey: ['accounts'] })
-    queryClient.invalidateQueries({ queryKey: ['loans'] })
+    // Update query cache directly
+    const [updatedTransactions, updatedAccounts, updatedLoans] = await Promise.all([
+      transactionRepo.getAll(),
+      accountRepo.getAll(),
+      loanRepo.getAll(),
+    ])
+    queryClient.setQueryData(['transactions'], updatedTransactions)
+    queryClient.setQueryData(['accounts'], updatedAccounts)
+    queryClient.setQueryData(['loans'], updatedLoans)
   }
 
   const handleEdit = (transaction: Transaction) => {
@@ -402,9 +408,15 @@ export function HistoryPage() {
 
     handleCloseEditModal()
 
-    queryClient.invalidateQueries({ queryKey: ['transactions'] })
-    queryClient.invalidateQueries({ queryKey: ['accounts'] })
-    queryClient.invalidateQueries({ queryKey: ['loans'] })
+    // Update query cache directly
+    const [updatedTransactions, updatedAccounts, updatedLoans] = await Promise.all([
+      transactionRepo.getAll(),
+      accountRepo.getAll(),
+      loanRepo.getAll(),
+    ])
+    queryClient.setQueryData(['transactions'], updatedTransactions)
+    queryClient.setQueryData(['accounts'], updatedAccounts)
+    queryClient.setQueryData(['loans'], updatedLoans)
   }
 
   const getTransactionTitle = (tx: Transaction): string => {
