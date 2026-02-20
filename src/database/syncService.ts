@@ -23,9 +23,8 @@ export function setSyncQueryClient(client: QueryClient): void {
   queryClient = client
 }
 
-const MAX_RETRIES = 3
 const INITIAL_RETRY_DELAY = 5000
-const MAX_RETRY_DELAY = 300000
+const MAX_RETRY_DELAY = 60000
 
 type SyncStatus = 'idle' | 'syncing' | 'error' | 'success'
 
@@ -50,6 +49,7 @@ class SyncService {
 
   private listeners = new Set<SyncListener>()
   private retryTimer: ReturnType<typeof setTimeout> | null = null
+  private fetchingEntities = new Set<string>()
 
   constructor() {
     if (typeof globalThis !== 'undefined') {
@@ -108,8 +108,6 @@ class SyncService {
         let minDelay = MAX_RETRY_DELAY
 
         for (const item of items) {
-          if (item.attempts >= MAX_RETRIES) continue
-
           const lastAttempt = item.lastAttemptAt ? new Date(item.lastAttemptAt) : null
           const elapsed = lastAttempt ? now.getTime() - lastAttempt.getTime() : MAX_RETRY_DELAY
 
@@ -144,17 +142,22 @@ class SyncService {
     this.listeners.forEach((listener) => listener(this.state))
   }
 
-  private invalidateQueries(): void {
+  private invalidateQueries(entities?: string[]): void {
     if (!queryClient) return
 
-    // Invalidate all relevant query keys to refresh UI after sync
-    queryClient.invalidateQueries({ queryKey: ['accounts'] })
-    queryClient.invalidateQueries({ queryKey: ['incomeSources'] })
-    queryClient.invalidateQueries({ queryKey: ['categories'] })
-    queryClient.invalidateQueries({ queryKey: ['transactions'] })
-    queryClient.invalidateQueries({ queryKey: ['loans'] })
-    queryClient.invalidateQueries({ queryKey: ['settings'] })
-    queryClient.invalidateQueries({ queryKey: ['customCurrencies'] })
+    const toInvalidate = entities ?? [
+      'accounts',
+      'incomeSources',
+      'categories',
+      'transactions',
+      'loans',
+      'settings',
+      'customCurrencies',
+    ]
+
+    for (const entity of toInvalidate) {
+      queryClient.invalidateQueries({ queryKey: [entity] })
+    }
   }
 
   async syncAll(): Promise<void> {
@@ -168,8 +171,15 @@ class SyncService {
 
     this.updateState({ status: 'syncing', error: null, nextRetryAt: null })
 
+    let hadChanges = false
+
     try {
       const items = await localCache.syncQueue.getAll()
+
+      if (items.length === 0) {
+        this.updateState({ status: 'success' })
+        return
+      }
 
       const transactionCreates = items.filter(
         (item) => item.entity === 'transactions' && item.operation === 'create' && item.data
@@ -249,6 +259,7 @@ class SyncService {
               await localCache.syncQueue.delete(item.id)
             }
           }
+          hadChanges = true
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           for (const item of transactionCreates) {
@@ -258,9 +269,6 @@ class SyncService {
                 lastAttemptAt: new Date(),
                 error: errorMessage,
               })
-              if (item.attempts >= MAX_RETRIES) {
-                await localCache.syncQueue.delete(item.id)
-              }
             }
           }
         }
@@ -273,6 +281,7 @@ class SyncService {
           if (item.id) {
             await localCache.syncQueue.delete(item.id)
           }
+          hadChanges = true
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
@@ -282,10 +291,6 @@ class SyncService {
               lastAttemptAt: new Date(),
               error: errorMessage,
             })
-          }
-
-          if (item.attempts >= MAX_RETRIES && item.id) {
-            await localCache.syncQueue.delete(item.id)
           }
         }
       }
@@ -299,8 +304,9 @@ class SyncService {
         nextRetryAt: remainingCount > 0 ? this.state.nextRetryAt : null,
       })
 
-      // Invalidate React Query cache so UI reflects sync changes
-      this.invalidateQueries()
+      if (hadChanges) {
+        this.invalidateQueries()
+      }
 
       await supabaseApi.reportCache.deleteExpired()
 
@@ -682,7 +688,7 @@ class SyncService {
     }
   }
 
-  async pullFromRemote(): Promise<void> {
+  async pullFromRemote(entities?: string[]): Promise<void> {
     if (!isCloudReady()) {
       return
     }
@@ -691,61 +697,143 @@ class SyncService {
       return
     }
 
+    const allEntities = [
+      'accounts',
+      'incomeSources',
+      'categories',
+      'transactions',
+      'loans',
+      'customCurrencies',
+      'settings',
+    ] as const
+    type EntityType = (typeof allEntities)[number]
+    const toFetch: EntityType[] = (entities ?? [...allEntities]).filter(
+      (e) => !this.fetchingEntities.has(e)
+    ) as EntityType[]
+
+    if (toFetch.length === 0) return
+
+    for (const entity of toFetch) {
+      this.fetchingEntities.add(entity)
+    }
+
     try {
-      const [accounts, incomeSources, categories, transactions, loans, customCurrencies, settings] =
-        await Promise.all([
-          supabaseApi.accounts.getAll(),
-          supabaseApi.incomeSources.getAll(),
-          supabaseApi.categories.getAll(),
-          supabaseApi.transactions.getAll(),
-          supabaseApi.loans.getAll(),
-          supabaseApi.customCurrencies.getAll(),
-          supabaseApi.settings.get(),
-        ])
+      const fetchPromises: Promise<unknown>[] = []
+      const entityOrder: EntityType[] = []
 
-      await localCache.accounts.clear()
-      await localCache.incomeSources.clear()
-      await localCache.categories.clear()
-      await localCache.transactions.clear()
-      await localCache.loans.clear()
-      await localCache.customCurrencies.clear()
-      await localCache.settings.clear()
+      for (const entity of allEntities) {
+        if (toFetch.includes(entity)) {
+          entityOrder.push(entity)
+          switch (entity) {
+            case 'accounts':
+              fetchPromises.push(supabaseApi.accounts.getAll())
+              break
+            case 'incomeSources':
+              fetchPromises.push(supabaseApi.incomeSources.getAll())
+              break
+            case 'categories':
+              fetchPromises.push(supabaseApi.categories.getAll())
+              break
+            case 'transactions':
+              fetchPromises.push(supabaseApi.transactions.getAll())
+              break
+            case 'loans':
+              fetchPromises.push(supabaseApi.loans.getAll())
+              break
+            case 'customCurrencies':
+              fetchPromises.push(supabaseApi.customCurrencies.getAll())
+              break
+            case 'settings':
+              fetchPromises.push(supabaseApi.settings.get())
+              break
+          }
+        }
+      }
 
-      if (accounts.length > 0) {
-        for (const account of accounts) {
-          await localCache.accounts.put(account)
+      const results = await Promise.all(fetchPromises)
+
+      for (const [index, entity] of entityOrder.entries()) {
+        const data = results[index]
+
+        switch (entity) {
+          case 'accounts': {
+            const accounts = data as Account[]
+            await localCache.accounts.clear()
+            if (accounts.length > 0) {
+              for (const account of accounts) {
+                await localCache.accounts.put(account)
+              }
+            }
+            break
+          }
+          case 'incomeSources': {
+            const incomeSources = data as IncomeSource[]
+            await localCache.incomeSources.clear()
+            if (incomeSources.length > 0) {
+              for (const source of incomeSources) {
+                await localCache.incomeSources.put(source)
+              }
+            }
+            break
+          }
+          case 'categories': {
+            const categories = data as Category[]
+            await localCache.categories.clear()
+            if (categories.length > 0) {
+              for (const category of categories) {
+                await localCache.categories.put(category)
+              }
+            }
+            break
+          }
+          case 'transactions': {
+            const transactions = data as Transaction[]
+            await localCache.transactions.clear()
+            if (transactions.length > 0) {
+              for (const transaction of transactions) {
+                await localCache.transactions.put(transaction)
+              }
+            }
+            break
+          }
+          case 'loans': {
+            const loans = data as Loan[]
+            await localCache.loans.clear()
+            if (loans.length > 0) {
+              for (const loan of loans) {
+                await localCache.loans.put(loan)
+              }
+            }
+            break
+          }
+          case 'customCurrencies': {
+            const customCurrencies = data as CustomCurrency[]
+            await localCache.customCurrencies.clear()
+            if (customCurrencies.length > 0) {
+              for (const currency of customCurrencies) {
+                await localCache.customCurrencies.put(currency)
+              }
+            }
+            break
+          }
+          case 'settings': {
+            const settings = data as AppSettings | null
+            await localCache.settings.clear()
+            if (settings) {
+              await localCache.settings.put(settings)
+            }
+            break
+          }
         }
       }
-      if (incomeSources.length > 0) {
-        for (const source of incomeSources) {
-          await localCache.incomeSources.put(source)
-        }
-      }
-      if (categories.length > 0) {
-        for (const category of categories) {
-          await localCache.categories.put(category)
-        }
-      }
-      if (transactions.length > 0) {
-        for (const transaction of transactions) {
-          await localCache.transactions.put(transaction)
-        }
-      }
-      if (loans.length > 0) {
-        for (const loan of loans) {
-          await localCache.loans.put(loan)
-        }
-      }
-      if (customCurrencies.length > 0) {
-        for (const currency of customCurrencies) {
-          await localCache.customCurrencies.put(currency)
-        }
-      }
-      if (settings) {
-        await localCache.settings.put(settings)
-      }
+
+      this.invalidateQueries(toFetch)
     } catch (error) {
       console.error('Failed to pull from remote:', error)
+    } finally {
+      for (const entity of toFetch) {
+        this.fetchingEntities.delete(entity)
+      }
     }
   }
 

@@ -165,6 +165,11 @@ export function SettingsPage() {
   const [importWizardOpen, setImportWizardOpen] = useState(false)
   const [savedImportState, setSavedImportState] = useState<SavedImportState | null>(null)
 
+  // Export/Import confirmation dialogs
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null)
+
   // Cloud unlock click tracking
   const [versionClickCount, setVersionClickCount] = useState(0)
   const [firstClickTime, setFirstClickTime] = useState<number | null>(null)
@@ -262,6 +267,7 @@ export function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleExportJSON = async () => {
+    setExportDialogOpen(false)
     setIsExporting(true)
     try {
       const data = {
@@ -289,16 +295,25 @@ export function SettingsPage() {
     }
   }
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setPendingImportFile(file)
+    setImportDialogOpen(true)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleConfirmImport = async () => {
+    if (!pendingImportFile) return
+
+    setImportDialogOpen(false)
 
     setIsImporting(true)
     setImportError('')
     setImportSuccess(false)
 
     try {
-      const text = await file.text()
+      const text = await pendingImportFile.text()
       const data = JSON.parse(text)
 
       if (!data.version || !data.accounts || !data.transactions) {
@@ -1023,7 +1038,7 @@ export function SettingsPage() {
           </button>
 
           <button
-            onClick={handleExportJSON}
+            onClick={() => setExportDialogOpen(true)}
             disabled={isExporting}
             className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl disabled:opacity-50"
           >
@@ -1044,7 +1059,7 @@ export function SettingsPage() {
               ref={fileInputRef}
               type="file"
               accept=".json"
-              onChange={handleImport}
+              onChange={handleImportFileSelected}
               disabled={isImporting}
               className="hidden"
             />
@@ -1097,6 +1112,62 @@ export function SettingsPage() {
         </p>
       </div>
 
+      {/* Export Confirmation Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={(open) => !open && setExportDialogOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('exportConfirmTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">{t('exportConfirmMessage')}</p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setExportDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              {t('cancel')}
+            </Button>
+            <Button onClick={handleExportJSON} disabled={isExporting} className="w-full sm:w-auto">
+              {isExporting ? t('processing') : t('exportBackup')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Confirmation Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={(open) => !open && setImportDialogOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              {t('backupImportConfirmTitle')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">{t('backupImportConfirmMessage')}</p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setImportDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmImport}
+              disabled={isImporting}
+              className="w-full sm:w-auto"
+            >
+              {isImporting ? t('processing') : t('importBackup')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={(open) => !open && setDeleteModalOpen(false)}>
         <DialogContent>
@@ -1109,11 +1180,20 @@ export function SettingsPage() {
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">{t('deleteConfirmationMessage')}</p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              className="w-full sm:w-auto"
+            >
               {t('cancel')}
             </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="w-full sm:w-auto"
+            >
               {isDeleting ? t('processing') : t('deleteAllData')}
             </Button>
           </DialogFooter>

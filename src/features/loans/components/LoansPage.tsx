@@ -1,17 +1,19 @@
 import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { LoanForm } from './LoanForm'
 import type { LoanFormData } from './LoanForm'
 import { PaymentDialog } from './PaymentDialog'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { Button } from '@/components/ui/button'
 import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
 import { useLoans, useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
 import { queryClient } from '@/lib/queryClient'
+import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 
 export function LoansPage() {
@@ -20,6 +22,13 @@ export function LoansPage() {
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t } = useLanguage()
+  const ensureEntitiesLoaded = useAppStore((state) => state.ensureEntitiesLoaded)
+  const loadedEntities = useAppStore((state) => state.loadedEntities)
+  const isLoadingLoans = !loadedEntities.has('loans')
+
+  useEffect(() => {
+    ensureEntitiesLoaded(['loans'])
+  }, [ensureEntitiesLoaded])
 
   const [loanFormOpen, setLoanFormOpen] = useState(false)
   const [givenExpanded, setGivenExpanded] = useState(true)
@@ -68,6 +77,10 @@ export function LoansPage() {
 
     return { givenByCurrency, receivedByCurrency }
   }, [activeGiven, activeReceived])
+
+  if (isLoadingLoans) {
+    return <LoadingSkeleton />
+  }
 
   const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
     if (isEdit && loanId) {

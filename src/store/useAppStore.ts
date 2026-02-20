@@ -23,30 +23,16 @@ interface MigrationState {
 }
 
 interface AppState {
-  // Settings
   mainCurrency: string
   blurFinancialFigures: boolean
-
-  // Loading states
   isLoading: boolean
-
-  // Migration state
+  loadedEntities: Set<string>
   migration: MigrationState
-
-  // UI State - Mobile-first: dashboard, history, loans, report, settings
   activeView: 'dashboard' | 'history' | 'loans' | 'report' | 'settings'
-
-  // Selected month for filtering (defaults to current month)
   selectedMonth: Date
-
-  // Navigation filters (set before navigating to a view)
   historyCategoryFilter: number | null
   historyAccountFilter: number | null
-
-  // Onboarding state (0 = not active, 1-5 = steps)
   onboardingStep: number
-
-  // Actions
   setActiveView: (view: AppState['activeView']) => void
   navigateToHistoryWithCategory: (categoryId: number) => void
   navigateToHistoryWithAccount: (accountId: number) => void
@@ -57,8 +43,7 @@ interface AppState {
   setOnboardingStep: (step: number) => void
   completeOnboarding: () => void
   skipOnboarding: () => void
-
-  // Migration actions
+  ensureEntitiesLoaded: (entities: string[]) => Promise<void>
   startMigration: () => Promise<void>
   skipMigration: () => Promise<void>
   dismissMigrationDialog: () => void
@@ -66,10 +51,18 @@ interface AppState {
   showMigrationDialogManually: () => Promise<void>
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   mainCurrency: 'BYN',
   blurFinancialFigures: false,
   isLoading: true,
+  loadedEntities: new Set([
+    'accounts',
+    'incomeSources',
+    'categories',
+    'transactions',
+    'customCurrencies',
+    'settings',
+  ]),
   migration: {
     showMigrationDialog: false,
     isMigrating: false,
@@ -115,7 +108,14 @@ export const useAppStore = create<AppState>((set) => ({
         localStorage.getItem('finance-tracker-onboarding-completed') === 'true'
 
       if (isSupabaseConfigured() && isCloudUnlocked() && isMigrationComplete()) {
-        await syncService.pullFromRemote()
+        await syncService.pullFromRemote([
+          'accounts',
+          'incomeSources',
+          'categories',
+          'transactions',
+          'customCurrencies',
+          'settings',
+        ])
         await syncService.syncAll()
       }
 
@@ -150,6 +150,21 @@ export const useAppStore = create<AppState>((set) => ({
   skipOnboarding: () => {
     localStorage.setItem('finance-tracker-onboarding-completed', 'true')
     set({ onboardingStep: 0 })
+  },
+
+  ensureEntitiesLoaded: async (entities: string[]) => {
+    const { loadedEntities } = get()
+    const toLoad = entities.filter((e) => !loadedEntities.has(e))
+
+    if (toLoad.length === 0) return
+
+    if (isSupabaseConfigured() && isCloudUnlocked() && isMigrationComplete()) {
+      await syncService.pullFromRemote(toLoad)
+    }
+
+    set((state) => ({
+      loadedEntities: new Set([...state.loadedEntities, ...toLoad]),
+    }))
   },
 
   startMigration: async () => {

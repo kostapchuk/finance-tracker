@@ -396,6 +396,12 @@ const lazyTranslations = {
       'Your account is now connected to the cloud. Data will sync automatically across devices.',
     olderDataUnavailableOffline: 'Older transactions unavailable offline',
     offlineDescription: 'Connect to internet to sync and access older transactions',
+    exportConfirmTitle: 'Export Backup',
+    exportConfirmMessage:
+      'A backup file will be downloaded containing all your data including accounts, transactions, categories, and loans. Current account balances will be included.',
+    backupImportConfirmTitle: 'Import Backup',
+    backupImportConfirmMessage:
+      'WARNING: All existing data will be completely deleted and replaced with data from the backup file. This action cannot be undone. Make sure to export your current data first if you want to keep it.',
   },
   ru: {
     goodExpenses: 'Хорошие расходы',
@@ -659,6 +665,12 @@ const lazyTranslations = {
       'Ваш аккаунт теперь подключён к облаку. Данные будут автоматически синхронизироваться между устройствами.',
     olderDataUnavailableOffline: 'Старые транзакции недоступны оффлайн',
     offlineDescription: 'Подключитесь к интернету для синхронизации и доступа к старым транзакциям',
+    exportConfirmTitle: 'Экспорт резервной копии',
+    exportConfirmMessage:
+      'Будет скачан файл резервной копии со всеми вашими данными, включая счета, транзакции, категории и долги. Текущие балансы счетов будут включены.',
+    backupImportConfirmTitle: 'Импорт резервной копии',
+    backupImportConfirmMessage:
+      'ВНИМАНИЕ: Все существующие данные будут полностью удалены и заменены данными из файла резервной копии. Это действие нельзя отменить. Сначала экспортируйте текущие данные, если хотите их сохранить.',
   },
 } as const
 
