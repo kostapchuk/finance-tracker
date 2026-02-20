@@ -18,8 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { loanRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
+import { useLoans, useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
+import { queryClient } from '@/lib/queryClient'
 import { formatCurrency } from '@/utils/currency'
 import { formatDate } from '@/utils/date'
 
@@ -31,10 +32,10 @@ const statusConfig = {
 
 export function LoanList() {
   const { t } = useLanguage()
-  const loans = useAppStore((state) => state.loans)
-  const accounts = useAppStore((state) => state.accounts)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
+  const { data: loans = [] } = useLoans()
+  const { data: accounts = [] } = useAccounts()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
   const [formOpen, setFormOpen] = useState(false)
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
   const [paymentLoan, setPaymentLoan] = useState<Loan | null>(null)
@@ -50,7 +51,9 @@ export function LoanList() {
     if (!confirm(`Delete loan for "${loan.personName}"? This cannot be undone.`)) return
 
     await loanRepo.delete(loan.id)
-    await refreshLoans()
+    // Update query cache directly
+    const updatedLoans = await loanRepo.getAll()
+    queryClient.setQueryData(['loans'], updatedLoans)
   }
 
   const handleCloseForm = () => {
@@ -58,8 +61,8 @@ export function LoanList() {
     setEditingLoan(null)
   }
 
-  const getAccountName = (id?: number) => {
-    const account = accounts.find((a) => a.id === id)
+  const getAccountName = (id?: number | string) => {
+    const account = accounts.find((a) => String(a.id) === String(id))
     return account ? `${account.name} (${account.currency})` : ''
   }
 

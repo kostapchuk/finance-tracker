@@ -1,403 +1,449 @@
-import { test, expect } from '../fixtures/test-base';
-import { LoanForm } from '../page-objects/components/loan-form';
-import { PaymentDialog } from '../page-objects/components/payment-dialog';
-import { testAccounts } from '../fixtures/test-data';
-
-test.describe('Loan Payments', () => {
-  test.beforeEach(async ({ setupCleanState }) => {
-    await setupCleanState();
-  });
-
-  test('should record partial payment on loan given - balance increases', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed account and create loan
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const initialBalance = await dbHelper.getAccountBalance(accountId);
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan given
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('John');
-    await loanForm.fillAmount('500');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // Balance should have decreased
-    let balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance - 500);
-
-    // Click loan to open payment dialog
-    await loansPage.clickLoan('John');
-
-    // Record partial payment
-    await paymentDialog.fillAmount('200');
-    await paymentDialog.recordPayment();
-
-    // Balance should increase (money returned)
-    balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance - 500 + 200);
-
-    // Verify loan status shows partial payment
-    const loanStatus = await dbHelper.getLoanStatus(1);
-    expect(loanStatus?.paidAmount).toBe(200);
-    expect(loanStatus?.status).toBe('partially_paid');
-  });
-
-  test('should record partial payment on loan received - balance decreases', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed account and create loan
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const initialBalance = await dbHelper.getAccountBalance(accountId);
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan received
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('received');
-    await loanForm.fillPersonName('Jane');
-    await loanForm.fillAmount('1000');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // Balance should have increased
-    let balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance + 1000);
-
-    // Click loan to open payment dialog
-    await loansPage.clickLoan('Jane');
-
-    // Record partial payment
-    await paymentDialog.fillAmount('300');
-    await paymentDialog.recordPayment();
-
-    // Balance should decrease (paying back)
-    balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance + 1000 - 300);
-  });
-
-  test('should record full payment - loan status becomes fully_paid', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed account and create loan
-    await dbHelper.seedAccount(testAccounts.usdCash());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan given
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('Full Payment Test');
-    await loanForm.fillAmount('300');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // Click loan to open payment dialog
-    await loansPage.clickLoan('Full Payment Test');
-
-    // Record full payment
-    await paymentDialog.fillAmount('300');
-    await paymentDialog.recordPayment();
-
-    // Verify loan is fully paid
-    const loanStatus = await dbHelper.getLoanStatus(1);
-    expect(loanStatus?.paidAmount).toBe(300);
-    expect(loanStatus?.status).toBe('fully_paid');
-
-    // Loan should move to completed section
-    await expect(loansPage.getCompletedSection()).toBeVisible();
-  });
-
-  test('should use pay remaining button for full payment', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed account and create loan
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const initialBalance = await dbHelper.getAccountBalance(accountId);
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan given
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('Pay Remaining Test');
-    await loanForm.fillAmount('400');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // Click loan
-    await loansPage.clickLoan('Pay Remaining Test');
-
-    // Use pay remaining button
-    await paymentDialog.payRemaining();
-
-    // Verify full balance change
-    const balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance - 400 + 400); // loan given minus, payment plus
-
-    // Verify fully paid status
-    const loanStatus = await dbHelper.getLoanStatus(1);
-    expect(loanStatus?.status).toBe('fully_paid');
-  });
-
-  test('should record multi-currency payment (EUR loan, USD account)', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed USD account
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const initialBalance = await dbHelper.getAccountBalance(accountId);
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create EUR loan from USD account
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('EUR Payment Test');
-    await loanForm.fillAmount('200');
-    await loanForm.selectCurrency('EUR');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.fillAccountAmount('220');
-    await loanForm.save();
-
-    // Balance decreased by USD amount
-    let balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance - 220);
-
-    // Click loan
-    await loansPage.clickLoan('EUR Payment Test');
-
-    // Record partial payment (multi-currency)
-    await paymentDialog.fillAmount('100'); // EUR
-    await paymentDialog.fillAccountAmount('110'); // USD
-
-    await paymentDialog.recordPayment();
-
-    // Balance should increase by USD payment amount
-    balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance - 220 + 110);
-  });
-
-  test('should record multiple payments on same loan', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed account
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const initialBalance = await dbHelper.getAccountBalance(accountId);
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('Multiple Payments');
-    await loanForm.fillAmount('600');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // First payment
-    await loansPage.clickLoan('Multiple Payments');
-    await paymentDialog.fillAmount('200');
-    await paymentDialog.recordPayment();
-
-    // Second payment
-    await loansPage.clickLoan('Multiple Payments');
-    await paymentDialog.fillAmount('150');
-    await paymentDialog.recordPayment();
-
-    // Verify total paid amount
-    const loanStatus = await dbHelper.getLoanStatus(1);
-    expect(loanStatus?.paidAmount).toBe(350);
-    expect(loanStatus?.status).toBe('partially_paid');
-
-    // Verify balance
-    const balance = await dbHelper.getAccountBalance(accountId);
-    expect(balance).toBe(initialBalance - 600 + 350);
-  });
-
-  test('should show payment in transaction history', async ({
-    page,
-    loansPage,
-    historyPage,
-    dbHelper,
-  }) => {
-    // Seed account
-    await dbHelper.seedAccount(testAccounts.usdCash());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('History Test');
-    await loanForm.fillAmount('500');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // Record payment (comment field not available for new payments)
-    await loansPage.clickLoan('History Test');
-    await paymentDialog.fillAmount('100');
-    await paymentDialog.recordPayment();
-
-    // Navigate to history and filter by loans
-    await historyPage.navigateTo('history');
-    await historyPage.filterByType('loans');
-
-    // Verify payment appears (auto-generated comment includes "Payment received from")
-    await expect(page.locator('text=Payment received from History Test')).toBeVisible();
-  });
-
-  test('should record payment to different account than loan account', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed two accounts: USD Cash and EUR Bank
-    const usdAccountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    const eurAccountId = await dbHelper.seedAccount(testAccounts.eurBank());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const initialUsdBalance = await dbHelper.getAccountBalance(usdAccountId);
-    const initialEurBalance = await dbHelper.getAccountBalance(eurAccountId);
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan given from USD Cash account
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('Different Account Test');
-    await loanForm.fillAmount('500');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // USD balance should have decreased
-    let usdBalance = await dbHelper.getAccountBalance(usdAccountId);
-    expect(usdBalance).toBe(initialUsdBalance - 500);
-
-    // EUR balance should be unchanged
-    let eurBalance = await dbHelper.getAccountBalance(eurAccountId);
-    expect(eurBalance).toBe(initialEurBalance);
-
-    // Click loan to open payment dialog
-    await loansPage.clickLoan('Different Account Test');
-
-    // Select EUR Bank as payment account (multi-currency)
-    await paymentDialog.selectAccount('EUR Bank');
-
-    // Fill amounts (loan currency USD -> account currency EUR)
-    await paymentDialog.fillAmount('200'); // USD
-    await paymentDialog.fillAccountAmount('180'); // EUR
-
-    await paymentDialog.recordPayment();
-
-    // USD balance should remain unchanged (payment went to EUR account)
-    usdBalance = await dbHelper.getAccountBalance(usdAccountId);
-    expect(usdBalance).toBe(initialUsdBalance - 500);
-
-    // EUR balance should increase (payment received in EUR account)
-    eurBalance = await dbHelper.getAccountBalance(eurAccountId);
-    expect(eurBalance).toBe(initialEurBalance + 180);
-
-    // Verify loan status
-    const loanStatus = await dbHelper.getLoanStatus(1);
-    expect(loanStatus?.paidAmount).toBe(200);
-    expect(loanStatus?.status).toBe('partially_paid');
-  });
-
-  test('should record payment to different account with same currency', async ({
-    page,
-    loansPage,
-    dbHelper,
-  }) => {
-    // Seed two USD accounts
-    const cashAccountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    const creditAccountId = await dbHelper.seedAccount(testAccounts.creditCard());
-    await dbHelper.refreshStoreData();
-    await page.reload();
-
-    const initialCashBalance = await dbHelper.getAccountBalance(cashAccountId);
-    const initialCreditBalance = await dbHelper.getAccountBalance(creditAccountId);
-    const loanForm = new LoanForm(page);
-    const paymentDialog = new PaymentDialog(page);
-
-    // Create loan given from USD Cash
-    await loansPage.navigateTo('loans');
-    await loansPage.clickAdd();
-    await loanForm.selectType('given');
-    await loanForm.fillPersonName('Same Currency Different Account');
-    await loanForm.fillAmount('300');
-    await loanForm.selectAccount('USD Cash');
-    await loanForm.save();
-
-    // Cash balance decreased
-    let cashBalance = await dbHelper.getAccountBalance(cashAccountId);
-    expect(cashBalance).toBe(initialCashBalance - 300);
-
-    // Click loan
-    await loansPage.clickLoan('Same Currency Different Account');
-
-    // Select Credit Card as payment account
-    await paymentDialog.selectAccount('Credit Card');
-
-    // Fill amount (same currency, no dual input needed)
-    await paymentDialog.fillAmount('150');
-
-    await paymentDialog.recordPayment();
-
-    // Cash balance unchanged
-    cashBalance = await dbHelper.getAccountBalance(cashAccountId);
-    expect(cashBalance).toBe(initialCashBalance - 300);
-
-    // Credit Card balance increased (money returned to this account)
-    const creditBalance = await dbHelper.getAccountBalance(creditAccountId);
-    expect(creditBalance).toBe(initialCreditBalance + 150);
-
-    // Verify loan status
-    const loanStatus = await dbHelper.getLoanStatus(1);
-    expect(loanStatus?.paidAmount).toBe(150);
-  });
-});
+import { test, expect, type SyncMode } from '../fixtures/test-base'
+import { LoanForm } from '../page-objects/components/loan-form'
+import { PaymentDialog } from '../page-objects/components/payment-dialog'
+import { testAccounts } from '../fixtures/test-data'
+
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+
+for (const mode of syncModes) {
+  test.describe(`[${mode}] Loan Payments`, () => {
+    test.beforeEach(async ({ setupCleanState }) => {
+      await setupCleanState(mode)
+    })
+
+    test('should record partial payment on loan given - balance increases', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      const accountId = await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const initialBalance = await dbHelper.getAccountBalance(accountId)
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('John')
+      await loanForm.fillAmount('500')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      let balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance - 500)
+
+      await loansPage.clickLoan('John')
+
+      await paymentDialog.fillAmount('200')
+      await paymentDialog.recordPayment()
+
+      balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance - 500 + 200)
+
+      const loanStatus = await dbHelper.getLoanStatus(1)
+      expect(loanStatus?.paidAmount).toBe(200)
+      expect(loanStatus?.status).toBe('partially_paid')
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+        const remoteTransactions = syncHelper.getMockRemoteData('transactions')
+        expect(remoteTransactions.length).toBeGreaterThanOrEqual(2)
+      }
+    })
+
+    test('should record partial payment on loan received - balance decreases', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      const accountId = await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const initialBalance = await dbHelper.getAccountBalance(accountId)
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('received')
+      await loanForm.fillPersonName('Jane')
+      await loanForm.fillAmount('1000')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      let balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance + 1000)
+
+      await loansPage.clickLoan('Jane')
+
+      await paymentDialog.fillAmount('300')
+      await paymentDialog.recordPayment()
+
+      balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance + 1000 - 300)
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+        const remoteLoans = syncHelper.getMockRemoteData('loans')
+        expect(remoteLoans.length).toBe(1)
+      }
+    })
+
+    test('should record full payment - loan status becomes fully_paid', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('Full Payment Test')
+      await loanForm.fillAmount('300')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      await loansPage.clickLoan('Full Payment Test')
+
+      await paymentDialog.fillAmount('300')
+      await paymentDialog.recordPayment()
+
+      const loanStatus = await dbHelper.getLoanStatus(1)
+      expect(loanStatus?.paidAmount).toBe(300)
+      expect(loanStatus?.status).toBe('fully_paid')
+
+      await expect(loansPage.getCompletedSection()).toBeVisible()
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+        const remoteLoans = syncHelper.getMockRemoteData('loans')
+        expect(remoteLoans[0].status).toBe('fully_paid')
+      }
+    })
+
+    test('should use pay remaining button for full payment', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      const accountId = await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const initialBalance = await dbHelper.getAccountBalance(accountId)
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('Pay Remaining Test')
+      await loanForm.fillAmount('400')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      await loansPage.clickLoan('Pay Remaining Test')
+
+      await paymentDialog.payRemaining()
+
+      const balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance - 400 + 400)
+
+      const loanStatus = await dbHelper.getLoanStatus(1)
+      expect(loanStatus?.status).toBe('fully_paid')
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+        const remoteLoans = syncHelper.getMockRemoteData('loans')
+        expect(remoteLoans[0].status).toBe('fully_paid')
+      }
+    })
+
+    test('should record multi-currency payment (EUR loan, USD account)', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      const accountId = await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const initialBalance = await dbHelper.getAccountBalance(accountId)
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('EUR Payment Test')
+      await loanForm.fillAmount('200')
+      await loanForm.selectCurrency('EUR')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.fillAccountAmount('220')
+      await loanForm.save()
+
+      let balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance - 220)
+
+      await loansPage.clickLoan('EUR Payment Test')
+
+      await paymentDialog.fillAmount('100')
+      await paymentDialog.fillAccountAmount('110')
+
+      await paymentDialog.recordPayment()
+
+      balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance - 220 + 110)
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+        const remoteLoans = syncHelper.getMockRemoteData('loans')
+        expect(remoteLoans[0].currency).toBe('EUR')
+      }
+    })
+
+    test('should record multiple payments on same loan', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      const accountId = await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const initialBalance = await dbHelper.getAccountBalance(accountId)
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('Multiple Payments')
+      await loanForm.fillAmount('600')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      await loansPage.clickLoan('Multiple Payments')
+      await paymentDialog.fillAmount('200')
+      await paymentDialog.recordPayment()
+
+      await loansPage.clickLoan('Multiple Payments')
+      await paymentDialog.fillAmount('150')
+      await paymentDialog.recordPayment()
+
+      const loanStatus = await dbHelper.getLoanStatus(1)
+      expect(loanStatus?.paidAmount).toBe(350)
+      expect(loanStatus?.status).toBe('partially_paid')
+
+      const balance = await dbHelper.getAccountBalance(accountId)
+      expect(balance).toBe(initialBalance - 600 + 350)
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+        const remoteTransactions = syncHelper.getMockRemoteData('transactions')
+        expect(remoteTransactions.length).toBeGreaterThanOrEqual(3)
+      }
+    })
+
+    test('should show payment in transaction history', async ({
+      page,
+      loansPage,
+      historyPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('History Test')
+      await loanForm.fillAmount('500')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      await loansPage.clickLoan('History Test')
+      await paymentDialog.fillAmount('100')
+      await paymentDialog.recordPayment()
+
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('loans')
+
+      await expect(page.locator('text=Payment received from History Test')).toBeVisible()
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+      }
+    })
+
+    test('should record payment to different account than loan account', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      const usdAccountId = await seedAccount(testAccounts.usdCash())
+      const eurAccountId = await seedAccount(testAccounts.eurBank())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const initialUsdBalance = await dbHelper.getAccountBalance(usdAccountId)
+      const initialEurBalance = await dbHelper.getAccountBalance(eurAccountId)
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('Different Account Test')
+      await loanForm.fillAmount('500')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      let usdBalance = await dbHelper.getAccountBalance(usdAccountId)
+      expect(usdBalance).toBe(initialUsdBalance - 500)
+
+      let eurBalance = await dbHelper.getAccountBalance(eurAccountId)
+      expect(eurBalance).toBe(initialEurBalance)
+
+      await loansPage.clickLoan('Different Account Test')
+
+      await paymentDialog.selectAccount('EUR Bank')
+
+      await paymentDialog.fillAmount('200')
+      await paymentDialog.fillAccountAmount('180')
+
+      await paymentDialog.recordPayment()
+
+      usdBalance = await dbHelper.getAccountBalance(usdAccountId)
+      expect(usdBalance).toBe(initialUsdBalance - 500)
+
+      eurBalance = await dbHelper.getAccountBalance(eurAccountId)
+      expect(eurBalance).toBe(initialEurBalance + 180)
+
+      const loanStatus = await dbHelper.getLoanStatus(1)
+      expect(loanStatus?.paidAmount).toBe(200)
+      expect(loanStatus?.status).toBe('partially_paid')
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+      }
+    })
+
+    test('should record payment to different account with same currency', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      const cashAccountId = await seedAccount(testAccounts.usdCash())
+      const creditAccountId = await seedAccount(testAccounts.creditCard())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const initialCashBalance = await dbHelper.getAccountBalance(cashAccountId)
+      const initialCreditBalance = await dbHelper.getAccountBalance(creditAccountId)
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('Same Currency Different Account')
+      await loanForm.fillAmount('300')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      let cashBalance = await dbHelper.getAccountBalance(cashAccountId)
+      expect(cashBalance).toBe(initialCashBalance - 300)
+
+      await loansPage.clickLoan('Same Currency Different Account')
+
+      await paymentDialog.selectAccount('Credit Card')
+
+      await paymentDialog.fillAmount('150')
+
+      await paymentDialog.recordPayment()
+
+      cashBalance = await dbHelper.getAccountBalance(cashAccountId)
+      expect(cashBalance).toBe(initialCashBalance - 300)
+
+      const creditBalance = await dbHelper.getAccountBalance(creditAccountId)
+      expect(creditBalance).toBe(initialCreditBalance + 150)
+
+      const loanStatus = await dbHelper.getLoanStatus(1)
+      expect(loanStatus?.paidAmount).toBe(150)
+
+      if (mode !== 'sync-disabled') {
+        await syncHelper.waitForSyncToComplete()
+      }
+    })
+
+    test('should persist payment after offline and back online', async ({
+      page,
+      loansPage,
+      dbHelper,
+      syncHelper,
+    }) => {
+      if (mode !== 'sync-enabled-offline') {
+        test.skip()
+        return
+      }
+
+      const accountId = await seedAccount(testAccounts.usdCash())
+      await dbHelper.refreshStoreData()
+      await page.reload()
+
+      const loanForm = new LoanForm(page)
+      const paymentDialog = new PaymentDialog(page)
+
+      await loansPage.navigateTo('loans')
+      await loansPage.clickAdd()
+      await loanForm.selectType('given')
+      await loanForm.fillPersonName('Offline Payment Test')
+      await loanForm.fillAmount('500')
+      await loanForm.selectAccount('USD Cash')
+      await loanForm.save()
+
+      await loansPage.clickLoan('Offline Payment Test')
+      await paymentDialog.fillAmount('200')
+      await paymentDialog.recordPayment()
+
+      const queueCount = await syncHelper.getSyncQueueCount()
+      expect(queueCount).toBeGreaterThan(0)
+
+      await syncHelper.goOnline()
+      await syncHelper.waitForSyncToComplete()
+
+      const finalQueueCount = await syncHelper.getSyncQueueCount()
+      expect(finalQueueCount).toBe(0)
+
+      const remoteTransactions = syncHelper.getMockRemoteData('transactions')
+      expect(remoteTransactions.length).toBeGreaterThanOrEqual(2)
+
+      const remoteLoans = syncHelper.getMockRemoteData('loans')
+      expect(remoteLoans[0].paidAmount).toBe(200)
+    })
+  })
+}

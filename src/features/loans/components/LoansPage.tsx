@@ -1,26 +1,34 @@
 import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { LoanForm } from './LoanForm'
 import type { LoanFormData } from './LoanForm'
 import { PaymentDialog } from './PaymentDialog'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { Button } from '@/components/ui/button'
 import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
+import { useLoans, useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { queryClient } from '@/lib/queryClient'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 
 export function LoansPage() {
-  const loans = useAppStore((state) => state.loans)
-  const accounts = useAppStore((state) => state.accounts)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
+  const { data: loans = [] } = useLoans()
+  const { data: accounts = [] } = useAccounts()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t } = useLanguage()
+  const ensureEntitiesLoaded = useAppStore((state) => state.ensureEntitiesLoaded)
+  const loadedEntities = useAppStore((state) => state.loadedEntities)
+  const isLoadingLoans = !loadedEntities.has('loans')
+
+  useEffect(() => {
+    ensureEntitiesLoaded(['loans'])
+  }, [ensureEntitiesLoaded])
 
   const [loanFormOpen, setLoanFormOpen] = useState(false)
   const [givenExpanded, setGivenExpanded] = useState(true)
@@ -70,9 +78,12 @@ export function LoansPage() {
     return { givenByCurrency, receivedByCurrency }
   }, [activeGiven, activeReceived])
 
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
+  if (isLoadingLoans) {
+    return <LoadingSkeleton />
+  }
+
+  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
     if (isEdit && loanId) {
-      // Edit: just update loan fields, no transaction/balance changes
       await loanRepo.update(loanId, {
         type: data.type,
         personName: data.personName,
@@ -82,8 +93,11 @@ export function LoansPage() {
         accountId: data.accountId,
         dueDate: data.dueDate,
       })
+
+      // Update query cache directly
+      const updatedLoans = await loanRepo.getAll()
+      queryClient.setQueryData(['loans'], updatedLoans)
     } else {
-      // Create: save loan, create transaction, update account balance
       const newLoanId = await loanRepo.create({
         type: data.type,
         personName: data.personName,
@@ -96,16 +110,12 @@ export function LoansPage() {
         dueDate: data.dueDate,
       })
 
-      const account = accounts.find((a) => a.id === data.accountId)
-      // Amount to use for account balance update
+      const account = accounts.find((a) => String(a.id) === String(data.accountId))
       const balanceAmount = data.accountAmount ?? data.amount
 
-      // loan_given: you give money out → balance decreases
-      // loan_received: you receive money → balance increases
       const balanceChange = data.type === 'given' ? -balanceAmount : balanceAmount
       await accountRepo.updateBalance(data.accountId, balanceChange)
 
-      // Create transaction record
       const transactionType =
         data.type === 'given' ? ('loan_given' as const) : ('loan_received' as const)
       await transactionRepo.create({
@@ -113,17 +123,22 @@ export function LoansPage() {
         amount: balanceAmount,
         currency: account?.currency || data.currency,
         date: new Date(),
-        loanId: newLoanId as number,
+        loanId: newLoanId,
         accountId: data.accountId,
         mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })
 
-      await refreshAccounts()
-      await refreshTransactions()
+      // Update query cache directly
+      const [updatedLoans2, updatedAccounts, updatedTransactions] = await Promise.all([
+        loanRepo.getAll(),
+        accountRepo.getAll(),
+        transactionRepo.getAll(),
+      ])
+      queryClient.setQueryData(['loans'], updatedLoans2)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
+      queryClient.setQueryData(['transactions'], updatedTransactions)
     }
-
-    await refreshLoans()
   }
 
   const handleAddNew = () => {

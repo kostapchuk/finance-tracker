@@ -76,10 +76,13 @@ function DialogTrigger({ children, asChild }: DialogTriggerProps) {
 
 interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
+  hideClose?: boolean
+  /** When true, prevents closing by clicking backdrop or pressing Escape */
+  modal?: boolean
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, hideClose, modal = false, ...props }, ref) => {
     const { open, onOpenChange, titleId } = useDialog()
     const dialogRef = React.useRef<HTMLDivElement>(null)
     const previousActiveElement = React.useRef<Element | null>(null)
@@ -107,6 +110,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     // Escape key handler
     React.useEffect(() => {
+      if (modal) return // Don't add escape handler for modal dialogs
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape' && open) {
           onOpenChange(false)
@@ -116,7 +120,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       return () => {
         document.removeEventListener('keydown', handleKeyDown)
       }
-    }, [open, onOpenChange])
+    }, [open, onOpenChange, modal])
 
     // Focus trap handler
     const handleTabTrap = (e: React.KeyboardEvent) => {
@@ -143,7 +147,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div className="fixed inset-0 z-[60]">
         {/* Backdrop - click to close */}
         {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-        <div className="fixed inset-0 bg-black/80" onClick={() => onOpenChange(false)} />
+        <div className="fixed inset-0 bg-black/80" onClick={() => !modal && onOpenChange(false)} />
         <div className="fixed inset-x-4 top-[50%] z-[60] translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
           <div
@@ -167,13 +171,15 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
             {...props}
           >
             {children}
-            <button
-              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none p-2 -m-2"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </button>
+            {!hideClose && (
+              <button
+                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none p-2 -m-2"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -20,14 +20,19 @@ import {
   Plus,
   Pencil,
   AlertTriangle,
+  AlertCircle,
   Coins,
   Globe,
   GripVertical,
   EyeOff,
   FileSpreadsheet,
   RefreshCw,
+  WifiOff,
+  Check,
+  Key,
+  Copy,
 } from 'lucide-react'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 
 import { version } from '../../../../package.json'
 
@@ -50,14 +55,31 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
-import { db } from '@/database/db'
+import { localCache } from '@/database/localCache'
+import {
+  isCloudUnlocked,
+  setCloudUnlocked,
+  isMigrationComplete,
+  isCloudReady,
+} from '@/database/migration'
 import {
   accountRepo,
   categoryRepo,
   incomeSourceRepo,
   customCurrencyRepo,
+  transactionRepo,
+  loanRepo,
 } from '@/database/repositories'
-import type { Account, Category, IncomeSource, CustomCurrency } from '@/database/types'
+import { supabaseApi } from '@/database/supabaseApi'
+import { syncService } from '@/database/syncService'
+import type {
+  Account,
+  Category,
+  IncomeSource,
+  CustomCurrency,
+  Transaction,
+  Loan,
+} from '@/database/types'
 import { AccountForm } from '@/features/accounts/components/AccountForm'
 import { CategoryForm } from '@/features/categories/components/CategoryForm'
 import {
@@ -65,33 +87,64 @@ import {
   type SavedImportState,
 } from '@/features/import/components/BudgetOkImportWizard'
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
+import {
+  useAccounts,
+  useIncomeSources,
+  useCategories,
+  useTransactions,
+  useLoans,
+  useCustomCurrencies,
+} from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useSync } from '@/hooks/useSync'
+import { getUserId } from '@/lib/deviceId'
+import { queryClient } from '@/lib/queryClient'
+import { isSupabaseConfigured } from '@/lib/supabase'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAllCurrencies } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
 
 type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | null
 
+// Helper to generate temp IDs for imported data (matches repositories.ts pattern)
+function generateTempId(): string {
+  return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+}
+
+// Helper to format time until next retry
+function formatTimeUntil(date: Date | null): string {
+  if (!date) return ''
+  const now = new Date()
+  const diff = Math.max(0, date.getTime() - now.getTime())
+
+  const seconds = Math.floor(diff / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+
+  if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`
+  }
+  return `${seconds}s`
+}
+
 export function SettingsPage() {
-  const {
-    accounts,
-    incomeSources,
-    categories,
-    transactions,
-    loans,
-    customCurrencies,
-    mainCurrency,
-    setMainCurrency,
-    blurFinancialFigures,
-    setBlurFinancialFigures,
-    loadAllData,
-    refreshAccounts,
-    refreshCategories,
-    refreshIncomeSources,
-    refreshCustomCurrencies,
-  } = useAppStore()
+  const { data: accounts = [] } = useAccounts()
+  const { data: incomeSources = [] } = useIncomeSources()
+  const { data: categories = [] } = useCategories()
+  const { data: transactions = [] } = useTransactions()
+  const { data: loans = [] } = useLoans()
+  const { data: customCurrencies = [] } = useCustomCurrencies()
+  const mainCurrency = useAppStore((state) => state.mainCurrency)
+  const setMainCurrency = useAppStore((state) => state.setMainCurrency)
+  const blurFinancialFigures = useAppStore((state) => state.blurFinancialFigures)
+  const setBlurFinancialFigures = useAppStore((state) => state.setBlurFinancialFigures)
+  const showMigrationDialogManually = useAppStore((state) => state.showMigrationDialogManually)
   const { language, setLanguage, t } = useLanguage()
   const { needRefresh, updateServiceWorker } = useServiceWorker()
+  const { status, pendingCount, isOffline, sync, nextRetryAt } = useSync()
 
   const [activeSection, setActiveSection] = useState<ManagementSection>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -111,6 +164,67 @@ export function SettingsPage() {
   const [editingCurrency, setEditingCurrency] = useState<CustomCurrency | null>(null)
   const [importWizardOpen, setImportWizardOpen] = useState(false)
   const [savedImportState, setSavedImportState] = useState<SavedImportState | null>(null)
+
+  // Export/Import confirmation dialogs
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null)
+
+  // Cloud unlock click tracking
+  const [versionClickCount, setVersionClickCount] = useState(0)
+  const [firstClickTime, setFirstClickTime] = useState<number | null>(null)
+  const [cloudUnlocked, setCloudUnlockedState] = useState(isCloudUnlocked())
+  const [migrationComplete, setMigrationCompleteState] = useState(isMigrationComplete())
+
+  // Timer tick for updating next retry time display
+  const [, setTick] = useState(0)
+
+  useEffect(() => {
+    setCloudUnlockedState(isCloudUnlocked())
+    setMigrationCompleteState(isMigrationComplete())
+  }, [])
+
+  // Update timer every second for next retry display
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleVersionClick = useCallback(() => {
+    // If both cloud is unlocked and migration is complete, no action needed
+    if (cloudUnlocked && migrationComplete) return
+
+    const now = Date.now()
+
+    if (firstClickTime === null || now - firstClickTime > 5000) {
+      setVersionClickCount(1)
+      setFirstClickTime(now)
+    } else {
+      const newCount = versionClickCount + 1
+      setVersionClickCount(newCount)
+
+      if (newCount >= 5) {
+        // Only set cloud unlocked if not already
+        if (!cloudUnlocked) {
+          setCloudUnlocked()
+          setCloudUnlockedState(true)
+        }
+        setVersionClickCount(0)
+        setFirstClickTime(null)
+        showMigrationDialogManually().then(() => {
+          setMigrationCompleteState(isMigrationComplete())
+        })
+      }
+    }
+  }, [
+    cloudUnlocked,
+    migrationComplete,
+    firstClickTime,
+    versionClickCount,
+    showMigrationDialogManually,
+  ])
 
   // Drag-to-reorder sensors
   const reorderSensors = useSensors(
@@ -153,6 +267,7 @@ export function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleExportJSON = async () => {
+    setExportDialogOpen(false)
     setIsExporting(true)
     try {
       const data = {
@@ -180,88 +295,220 @@ export function SettingsPage() {
     }
   }
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setPendingImportFile(file)
+    setImportDialogOpen(true)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleConfirmImport = async () => {
+    if (!pendingImportFile) return
+
+    setImportDialogOpen(false)
 
     setIsImporting(true)
     setImportError('')
     setImportSuccess(false)
 
     try {
-      const text = await file.text()
+      const text = await pendingImportFile.text()
       const data = JSON.parse(text)
 
       if (!data.version || !data.accounts || !data.transactions) {
         throw new Error('Invalid backup file format')
       }
 
-      await db.transaction(
-        'rw',
-        [db.accounts, db.incomeSources, db.categories, db.transactions, db.loans],
-        async () => {
-          await db.accounts.clear()
-          await db.incomeSources.clear()
-          await db.categories.clear()
-          await db.transactions.clear()
-          await db.loans.clear()
+      await localCache.clearAll()
 
-          if (data.accounts?.length) {
-            await db.accounts.bulkAdd(
-              data.accounts.map((a: Record<string, unknown>) => ({
-                ...a,
-                id: undefined,
-                createdAt: new Date(a.createdAt as string),
-                updatedAt: new Date(a.updatedAt as string),
-              }))
-            )
-          }
-          if (data.incomeSources?.length) {
-            await db.incomeSources.bulkAdd(
-              data.incomeSources.map((s: Record<string, unknown>) => ({
-                ...s,
-                id: undefined,
-                createdAt: new Date(s.createdAt as string),
-                updatedAt: new Date(s.updatedAt as string),
-              }))
-            )
-          }
-          if (data.categories?.length) {
-            await db.categories.bulkAdd(
-              data.categories.map((c: Record<string, unknown>) => ({
-                ...c,
-                id: undefined,
-                createdAt: new Date(c.createdAt as string),
-                updatedAt: new Date(c.updatedAt as string),
-              }))
-            )
-          }
-          if (data.transactions?.length) {
-            await db.transactions.bulkAdd(
-              data.transactions.map((t: Record<string, unknown>) => ({
-                ...t,
-                id: undefined,
-                date: new Date(t.date as string),
-                createdAt: new Date(t.createdAt as string),
-                updatedAt: new Date(t.updatedAt as string),
-              }))
-            )
-          }
-          if (data.loans?.length) {
-            await db.loans.bulkAdd(
-              data.loans.map((l: Record<string, unknown>) => ({
-                ...l,
-                id: undefined,
-                dueDate: l.dueDate ? new Date(l.dueDate as string) : undefined,
-                createdAt: new Date(l.createdAt as string),
-                updatedAt: new Date(l.updatedAt as string),
-              }))
-            )
-          }
-        }
-      )
+      const userId = getUserId()
+      const cloudReady = isCloudReady()
 
-      await loadAllData()
+      // Generate ID mappings (old ID → new temp ID)
+      const accountIdMap = new Map<number | undefined, string>()
+      const incomeSourceIdMap = new Map<number | undefined, string>()
+      const categoryIdMap = new Map<number | undefined, string>()
+      const loanIdMap = new Map<number | undefined, string>()
+
+      // Collect items for sync queue
+      const syncQueueAccounts: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueIncomeSources: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueCategories: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueLoans: { tempId: string; data: Record<string, unknown> }[] = []
+      const syncQueueTransactions: { tempId: string; data: Record<string, unknown> }[] = []
+
+      // Import accounts with new IDs
+      if (data.accounts?.length) {
+        const accountsToImport = data.accounts.map((a: Record<string, unknown>) => {
+          const oldId = a.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            accountIdMap.set(oldId, newId)
+          }
+          const account = {
+            ...a,
+            id: newId as unknown as number,
+            userId,
+            createdAt: new Date(a.createdAt as string),
+            updatedAt: new Date(a.updatedAt as string),
+          } as Account
+          if (cloudReady) {
+            syncQueueAccounts.push({
+              tempId: newId,
+              data: { ...account, id: newId },
+            })
+          }
+          return account
+        })
+        await localCache.accounts.putAll(accountsToImport)
+      }
+
+      // Import income sources with new IDs
+      if (data.incomeSources?.length) {
+        const sourcesToImport = data.incomeSources.map((s: Record<string, unknown>) => {
+          const oldId = s.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            incomeSourceIdMap.set(oldId, newId)
+          }
+          const source = {
+            ...s,
+            id: newId as unknown as number,
+            userId,
+            createdAt: new Date(s.createdAt as string),
+            updatedAt: new Date(s.updatedAt as string),
+          } as IncomeSource
+          if (cloudReady) {
+            syncQueueIncomeSources.push({
+              tempId: newId,
+              data: { ...source, id: newId },
+            })
+          }
+          return source
+        })
+        await localCache.incomeSources.putAll(sourcesToImport)
+      }
+
+      // Import categories with new IDs
+      if (data.categories?.length) {
+        const categoriesToImport = data.categories.map((c: Record<string, unknown>) => {
+          const oldId = c.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            categoryIdMap.set(oldId, newId)
+          }
+          const category = {
+            ...c,
+            id: newId as unknown as number,
+            userId,
+            createdAt: new Date(c.createdAt as string),
+            updatedAt: new Date(c.updatedAt as string),
+          } as Category
+          if (cloudReady) {
+            syncQueueCategories.push({
+              tempId: newId,
+              data: { ...category, id: newId },
+            })
+          }
+          return category
+        })
+        await localCache.categories.putAll(categoriesToImport)
+      }
+
+      // Import loans with new IDs
+      if (data.loans?.length) {
+        const loansToImport = data.loans.map((l: Record<string, unknown>) => {
+          const oldId = l.id as number | undefined
+          const newId = generateTempId()
+          if (oldId !== undefined) {
+            loanIdMap.set(oldId, newId)
+          }
+          const loan = {
+            ...l,
+            id: newId as unknown as number,
+            userId,
+            accountId: l.accountId
+              ? (accountIdMap.get(l.accountId as number) as unknown as number)
+              : undefined,
+            dueDate: l.dueDate ? new Date(l.dueDate as string) : undefined,
+            createdAt: new Date(l.createdAt as string),
+            updatedAt: new Date(l.updatedAt as string),
+          } as Loan
+          if (cloudReady) {
+            syncQueueLoans.push({
+              tempId: newId,
+              data: { ...loan, id: newId },
+            })
+          }
+          return loan
+        })
+        await localCache.loans.putAll(loansToImport)
+      }
+
+      // Import transactions with new IDs and updated references
+      if (data.transactions?.length) {
+        const transactionsToImport = data.transactions.map((t: Record<string, unknown>) => {
+          const newId = generateTempId()
+          const transaction = {
+            ...t,
+            id: newId as unknown as number,
+            userId,
+            accountId: t.accountId
+              ? (accountIdMap.get(t.accountId as number) as unknown as number)
+              : undefined,
+            toAccountId: t.toAccountId
+              ? (accountIdMap.get(t.toAccountId as number) as unknown as number)
+              : undefined,
+            categoryId: t.categoryId
+              ? (categoryIdMap.get(t.categoryId as number) as unknown as number)
+              : undefined,
+            incomeSourceId: t.incomeSourceId
+              ? (incomeSourceIdMap.get(t.incomeSourceId as number) as unknown as number)
+              : undefined,
+            loanId: t.loanId ? (loanIdMap.get(t.loanId as number) as unknown as number) : undefined,
+            date: new Date(t.date as string),
+            createdAt: new Date(t.createdAt as string),
+            updatedAt: new Date(t.updatedAt as string),
+          } as Transaction
+          if (cloudReady) {
+            syncQueueTransactions.push({
+              tempId: newId,
+              data: { ...transaction, id: newId },
+            })
+          }
+          return transaction
+        })
+        await localCache.transactions.putAll(transactionsToImport)
+      }
+
+      // Queue all imported data for sync
+      if (cloudReady) {
+        await syncService.queueBulkOperation('create', 'accounts', syncQueueAccounts)
+        await syncService.queueBulkOperation('create', 'incomeSources', syncQueueIncomeSources)
+        await syncService.queueBulkOperation('create', 'categories', syncQueueCategories)
+        await syncService.queueBulkOperation('create', 'loans', syncQueueLoans)
+        await syncService.queueBulkOperation('create', 'transactions', syncQueueTransactions)
+      }
+
+      // Directly set query data from database to ensure UI updates
+      const [accounts, incomeSources, categories, transactions, loans, currencies] =
+        await Promise.all([
+          accountRepo.getAll(),
+          incomeSourceRepo.getAll(),
+          categoryRepo.getAll(),
+          transactionRepo.getAll(),
+          loanRepo.getAll(),
+          customCurrencyRepo.getAll(),
+        ])
+
+      queryClient.setQueryData(['accounts'], accounts)
+      queryClient.setQueryData(['incomeSources'], incomeSources)
+      queryClient.setQueryData(['categories'], categories)
+      queryClient.setQueryData(['transactions'], transactions)
+      queryClient.setQueryData(['loans'], loans)
+      queryClient.setQueryData(['customCurrencies'], currencies)
+
       setImportSuccess(true)
     } catch (error) {
       console.error('Import failed:', error)
@@ -280,18 +527,21 @@ export function SettingsPage() {
     setIsDeleting(true)
 
     try {
-      await db.transaction(
-        'rw',
-        [db.accounts, db.incomeSources, db.categories, db.transactions, db.loans],
-        async () => {
-          await db.accounts.clear()
-          await db.incomeSources.clear()
-          await db.categories.clear()
-          await db.transactions.clear()
-          await db.loans.clear()
-        }
-      )
-      await loadAllData()
+      await localCache.clearAll()
+
+      // Delete from Supabase cloud only if sync is enabled
+      if (isCloudReady()) {
+        await supabaseApi.accounts.deleteAll()
+        await supabaseApi.incomeSources.deleteAll()
+        await supabaseApi.categories.deleteAll()
+        await supabaseApi.transactions.deleteAll()
+        await supabaseApi.loans.deleteAll()
+        await supabaseApi.customCurrencies.deleteAll()
+      }
+
+      // Invalidate queries to refresh UI
+      await queryClient.invalidateQueries()
+
       setDeleteModalOpen(false)
     } catch (error) {
       console.error('Failed to clear data:', error)
@@ -304,28 +554,28 @@ export function SettingsPage() {
     if (!account.id) return
     if (!confirm(`Delete "${account.name}"?`)) return
     await accountRepo.delete(account.id)
-    await refreshAccounts()
+    await queryClient.invalidateQueries({ queryKey: ['accounts'], refetchType: 'all' })
   }
 
   const handleDeleteCategory = async (category: Category) => {
     if (!category.id) return
     if (!confirm(`Delete "${category.name}"?`)) return
     await categoryRepo.delete(category.id)
-    await refreshCategories()
+    await queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' })
   }
 
   const handleDeleteIncomeSource = async (source: IncomeSource) => {
     if (!source.id) return
     if (!confirm(`Delete "${source.name}"?`)) return
     await incomeSourceRepo.delete(source.id)
-    await refreshIncomeSources()
+    await queryClient.invalidateQueries({ queryKey: ['incomeSources'], refetchType: 'all' })
   }
 
   const handleDeleteCurrency = async (currency: CustomCurrency) => {
     if (!currency.id) return
     if (!confirm(`Delete "${currency.name}" (${currency.code})?`)) return
     await customCurrencyRepo.delete(currency.id)
-    await refreshCustomCurrencies()
+    await queryClient.invalidateQueries({ queryKey: ['customCurrencies'], refetchType: 'all' })
   }
 
   // Render management sections
@@ -343,7 +593,11 @@ export function SettingsPage() {
         <DndContext
           sensors={reorderSensors}
           collisionDetection={closestCenter}
-          onDragEnd={(e) => handleReorder(e, accounts, accountRepo, refreshAccounts)}
+          onDragEnd={(e) =>
+            handleReorder(e, accounts, accountRepo, () =>
+              queryClient.invalidateQueries({ queryKey: ['accounts'], refetchType: 'all' })
+            )
+          }
         >
           <SortableContext
             items={accounts.map((a) => a.id!)}
@@ -397,7 +651,11 @@ export function SettingsPage() {
         <DndContext
           sensors={reorderSensors}
           collisionDetection={closestCenter}
-          onDragEnd={(e) => handleReorder(e, categories, categoryRepo, refreshCategories)}
+          onDragEnd={(e) =>
+            handleReorder(e, categories, categoryRepo, () =>
+              queryClient.invalidateQueries({ queryKey: ['categories'], refetchType: 'all' })
+            )
+          }
         >
           <SortableContext
             items={categories.map((c) => c.id!)}
@@ -456,7 +714,11 @@ export function SettingsPage() {
         <DndContext
           sensors={reorderSensors}
           collisionDetection={closestCenter}
-          onDragEnd={(e) => handleReorder(e, incomeSources, incomeSourceRepo, refreshIncomeSources)}
+          onDragEnd={(e) =>
+            handleReorder(e, incomeSources, incomeSourceRepo, () =>
+              queryClient.invalidateQueries({ queryKey: ['incomeSources'], refetchType: 'all' })
+            )
+          }
         >
           <SortableContext
             items={incomeSources.map((s) => s.id!)}
@@ -553,7 +815,7 @@ export function SettingsPage() {
       )}
 
       {/* Management Sections */}
-      <div className="px-4 py-2">
+      <div className="px-4 py-4">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           {t('manage')}
         </h3>
@@ -594,7 +856,7 @@ export function SettingsPage() {
           <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl">
             <div className="flex items-center gap-3">
               <Globe className="h-5 w-5 text-muted-foreground" />
-              <span>{t('language')}</span>
+              <span className="text-[17px]">{t('language')}</span>
             </div>
             <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
               <SelectTrigger className="w-[140px]">
@@ -610,8 +872,10 @@ export function SettingsPage() {
             <div className="flex items-center gap-3">
               <DollarSign className="h-5 w-5 text-muted-foreground" />
               <div>
-                <span>{t('mainCurrency')}</span>
-                <p className="text-xs text-muted-foreground">{t('mainCurrencyDescription')}</p>
+                <span className="text-[17px] block">{t('mainCurrency')}</span>
+                <span className="text-sm text-muted-foreground">
+                  {t('mainCurrencyDescription')}
+                </span>
               </div>
             </div>
             <Select value={mainCurrency} onValueChange={(v) => setMainCurrency(v)}>
@@ -633,8 +897,8 @@ export function SettingsPage() {
             <div className="flex items-center gap-3">
               <EyeOff className="h-5 w-5 text-muted-foreground" />
               <div>
-                <span>{t('privacyMode')}</span>
-                <p className="text-xs text-muted-foreground">{t('privacyModeDescription')}</p>
+                <span className="text-[17px] block">{t('privacyMode')}</span>
+                <span className="text-sm text-muted-foreground">{t('privacyModeDescription')}</span>
               </div>
             </div>
             <button
@@ -653,6 +917,92 @@ export function SettingsPage() {
         </div>
       </div>
 
+      {/* Sync Section */}
+      {cloudUnlocked && migrationComplete && (
+        <div className="px-4 py-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            {t('syncStatus')}
+          </h3>
+
+          <div className="space-y-2">
+            {/* Sync Status */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-secondary/50 rounded-xl">
+              <div className="flex items-center gap-3 min-w-0">
+                {isOffline ? (
+                  <WifiOff className="h-5 w-5 text-amber-500 shrink-0" />
+                ) : status === 'error' ? (
+                  <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+                ) : status === 'syncing' ? (
+                  <RefreshCw className="h-5 w-5 text-blue-500 animate-spin shrink-0" />
+                ) : pendingCount > 0 ? (
+                  <RefreshCw className="h-5 w-5 text-amber-500 shrink-0" />
+                ) : (
+                  <Check className="h-5 w-5 text-green-500 shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <span className="text-[17px] block">
+                    {isOffline
+                      ? t('syncOffline')
+                      : status === 'syncing'
+                        ? t('syncing')
+                        : status === 'error'
+                          ? t('syncError')
+                          : pendingCount > 0
+                            ? t('syncPending').replace('{count}', String(pendingCount))
+                            : t('syncComplete')}
+                  </span>
+                  {pendingCount > 0 && !isOffline && status !== 'syncing' && status !== 'error' && (
+                    <p className="text-sm text-muted-foreground">
+                      {pendingCount}{' '}
+                      {t(pendingCount === 1 ? 'itemsWaiting' : 'itemsWaiting_plural')}
+                    </p>
+                  )}
+                  {nextRetryAt && !isOffline && status !== 'syncing' && (
+                    <p className="text-sm text-muted-foreground">
+                      {t('nextRetryIn').replace('{time}', formatTimeUntil(nextRetryAt))}
+                    </p>
+                  )}
+                  {isOffline && (
+                    <p className="text-sm text-muted-foreground">{t('offlineDescription')}</p>
+                  )}
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => sync()}
+                disabled={isOffline || status === 'syncing'}
+                variant="outline"
+                className="shrink-0"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 mr-1.5 ${status === 'syncing' ? 'animate-spin' : ''}`}
+                />
+                {t('syncNow')}
+              </Button>
+            </div>
+
+            {/* User ID */}
+            <button
+              className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl active:bg-secondary transition-colors"
+              onClick={() => {
+                navigator.clipboard.writeText(getUserId())
+              }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Key className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div className="text-left min-w-0">
+                  <span className="text-[17px] block">User ID</span>
+                  <span className="text-sm text-muted-foreground font-mono block max-w-[180px] sm:max-w-[220px] truncate">
+                    {getUserId()}
+                  </span>
+                </div>
+              </div>
+              <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Data Section */}
       <div className="px-4 py-4">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
@@ -670,11 +1020,15 @@ export function SettingsPage() {
                 className={`h-5 w-5 ${savedImportState ? 'text-primary' : 'text-muted-foreground'}`}
               />
               <div className="text-left">
-                <span className={savedImportState ? 'text-primary font-medium' : ''}>
+                <span
+                  className={`text-[17px] ${savedImportState ? 'text-primary font-medium' : ''}`}
+                >
                   {savedImportState ? t('importResume') : t('importFromBudgetOk')}
                 </span>
                 {savedImportState && (
-                  <p className="text-xs text-muted-foreground">{savedImportState.fileName}</p>
+                  <span className="text-sm text-muted-foreground block">
+                    {savedImportState.fileName}
+                  </span>
                 )}
               </div>
             </div>
@@ -684,13 +1038,13 @@ export function SettingsPage() {
           </button>
 
           <button
-            onClick={handleExportJSON}
+            onClick={() => setExportDialogOpen(true)}
             disabled={isExporting}
             className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
               <Download className="h-5 w-5 text-muted-foreground" />
-              <span>{t('exportBackup')}</span>
+              <span className="text-[17px]">{t('exportBackup')}</span>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
@@ -698,14 +1052,14 @@ export function SettingsPage() {
           <label className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl cursor-pointer">
             <div className="flex items-center gap-3">
               <Upload className="h-5 w-5 text-muted-foreground" />
-              <span>{t('importBackup')}</span>
+              <span className="text-[17px]">{t('importBackup')}</span>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
             <input
               ref={fileInputRef}
               type="file"
               accept=".json"
-              onChange={handleImport}
+              onChange={handleImportFileSelected}
               disabled={isImporting}
               className="hidden"
             />
@@ -744,9 +1098,75 @@ export function SettingsPage() {
 
       {/* Footer */}
       <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-        <p>Finance Tracker v{version}</p>
-        <p>{t('dataStoredLocally')}</p>
+        <button
+          type="button"
+          onClick={handleVersionClick}
+          className={`text-inherit ${cloudUnlocked && migrationComplete ? 'text-primary' : ''}`}
+        >
+          Finance Tracker v{version}
+        </button>
+        <p>
+          {isSupabaseConfigured() && cloudUnlocked && migrationComplete
+            ? t('dataStoredInCloud')
+            : t('dataStoredLocally')}
+        </p>
       </div>
+
+      {/* Export Confirmation Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={(open) => !open && setExportDialogOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('exportConfirmTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">{t('exportConfirmMessage')}</p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setExportDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              {t('cancel')}
+            </Button>
+            <Button onClick={handleExportJSON} disabled={isExporting} className="w-full sm:w-auto">
+              {isExporting ? t('processing') : t('exportBackup')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Confirmation Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={(open) => !open && setImportDialogOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              {t('backupImportConfirmTitle')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">{t('backupImportConfirmMessage')}</p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setImportDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmImport}
+              disabled={isImporting}
+              className="w-full sm:w-auto"
+            >
+              {isImporting ? t('processing') : t('importBackup')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteModalOpen} onOpenChange={(open) => !open && setDeleteModalOpen(false)}>
@@ -760,11 +1180,20 @@ export function SettingsPage() {
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">{t('deleteConfirmationMessage')}</p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteModalOpen(false)}
+              className="w-full sm:w-auto"
+            >
               {t('cancel')}
             </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="w-full sm:w-auto"
+            >
               {isDeleting ? t('processing') : t('deleteAllData')}
             </Button>
           </DialogFooter>
@@ -802,7 +1231,7 @@ function SettingsRow({
     >
       <div className="flex items-center gap-3">
         <Icon className="h-5 w-5 text-muted-foreground" />
-        <span>{label}</span>
+        <span className="text-[17px]">{label}</span>
       </div>
       <div className="flex items-center gap-2">
         {count !== undefined && <span className="text-sm text-muted-foreground">{count}</span>}

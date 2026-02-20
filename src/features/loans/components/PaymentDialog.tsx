@@ -21,8 +21,9 @@ import {
 } from '@/components/ui/select'
 import { loanRepo, transactionRepo, accountRepo } from '@/database/repositories'
 import type { Loan, Transaction } from '@/database/types'
+import { useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
+import { queryClient } from '@/lib/queryClient'
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
 import { deleteLoanWithTransactions } from '@/utils/transactionBalance'
 
@@ -34,21 +35,18 @@ interface PaymentDialogProps {
 }
 
 export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentDialogProps) {
-  const accounts = useAppStore((state) => state.accounts)
-  const mainCurrency = useAppStore((state) => state.mainCurrency)
+  const { data: accounts = [] } = useAccounts()
+  const { data: settings } = useSettings()
+  const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t } = useLanguage()
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const [amount, setAmount] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
   const [comment, setComment] = useState('')
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [selectedAccountId, setSelectedAccountId] = useState('')
 
   const isEditMode = !!editTransaction
   const selectedAccount = selectedAccountId
-    ? accounts.find((a) => a.id === parseInt(selectedAccountId))
+    ? accounts.find((a) => String(a.id) === selectedAccountId)
     : null
   const isMultiCurrency = loan && selectedAccount && loan.currency !== selectedAccount.currency
 
@@ -112,9 +110,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     const acctAmount = isMultiCurrency ? parseFloat(accountAmount) : paymentAmount
     if (isMultiCurrency && (isNaN(acctAmount) || acctAmount <= 0)) return
 
-    const acctId = parseInt(selectedAccountId)
-
-    setIsLoading(true)
     try {
       if (isEditMode && editTransaction?.id) {
         const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
@@ -136,7 +131,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         await transactionRepo.update(editTransaction.id, {
           amount: acctAmount,
           currency: selectedAccount?.currency || loan.currency,
-          accountId: acctId,
+          accountId: selectedAccountId,
           mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
           comment:
             comment ||
@@ -144,9 +139,9 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         })
 
         if (loan.type === 'given') {
-          await accountRepo.updateBalance(acctId, acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, acctAmount)
         } else {
-          await accountRepo.updateBalance(acctId, -acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, -acctAmount)
         }
       } else {
         await loanRepo.recordPayment(loan.id, paymentAmount)
@@ -157,7 +152,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           currency: selectedAccount?.currency || loan.currency,
           date: new Date(),
           loanId: loan.id,
-          accountId: acctId,
+          accountId: selectedAccountId,
           mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
           comment:
             comment ||
@@ -165,20 +160,25 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         })
 
         if (loan.type === 'given') {
-          await accountRepo.updateBalance(acctId, acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, acctAmount)
         } else {
-          await accountRepo.updateBalance(acctId, -acctAmount)
+          await accountRepo.updateBalance(selectedAccountId, -acctAmount)
         }
       }
 
-      await refreshLoans()
-      await refreshTransactions()
-      await refreshAccounts()
       handleClose()
+
+      // Update query cache directly
+      const [updatedLoans, updatedTransactions, updatedAccounts] = await Promise.all([
+        loanRepo.getAll(),
+        transactionRepo.getAll(),
+        accountRepo.getAll(),
+      ])
+      queryClient.setQueryData(['loans'], updatedLoans)
+      queryClient.setQueryData(['transactions'], updatedTransactions)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
     } catch (error) {
       console.error('Failed to record payment:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -194,15 +194,22 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     if (!loan?.id) return
     if (!confirm(t('deleteLoan'))) return
 
-    setIsLoading(true)
     try {
       await deleteLoanWithTransactions(loan)
-      await Promise.all([refreshLoans(), refreshTransactions(), refreshAccounts()])
+
       handleClose()
+
+      // Update query cache directly
+      const [updatedLoans, updatedTransactions, updatedAccounts] = await Promise.all([
+        loanRepo.getAll(),
+        transactionRepo.getAll(),
+        accountRepo.getAll(),
+      ])
+      queryClient.setQueryData(['loans'], updatedLoans)
+      queryClient.setQueryData(['transactions'], updatedTransactions)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
     } catch (error) {
       console.error('Failed to delete loan:', error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -222,7 +229,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           </DialogHeader>
           <button
             onClick={handleDelete}
-            disabled={isLoading}
             className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
             aria-label={t('delete')}
           >
@@ -372,7 +378,6 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             <Button
               type="submit"
               disabled={
-                isLoading ||
                 !amount ||
                 !selectedAccountId ||
                 (!!isMultiCurrency && !accountAmount) ||
@@ -380,7 +385,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
               }
               className="flex-1 sm:flex-none"
             >
-              {isLoading ? t('recording') : isEditMode ? t('update') : t('recordPayment')}
+              {isEditMode ? t('update') : t('recordPayment')}
             </Button>
           </DialogFooter>
         </form>

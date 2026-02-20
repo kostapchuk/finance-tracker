@@ -17,6 +17,7 @@ import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { CategoryTile } from '@/components/ui/CategoryTile'
 import { MonthSelector } from '@/components/ui/MonthSelector'
 import type { Category, IncomeSource, Account, AccountType } from '@/database/types'
+import { useAccounts, useTransactions, useCategories, useIncomeSources } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
@@ -59,10 +60,10 @@ type DraggedItem =
   | null
 
 export function Dashboard() {
-  const accounts = useAppStore((state) => state.accounts)
-  const transactions = useAppStore((state) => state.transactions)
-  const categories = useAppStore((state) => state.categories)
-  const incomeSources = useAppStore((state) => state.incomeSources)
+  const { data: accounts = [] } = useAccounts()
+  const { data: transactions = [] } = useTransactions()
+  const { data: categories = [] } = useCategories()
+  const { data: incomeSources = [] } = useIncomeSources()
   const selectedMonth = useAppStore((state) => state.selectedMonth)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const onboardingStep = useAppStore((state) => state.onboardingStep)

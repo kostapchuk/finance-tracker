@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { accountRepo } from '@/database/repositories'
 import type { Account, AccountType } from '@/database/types'
+import { useAccounts } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
+import { queryClient } from '@/lib/queryClient'
 import { formatCurrency } from '@/utils/currency'
 
 const typeIcons: Record<AccountType, React.ReactNode> = {
@@ -28,8 +29,7 @@ const typeLabels: Record<AccountType, string> = {
 
 export function AccountList() {
   const { t } = useLanguage()
-  const accounts = useAppStore((state) => state.accounts)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
+  const { data: accounts = [] } = useAccounts()
   const [formOpen, setFormOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
 
@@ -43,7 +43,9 @@ export function AccountList() {
     if (!confirm(`Delete "${account.name}"? This cannot be undone.`)) return
 
     await accountRepo.delete(account.id)
-    await refreshAccounts()
+    // Update query cache directly
+    const updatedAccounts = await accountRepo.getAll()
+    queryClient.setQueryData(['accounts'], updatedAccounts)
   }
 
   const handleCloseForm = () => {

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react'
 
+import { MigrationDialog } from '@/components/MigrationDialog'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoadingSkeleton } from '@/components/ui/LoadingSkeleton'
 import { ServiceWorkerProvider } from '@/contexts/ServiceWorkerContext'
@@ -97,6 +98,7 @@ export function App() {
 
   return (
     <ServiceWorkerProvider>
+      <MigrationDialog />
       <AppShell>
         <MainContent />
       </AppShell>

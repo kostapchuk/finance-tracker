@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { incomeSourceRepo } from '@/database/repositories'
 import type { IncomeSource } from '@/database/types'
+import { useIncomeSources } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAppStore } from '@/store/useAppStore'
+import { queryClient } from '@/lib/queryClient'
 
 export function IncomeSourceList() {
   const { t } = useLanguage()
-  const incomeSources = useAppStore((state) => state.incomeSources)
-  const refreshIncomeSources = useAppStore((state) => state.refreshIncomeSources)
+  const { data: incomeSources = [] } = useIncomeSources()
   const [formOpen, setFormOpen] = useState(false)
   const [editingSource, setEditingSource] = useState<IncomeSource | null>(null)
 
@@ -27,7 +27,9 @@ export function IncomeSourceList() {
     if (!confirm(`Delete "${source.name}"? This cannot be undone.`)) return
 
     await incomeSourceRepo.delete(source.id)
-    await refreshIncomeSources()
+    // Update query cache directly
+    const updatedSources = await incomeSourceRepo.getAll()
+    queryClient.setQueryData(['incomeSources'], updatedSources)
   }
 
   const handleCloseForm = () => {

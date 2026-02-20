@@ -9,8 +9,9 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
+  WifiOff,
 } from 'lucide-react'
-import { useState, useMemo, useEffect, useCallback, useRef, useReducer } from 'react'
+import { useState, useMemo, useEffect, useRef, useReducer } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { QuickTransactionModal, type TransactionMode } from '@/components/ui/QuickTransactionModal'
@@ -26,12 +27,21 @@ import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import type { Transaction, TransactionType, Loan } from '@/database/types'
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
+import {
+  useTransactions,
+  useAccounts,
+  useCategories,
+  useIncomeSources,
+  useLoans,
+} from '@/hooks/useDataHooks'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useLanguage } from '@/hooks/useLanguage'
+import { usePaginatedTransactions } from '@/hooks/usePaginatedTransactions'
+import { queryClient } from '@/lib/queryClient'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
-import { getStartOfMonth, getStartOfWeek, getEndOfMonth, formatDateForInput } from '@/utils/date'
+import { getStartOfMonth, getEndOfMonth, formatDateForInput } from '@/utils/date'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 
 type DateFilterType =
@@ -52,7 +62,6 @@ interface FilterState {
   customDateFrom: string
   customDateTo: string
   searchQuery: string
-  displayCount: number
   showFilters: boolean
 }
 
@@ -65,7 +74,6 @@ type FilterAction =
   | { type: 'SET_CUSTOM_DATE_TO'; payload: string }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_SHOW_FILTERS'; payload: boolean }
-  | { type: 'LOAD_MORE' }
   | { type: 'APPLY_CATEGORY_NAV'; payload: number }
   | { type: 'APPLY_ACCOUNT_NAV'; payload: number }
 
@@ -83,7 +91,6 @@ function getInitialFilterState(): FilterState {
     customDateFrom: isCurrentMonth ? '' : formatDateForInput(getStartOfMonth(selectedMonth)),
     customDateTo: isCurrentMonth ? '' : formatDateForInput(getEndOfMonth(selectedMonth)),
     searchQuery: '',
-    displayCount: 50,
     showFilters: !isCurrentMonth,
   }
 }
@@ -91,23 +98,21 @@ function getInitialFilterState(): FilterState {
 function filterReducer(state: FilterState, action: FilterAction): FilterState {
   switch (action.type) {
     case 'SET_TYPE_FILTER':
-      return { ...state, typeFilter: action.payload, categoryFilter: 'all', displayCount: 50 }
+      return { ...state, typeFilter: action.payload, categoryFilter: 'all' }
     case 'SET_CATEGORY_FILTER':
-      return { ...state, categoryFilter: action.payload, displayCount: 50 }
+      return { ...state, categoryFilter: action.payload }
     case 'SET_ACCOUNT_FILTER':
-      return { ...state, accountFilter: action.payload, displayCount: 50 }
+      return { ...state, accountFilter: action.payload }
     case 'SET_DATE_FILTER':
-      return { ...state, dateFilter: action.payload, displayCount: 50 }
+      return { ...state, dateFilter: action.payload }
     case 'SET_CUSTOM_DATE_FROM':
-      return { ...state, customDateFrom: action.payload, displayCount: 50 }
+      return { ...state, customDateFrom: action.payload }
     case 'SET_CUSTOM_DATE_TO':
-      return { ...state, customDateTo: action.payload, displayCount: 50 }
+      return { ...state, customDateTo: action.payload }
     case 'SET_SEARCH_QUERY':
-      return { ...state, searchQuery: action.payload, displayCount: 50 }
+      return { ...state, searchQuery: action.payload }
     case 'SET_SHOW_FILTERS':
       return { ...state, showFilters: action.payload }
-    case 'LOAD_MORE':
-      return { ...state, displayCount: state.displayCount + 50 }
     case 'APPLY_CATEGORY_NAV':
       return {
         ...state,
@@ -115,14 +120,12 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
         typeFilter: 'expense',
         dateFilter: 'month',
         showFilters: true,
-        displayCount: 50,
       }
     case 'APPLY_ACCOUNT_NAV':
       return {
         ...state,
         accountFilter: String(action.payload),
         showFilters: true,
-        displayCount: 50,
       }
     default:
       return state
@@ -130,15 +133,12 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
 }
 
 export function HistoryPage() {
-  const transactions = useAppStore((state) => state.transactions)
-  const accounts = useAppStore((state) => state.accounts)
-  const categories = useAppStore((state) => state.categories)
-  const incomeSources = useAppStore((state) => state.incomeSources)
+  const { data: localTransactions = [] } = useTransactions()
+  const { data: accounts = [] } = useAccounts()
+  const { data: categories = [] } = useCategories()
+  const { data: incomeSources = [] } = useIncomeSources()
+  const { data: loans = [] } = useLoans()
   const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const loans = useAppStore((state) => state.loans)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
   const { t, language } = useLanguage()
 
   const historyCategoryFilter = useAppStore((state) => state.historyCategoryFilter)
@@ -153,12 +153,10 @@ export function HistoryPage() {
     customDateFrom,
     customDateTo,
     searchQuery,
-    displayCount,
     showFilters,
   } = filterState
 
   const [showSearch, setShowSearch] = useState(false)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment' | null>(null)
@@ -183,6 +181,56 @@ export function HistoryPage() {
     }
   }, [historyAccountFilter])
 
+  const paginationFilters = useMemo(
+    () => ({
+      typeFilter,
+      categoryFilter,
+      accountFilter,
+      dateFilter,
+      customDateFrom,
+      customDateTo,
+    }),
+    [typeFilter, categoryFilter, accountFilter, dateFilter, customDateFrom, customDateTo]
+  )
+
+  const {
+    transactions: paginatedTransactions,
+    periodSummary,
+    isLoading,
+    isLoadingMore,
+    hasMore,
+    isOffline,
+    loadMore,
+  } = usePaginatedTransactions(paginationFilters, localTransactions)
+
+  const filteredTransactions = useMemo(() => {
+    if (!searchQuery) return paginatedTransactions
+
+    const query = searchQuery.toLowerCase()
+    return paginatedTransactions.filter((tx) => {
+      const comment = tx.comment?.toLowerCase() || ''
+      const account = accounts.find((a) => a.id === tx.accountId)
+      const accountName = account ? `${account.name} (${account.currency})`.toLowerCase() : ''
+      const category = categories.find((c) => c.id === tx.categoryId)
+      const categoryName = category?.name.toLowerCase() || ''
+      const source = incomeSources.find((s) => s.id === tx.incomeSourceId)
+      const sourceName = source?.name.toLowerCase() || ''
+
+      return (
+        comment.includes(query) ||
+        accountName.includes(query) ||
+        categoryName.includes(query) ||
+        sourceName.includes(query)
+      )
+    })
+  }, [paginatedTransactions, searchQuery, accounts, categories, incomeSources])
+
+  const { scrollContainerRef } = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore,
+    isLoading: isLoadingMore,
+  })
+
   const typeConfig: Record<
     TransactionType,
     { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
@@ -195,173 +243,15 @@ export function HistoryPage() {
     loan_payment: { label: t('paid'), icon: ArrowLeftRight, color: 'text-loan' },
   }
 
-  const getAccountName = (id?: number) => {
-    const account = accounts.find((a) => a.id === id)
+  const getAccountName = (id?: number | string) => {
+    const account = accounts.find((a) => String(a.id) === String(id))
     return account ? `${account.name} (${account.currency})` : 'Unknown'
   }
   const getAccountNameWithCurrency = getAccountName
-  const getCategoryName = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-  const getIncomeSourceName = (id?: number) =>
-    incomeSources.find((s) => s.id === id)?.name || 'Unknown'
-
-  const filteredTransactions = useMemo(() => {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const weekStart = getStartOfWeek()
-    const monthStart = getStartOfMonth()
-    const threeMonthsAgo = new Date(today)
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    const sixMonthsAgo = new Date(today)
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-    const yearStart = new Date(now.getFullYear(), 0, 1)
-
-    const matchAccount = (id?: number) => {
-      const account = accounts.find((a) => a.id === id)
-      return account ? `${account.name} (${account.currency})` : 'Unknown'
-    }
-    const matchCategory = (id?: number) => categories.find((c) => c.id === id)?.name || 'Unknown'
-    const matchIncomeSource = (id?: number) =>
-      incomeSources.find((s) => s.id === id)?.name || 'Unknown'
-
-    return transactions
-      .filter((tx) => {
-        // Type filter
-        if (typeFilter !== 'all') {
-          if (typeFilter === 'transfers') {
-            if (tx.type !== 'transfer') return false
-          } else if (typeFilter === 'loans') {
-            if (
-              tx.type !== 'loan_given' &&
-              tx.type !== 'loan_received' &&
-              tx.type !== 'loan_payment'
-            )
-              return false
-          } else if (tx.type !== typeFilter) {
-            return false
-          }
-        }
-
-        // Category filter
-        if (categoryFilter !== 'all') {
-          if (tx.type === 'expense' && tx.categoryId?.toString() !== categoryFilter) return false
-          if (tx.type === 'income' && tx.incomeSourceId?.toString() !== categoryFilter) return false
-        }
-
-        // Account filter
-        if (accountFilter !== 'all') {
-          const accountId = accountFilter
-          if (tx.accountId?.toString() !== accountId && tx.toAccountId?.toString() !== accountId)
-            return false
-        }
-
-        // Date filter
-        if (dateFilter !== 'all') {
-          const txDate = new Date(tx.date)
-          if (dateFilter === 'today' && txDate < today) return false
-          if (dateFilter === 'week' && txDate < weekStart) return false
-          if (dateFilter === 'month' && txDate < monthStart) return false
-          if (dateFilter === 'last3months' && txDate < threeMonthsAgo) return false
-          if (dateFilter === 'last6months' && txDate < sixMonthsAgo) return false
-          if (dateFilter === 'year' && txDate < yearStart) return false
-          if (dateFilter === 'custom') {
-            if (customDateFrom) {
-              const fromDate = new Date(customDateFrom)
-              fromDate.setHours(0, 0, 0, 0)
-              if (txDate < fromDate) return false
-            }
-            if (customDateTo) {
-              const toDate = new Date(customDateTo)
-              toDate.setHours(23, 59, 59, 999)
-              if (txDate > toDate) return false
-            }
-          }
-        }
-
-        // Search query
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase()
-          const comment = tx.comment?.toLowerCase() || ''
-          const accountName = matchAccount(tx.accountId).toLowerCase()
-          const categoryName = matchCategory(tx.categoryId).toLowerCase()
-          const sourceName = matchIncomeSource(tx.incomeSourceId).toLowerCase()
-          if (
-            !comment.includes(query) &&
-            !accountName.includes(query) &&
-            !categoryName.includes(query) &&
-            !sourceName.includes(query)
-          ) {
-            return false
-          }
-        }
-        return true
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.date)
-        const dateB = new Date(b.date)
-        const dateOnlyA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate()).getTime()
-        const dateOnlyB = new Date(dateB.getFullYear(), dateB.getMonth(), dateB.getDate()).getTime()
-        if (dateOnlyA !== dateOnlyB) {
-          return dateOnlyB - dateOnlyA
-        }
-        const createdAtA = new Date(a.createdAt).getTime()
-        const createdAtB = new Date(b.createdAt).getTime()
-        if (createdAtA !== createdAtB) {
-          return createdAtB - createdAtA
-        }
-        return (b.id || 0) - (a.id || 0)
-      })
-  }, [
-    transactions,
-    typeFilter,
-    categoryFilter,
-    accountFilter,
-    dateFilter,
-    customDateFrom,
-    customDateTo,
-    searchQuery,
-    accounts,
-    categories,
-    incomeSources,
-  ])
-
-  // Period summary for header
-  const periodSummary = useMemo(() => {
-    let inflows = 0
-    let outflows = 0
-
-    filteredTransactions.forEach((tx) => {
-      const amount = tx.mainCurrencyAmount ?? tx.amount
-
-      if (tx.type === 'income' || tx.type === 'loan_received') {
-        inflows += amount
-      } else if (tx.type === 'expense' || tx.type === 'loan_given') {
-        outflows += amount
-      }
-    })
-
-    return { inflows, outflows, net: inflows - outflows }
-  }, [filteredTransactions])
-
-  // Paginated transactions for display
-  const displayedTransactions = useMemo(() => {
-    return filteredTransactions.slice(0, displayCount)
-  }, [filteredTransactions, displayCount])
-
-  const hasMore = displayCount < filteredTransactions.length
-
-  const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return
-    setIsLoadingMore(true)
-    await new Promise((r) => setTimeout(r, 50))
-    dispatch({ type: 'LOAD_MORE' })
-    setIsLoadingMore(false)
-  }, [isLoadingMore, hasMore])
-
-  const { sentinelRef } = useInfiniteScroll({
-    onLoadMore: loadMore,
-    hasMore,
-    isLoading: isLoadingMore,
-  })
+  const getCategoryName = (id?: number | string) =>
+    categories.find((c) => String(c.id) === String(id))?.name || 'Unknown'
+  const getIncomeSourceName = (id?: number | string) =>
+    incomeSources.find((s) => String(s.id) === String(id))?.name || 'Unknown'
 
   const groupedTransactions = useMemo(() => {
     const now = new Date()
@@ -394,37 +284,41 @@ export function HistoryPage() {
     }
 
     const groups: Record<string, Transaction[]> = {}
-    displayedTransactions.forEach((tx) => {
+    filteredTransactions.forEach((tx) => {
       const group = getDateGroup(new Date(tx.date))
       if (!groups[group]) groups[group] = []
       groups[group].push(tx)
     })
     return groups
-  }, [displayedTransactions, t, language])
+  }, [filteredTransactions, t, language])
 
   const handleDelete = async (transaction: Transaction) => {
     if (!transaction.id) return
     if (!confirm(t('deleteTransaction'))) return
 
-    // Close the modal first
     handleCloseEditModal()
 
-    // Reverse the balance effects
     await reverseTransactionBalance(transaction, loans)
-
     await transactionRepo.delete(transaction.id)
-    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
+
+    // Update query cache directly
+    const [updatedTransactions, updatedAccounts, updatedLoans] = await Promise.all([
+      transactionRepo.getAll(),
+      accountRepo.getAll(),
+      loanRepo.getAll(),
+    ])
+    queryClient.setQueryData(['transactions'], updatedTransactions)
+    queryClient.setQueryData(['accounts'], updatedAccounts)
+    queryClient.setQueryData(['loans'], updatedLoans)
   }
 
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction)
 
-    // Determine the modal type based on transaction type
     switch (transaction.type) {
       case 'income':
       case 'expense':
       case 'transfer': {
-        // Build the TransactionMode for QuickTransactionModal
         switch (transaction.type) {
           case 'income': {
             const source = incomeSources.find((s) => s.id === transaction.incomeSourceId)
@@ -432,7 +326,6 @@ export function HistoryPage() {
               setEditTransactionMode({ type: 'income', source })
               setEditModalType('quick')
             }
-
             break
           }
           case 'expense': {
@@ -441,7 +334,6 @@ export function HistoryPage() {
               setEditTransactionMode({ type: 'expense', category })
               setEditModalType('quick')
             }
-
             break
           }
           case 'transfer': {
@@ -451,36 +343,28 @@ export function HistoryPage() {
               setEditTransactionMode({ type: 'transfer', fromAccount, toAccount })
               setEditModalType('quick')
             }
-
             break
           }
-          // No default
         }
-
         break
       }
       case 'loan_given':
       case 'loan_received': {
-        // Find the associated loan
         const loan = loans.find((l) => l.id === transaction.loanId)
         if (loan) {
           setEditingLoan(loan)
           setEditModalType('loan')
         }
-
         break
       }
       case 'loan_payment': {
-        // Find the associated loan for payment editing
         const loan = loans.find((l) => l.id === transaction.loanId)
         if (loan) {
           setEditingLoan(loan)
           setEditModalType('payment')
         }
-
         break
       }
-      // No default
     }
   }
 
@@ -491,16 +375,13 @@ export function HistoryPage() {
     setEditingLoan(null)
   }
 
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
+  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
     if (!isEdit || !loanId || !editingTransaction) return
 
-    // Get the old transaction to reverse its effects
     const oldTransaction = editingTransaction
 
-    // 1. Reverse old transaction's balance effect
     await reverseTransactionBalance(oldTransaction, loans)
 
-    // 2. Update the loan record
     await loanRepo.update(loanId, {
       type: data.type,
       personName: data.personName,
@@ -511,11 +392,9 @@ export function HistoryPage() {
       dueDate: data.dueDate,
     })
 
-    // 3. Calculate new balance amount
     const newBalanceAmount = data.accountAmount ?? data.amount
-    const account = accounts.find((a) => a.id === data.accountId)
+    const account = accounts.find((a) => String(a.id) === String(data.accountId))
 
-    // 4. Update the transaction record
     await transactionRepo.update(oldTransaction.id!, {
       amount: newBalanceAmount,
       currency: account?.currency || data.currency,
@@ -524,31 +403,35 @@ export function HistoryPage() {
       comment: oldTransaction.comment,
     })
 
-    // 5. Apply new balance effect
-    // loan_given: money goes out → balance decreases
-    // loan_received: money comes in → balance increases
     const balanceChange = data.type === 'given' ? -newBalanceAmount : newBalanceAmount
     await accountRepo.updateBalance(data.accountId, balanceChange)
 
-    // Refresh all data
-    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
     handleCloseEditModal()
+
+    // Update query cache directly
+    const [updatedTransactions, updatedAccounts, updatedLoans] = await Promise.all([
+      transactionRepo.getAll(),
+      accountRepo.getAll(),
+      loanRepo.getAll(),
+    ])
+    queryClient.setQueryData(['transactions'], updatedTransactions)
+    queryClient.setQueryData(['accounts'], updatedAccounts)
+    queryClient.setQueryData(['loans'], updatedLoans)
   }
 
-  const getTransactionTitle = (t: Transaction): string => {
-    switch (t.type) {
+  const getTransactionTitle = (tx: Transaction): string => {
+    switch (tx.type) {
       case 'income':
-        return getIncomeSourceName(t.incomeSourceId)
+        return getIncomeSourceName(tx.incomeSourceId)
       case 'expense':
-        return getCategoryName(t.categoryId)
+        return getCategoryName(tx.categoryId)
       case 'transfer':
-        return `${getAccountName(t.accountId)} → ${getAccountName(t.toAccountId)}`
+        return `${getAccountName(tx.accountId)} → ${getAccountName(tx.toAccountId)}`
       default:
-        return typeConfig[t.type].label
+        return typeConfig[tx.type].label
     }
   }
 
-  // Get unique categories/sources for filter
   const filterOptions = useMemo(() => {
     if (typeFilter === 'expense') {
       return categories.map((c) => ({ id: c.id!.toString(), name: c.name }))
@@ -589,7 +472,7 @@ export function HistoryPage() {
               <button
                 onClick={() => dispatch({ type: 'SET_SHOW_FILTERS', payload: !showFilters })}
                 className={cn(
-                  'p-2 rounded-full hover:bg-secondary touch-target',
+                  'flex items-center justify-center h-11 w-11 rounded-full hover:bg-secondary',
                   showFilters && 'bg-primary/20'
                 )}
               >
@@ -597,7 +480,7 @@ export function HistoryPage() {
               </button>
               <button
                 onClick={() => setShowSearch(true)}
-                className="p-2 rounded-full hover:bg-secondary touch-target"
+                className="flex items-center justify-center h-11 w-11 rounded-full hover:bg-secondary"
               >
                 <Search className="h-5 w-5" />
               </button>
@@ -757,45 +640,54 @@ export function HistoryPage() {
 
       {/* Period Summary Header */}
       {filteredTransactions.length > 0 && (
-        <div className="px-4 py-2 grid grid-cols-3 gap-2">
-          <div className="p-3 bg-secondary/50 rounded-2xl text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingUp className="h-3.5 w-3.5 text-success" />
-              <span className="text-xs text-muted-foreground">{t('inflows')}</span>
-            </div>
-            <BlurredAmount className="text-base font-bold text-success block">
-              +{formatCurrency(periodSummary.inflows, mainCurrency)}
-            </BlurredAmount>
-          </div>
-          <div className="p-3 bg-secondary/50 rounded-2xl text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
+        <div className="px-4 py-2 space-y-2">
+          {/* Net Balance - Full Width */}
+          <div className="py-2 bg-secondary/50 rounded-2xl text-center">
+            <div className="flex items-center justify-center gap-1">
               {periodSummary.net >= 0 ? (
                 <TrendingUp className="h-3.5 w-3.5 text-foreground" />
               ) : (
                 <TrendingDown className="h-3.5 w-3.5 text-foreground" />
               )}
               <span className="text-xs text-muted-foreground">{t('net')}</span>
+              <BlurredAmount className="text-base font-bold text-foreground">
+                {periodSummary.net >= 0 ? '+' : '-'}
+                {formatCurrency(Math.abs(periodSummary.net), mainCurrency)}
+              </BlurredAmount>
             </div>
-            <BlurredAmount className="text-base font-bold text-foreground block">
-              {periodSummary.net >= 0 ? '+' : '-'}
-              {formatCurrency(Math.abs(periodSummary.net), mainCurrency)}
-            </BlurredAmount>
           </div>
-          <div className="p-3 bg-secondary/50 rounded-2xl text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-              <span className="text-xs text-muted-foreground">{t('outflows')}</span>
+
+          {/* Inflows and Outflows - 2 Columns */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="p-3 bg-secondary/50 rounded-2xl text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <TrendingUp className="h-3.5 w-3.5 text-success" />
+                <span className="text-xs text-muted-foreground">{t('inflows')}</span>
+              </div>
+              <BlurredAmount className="text-base font-bold text-success block">
+                +{formatCurrency(periodSummary.inflows, mainCurrency)}
+              </BlurredAmount>
             </div>
-            <BlurredAmount className="text-base font-bold text-destructive block">
-              -{formatCurrency(periodSummary.outflows, mainCurrency)}
-            </BlurredAmount>
+            <div className="p-3 bg-secondary/50 rounded-2xl text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                <span className="text-xs text-muted-foreground">{t('outflows')}</span>
+              </div>
+              <BlurredAmount className="text-base font-bold text-destructive block">
+                -{formatCurrency(periodSummary.outflows, mainCurrency)}
+              </BlurredAmount>
+            </div>
           </div>
         </div>
       )}
 
       {/* Transaction List */}
-      <div className="flex-1 overflow-auto px-4">
-        {Object.keys(groupedTransactions).length === 0 ? (
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto px-4">
+        {isLoading && filteredTransactions.length === 0 ? (
+          <div className="flex justify-center py-12">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : Object.keys(groupedTransactions).length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>{t('noTransactionsFound')}</p>
           </div>
@@ -843,7 +735,6 @@ export function HistoryPage() {
                         </div>
                         <div className="text-right">
                           {transaction.type === 'transfer' ? (
-                            // Transfer: show amounts like other transaction types
                             (() => {
                               const fromAmount = transaction.amount
                               const fromCurrency = transaction.currency
@@ -856,7 +747,6 @@ export function HistoryPage() {
                               const isMultiCurrency =
                                 toAmount != null && fromCurrency !== toCurrency
 
-                              // For same currency, show single amount
                               if (!isMultiCurrency) {
                                 return (
                                   <BlurredAmount className="font-mono font-semibold text-foreground">
@@ -865,7 +755,6 @@ export function HistoryPage() {
                                 )
                               }
 
-                              // For multi-currency, show main currency as primary
                               if (toCurrency === mainCurrency) {
                                 return (
                                   <>
@@ -896,7 +785,6 @@ export function HistoryPage() {
                                 )
                               }
 
-                              // Neither is main currency, show from as primary
                               return (
                                 <>
                                   <BlurredAmount className="font-mono font-semibold text-foreground">
@@ -911,7 +799,6 @@ export function HistoryPage() {
                               )
                             })()
                           ) : (
-                            // Income/Expense/Loans/Investments
                             <>
                               <BlurredAmount
                                 className={cn(
@@ -943,16 +830,20 @@ export function HistoryPage() {
           })
         )}
 
-        {/* Sentinel for infinite scroll */}
-        <div ref={sentinelRef} className="h-1" />
-
         {isLoadingMore && (
           <div className="flex justify-center py-4">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         )}
 
-        {!hasMore && filteredTransactions.length > 50 && (
+        {isOffline && !hasMore && filteredTransactions.length > 0 && (
+          <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
+            <WifiOff className="h-4 w-4" />
+            <span className="text-sm">{t('olderDataUnavailableOffline')}</span>
+          </div>
+        )}
+
+        {!hasMore && !isOffline && filteredTransactions.length > 0 && (
           <p className="text-center text-sm text-muted-foreground py-4">
             {t('showingAllTransactions').replace('{count}', String(filteredTransactions.length))}
           </p>
@@ -962,6 +853,7 @@ export function HistoryPage() {
       {/* Edit Modals */}
       {editModalType === 'quick' && editTransactionMode && editingTransaction && (
         <QuickTransactionModal
+          key={editingTransaction.id}
           mode={editTransactionMode}
           accounts={accounts}
           preselectedAccountId={editingTransaction.accountId}
@@ -974,6 +866,7 @@ export function HistoryPage() {
 
       {editModalType === 'loan' && editingLoan && (
         <LoanForm
+          key={editingLoan.id}
           loan={editingLoan}
           open={true}
           onClose={handleCloseEditModal}
@@ -983,6 +876,7 @@ export function HistoryPage() {
 
       {editModalType === 'payment' && editingLoan && editingTransaction && (
         <PaymentDialog
+          key={editingTransaction.id}
           loan={editingLoan}
           open={true}
           onClose={handleCloseEditModal}
