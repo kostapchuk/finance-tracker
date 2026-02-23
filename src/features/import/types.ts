@@ -47,9 +47,9 @@ export interface ImportWizardState {
   step: ImportWizardStep
   file: File | null
   parsedData: ParsedImportData | null
-  accountMapping: Map<string, number> // БюджетОк account name → app account id
-  categoryMapping: Map<string, number> // БюджетОк expense category → app category id
-  incomeSourceMapping: Map<string, number> // БюджетОк income category → app income source id
+  accountMapping: Map<string, string> // БюджетОк account name → app account id
+  categoryMapping: Map<string, string> // БюджетОк expense category → app category id
+  incomeSourceMapping: Map<string, string> // БюджетОк income category → app income source id
   isImporting: boolean
   importResult: ImportResult | null
 }
@@ -61,6 +61,6 @@ export interface ImportResult {
 }
 
 export interface AccountBalanceDelta {
-  accountId: number
+  accountId: string
   delta: number
 }

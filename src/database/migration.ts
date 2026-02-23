@@ -1,17 +1,7 @@
 import { db } from './db'
 import { localCache } from './localCache'
 import { supabaseApi } from './supabaseApi'
-import type {
-  Account,
-  IncomeSource,
-  Category,
-  Transaction,
-  Loan,
-  AppSettings,
-  CustomCurrency,
-} from './types'
 
-import { getDeviceId } from '@/lib/deviceId'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
 const MIGRATION_KEY = 'finance-tracker-migration-complete'
@@ -63,14 +53,16 @@ export async function hasLocalData(): Promise<boolean> {
   return cacheAccounts > 0 || cacheTransactions > 0 || cacheIncomeSources > 0
 }
 
+function generateUUID(): string {
+  return crypto.randomUUID()
+}
+
 export async function migrateLocalToSupabase(
   onProgress?: (progress: { current: number; total: number; entity: string }) => void
 ): Promise<{ success: boolean; error?: string }> {
   if (!isSupabaseConfigured()) {
     return { success: false, error: 'Supabase is not configured' }
   }
-
-  const userId = getDeviceId()
 
   try {
     const [accounts, incomeSources, categories, transactions, loans, settings, customCurrencies] =
@@ -101,65 +93,58 @@ export async function migrateLocalToSupabase(
     }
 
     for (const account of accounts) {
-      const accountData = { ...account, userId }
-      delete accountData.id
-      await supabaseApi.accounts.create(
-        accountData as Omit<Account, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-      )
+      await supabaseApi.accounts.upsert({
+        ...account,
+        id: generateUUID(),
+      })
       updateProgress('accounts')
     }
 
     for (const source of incomeSources) {
-      const sourceData = { ...source, userId }
-      delete sourceData.id
-      await supabaseApi.incomeSources.create(
-        sourceData as Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-      )
+      await supabaseApi.incomeSources.upsert({
+        ...source,
+        id: generateUUID(),
+      })
       updateProgress('incomeSources')
     }
 
     for (const category of categories) {
-      const categoryData = { ...category, userId }
-      delete categoryData.id
-      await supabaseApi.categories.create(
-        categoryData as Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-      )
+      await supabaseApi.categories.upsert({
+        ...category,
+        id: generateUUID(),
+      })
       updateProgress('categories')
     }
 
     for (const transaction of transactions) {
-      const transactionData = { ...transaction, userId }
-      delete transactionData.id
-      await supabaseApi.transactions.create(
-        transactionData as Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-      )
+      await supabaseApi.transactions.upsert({
+        ...transaction,
+        id: generateUUID(),
+      })
       updateProgress('transactions')
     }
 
     for (const loan of loans) {
-      const loanData = { ...loan, userId }
-      delete loanData.id
-      await supabaseApi.loans.create(
-        loanData as Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-      )
+      await supabaseApi.loans.upsert({
+        ...loan,
+        id: generateUUID(),
+      })
       updateProgress('loans')
     }
 
     if (settings.length > 0) {
-      const settingsData = { ...settings[0], userId }
-      delete settingsData.id
-      await supabaseApi.settings.create(
-        settingsData as Omit<AppSettings, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-      )
+      await supabaseApi.settings.upsert({
+        ...settings[0],
+        id: generateUUID(),
+      })
       updateProgress('settings')
     }
 
     for (const currency of customCurrencies) {
-      const currencyData = { ...currency, userId }
-      delete currencyData.id
-      await supabaseApi.customCurrencies.create(
-        currencyData as Omit<CustomCurrency, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-      )
+      await supabaseApi.customCurrencies.upsert({
+        ...currency,
+        id: generateUUID(),
+      })
       updateProgress('customCurrencies')
     }
 

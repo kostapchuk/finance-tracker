@@ -1,5 +1,5 @@
 import { ArrowRight, Trash2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -34,17 +34,36 @@ interface PaymentDialogProps {
   editTransaction?: Transaction
 }
 
-export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentDialogProps) {
+function PaymentForm({
+  loan,
+  editTransaction,
+  onClose,
+}: {
+  loan: Loan
+  editTransaction?: Transaction
+  onClose: () => void
+}) {
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
   const { t } = useLanguage()
-  const [amount, setAmount] = useState('')
-  const [accountAmount, setAccountAmount] = useState('')
-  const [comment, setComment] = useState('')
-  const [selectedAccountId, setSelectedAccountId] = useState('')
 
   const isEditMode = !!editTransaction
+
+  const initialAmount = editTransaction
+    ? editTransaction.mainCurrencyAmount?.toString() || editTransaction.amount.toString()
+    : ''
+  const initialAccountAmount = editTransaction ? editTransaction.amount.toString() : ''
+  const initialComment = editTransaction?.comment || ''
+  const initialAccountId = editTransaction
+    ? editTransaction.accountId?.toString() || loan.accountId?.toString() || ''
+    : loan.accountId?.toString() || ''
+
+  const [amount, setAmount] = useState(initialAmount)
+  const [accountAmount, setAccountAmount] = useState(initialAccountAmount)
+  const [comment, setComment] = useState(initialComment)
+  const [selectedAccountId, setSelectedAccountId] = useState(initialAccountId)
+
   const selectedAccount = selectedAccountId
     ? accounts.find((a) => String(a.id) === selectedAccountId)
     : null
@@ -61,34 +80,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     return v
   }
 
-  useEffect(() => {
-    if (open) {
-      if (editTransaction) {
-        setAmount(
-          editTransaction.mainCurrencyAmount?.toString() || editTransaction.amount.toString()
-        )
-        setAccountAmount(editTransaction.amount.toString())
-        setComment(editTransaction.comment || '')
-        setSelectedAccountId(
-          editTransaction.accountId?.toString() || loan?.accountId?.toString() || ''
-        )
-      } else {
-        setAmount('')
-        setAccountAmount('')
-        setComment('')
-        setSelectedAccountId(loan?.accountId?.toString() || '')
-      }
-    }
-  }, [open, editTransaction, loan])
-
-  useEffect(() => {
-    if (selectedAccount && !isMultiCurrency) {
-      setAccountAmount('')
-    }
-  }, [selectedAccountId, selectedAccount, isMultiCurrency])
-
   const getEffectiveRemaining = () => {
-    if (!loan) return 0
     const baseRemaining = loan.amount - loan.paidAmount
     if (isEditMode && editTransaction) {
       const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
@@ -166,9 +158,8 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         }
       }
 
-      handleClose()
+      onClose()
 
-      // Update query cache directly
       const [updatedLoans, updatedTransactions, updatedAccounts] = await Promise.all([
         loanRepo.getAll(),
         transactionRepo.getAll(),
@@ -182,13 +173,166 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     }
   }
 
-  const handleClose = () => {
-    setAmount('')
+  const handleAccountChange = (value: string) => {
+    setSelectedAccountId(value)
     setAccountAmount('')
-    setComment('')
-    setSelectedAccountId('')
-    onClose()
   }
+
+  const displayRemaining = loan.amount - loan.paidAmount
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-3">
+        <div className="flex justify-between items-baseline">
+          <span className="text-2xl font-bold">
+            {formatCurrency(displayRemaining, loan.currency)}
+          </span>
+          <span className="text-sm text-muted-foreground">{t('remaining')}</span>
+        </div>
+        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+          <div
+            className={`h-full transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
+            style={{ width: `${(loan.paidAmount / loan.amount) * 100}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>
+            {formatCurrency(loan.paidAmount, loan.currency)} {t('paid').toLowerCase()}
+          </span>
+          <span>
+            {formatCurrency(loan.amount, loan.currency)} {t('total').toLowerCase()}
+          </span>
+        </div>
+      </div>
+
+      {isMultiCurrency ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 space-y-1">
+              <label className="text-xs text-muted-foreground">{loan.currency}</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {getCurrencySymbol(loan.currency)}
+                </span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                  className="pl-8 text-lg"
+                  placeholder="0.00"
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
+            <div className="flex-1 space-y-1">
+              <label className="text-xs text-muted-foreground">{selectedAccount?.currency}</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {getCurrencySymbol(selectedAccount?.currency || 'USD')}
+                </span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={accountAmount}
+                  onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
+                  className="pl-8 text-lg"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">
+              {getCurrencySymbol(loan.currency)}
+            </span>
+            <Input
+              id="amount"
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+              className="pl-8 text-lg h-12"
+              placeholder="0.00"
+              autoFocus
+              required
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <Label>{t('paymentAccount')}</Label>
+        <Select value={selectedAccountId} onValueChange={handleAccountChange}>
+          <SelectTrigger>
+            <SelectValue placeholder={t('selectAccount')}>
+              {selectedAccount
+                ? `${selectedAccount.name} (${selectedAccount.currency})`
+                : undefined}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {accounts.map((a) => (
+              <SelectItem key={a.id} value={a.id!.toString()}>
+                {a.name} ({a.currency})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {!isEditMode && displayRemaining > 0 && (
+        <button
+          type="button"
+          onClick={() => setAmount(effectiveRemaining.toString())}
+          className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+        >
+          {t('payFullRemaining')} ({formatCurrency(effectiveRemaining, loan.currency)})
+        </button>
+      )}
+
+      {isEditMode && (
+        <div className="space-y-2">
+          <Label htmlFor="comment">{t('comment')}</Label>
+          <Input
+            id="comment"
+            type="text"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder={t('addComment')}
+          />
+        </div>
+      )}
+
+      <DialogFooter className="gap-2 sm:gap-0">
+        <Button type="button" variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
+          {t('cancel')}
+        </Button>
+        <Button
+          type="submit"
+          disabled={
+            !amount ||
+            !selectedAccountId ||
+            (!!isMultiCurrency && !accountAmount) ||
+            parseFloat(amount) > effectiveRemaining
+          }
+          className="flex-1 sm:flex-none"
+        >
+          {isEditMode ? t('update') : t('recordPayment')}
+        </Button>
+      </DialogFooter>
+    </form>
+  )
+}
+
+export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentDialogProps) {
+  const { t } = useLanguage()
 
   const handleDelete = async () => {
     if (!loan?.id) return
@@ -197,9 +341,8 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     try {
       await deleteLoanWithTransactions(loan)
 
-      handleClose()
+      onClose()
 
-      // Update query cache directly
       const [updatedLoans, updatedTransactions, updatedAccounts] = await Promise.all([
         loanRepo.getAll(),
         transactionRepo.getAll(),
@@ -213,9 +356,13 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     }
   }
 
+  const handleClose = () => {
+    onClose()
+  }
+
   if (!loan) return null
 
-  const displayRemaining = loan.amount - loan.paidAmount
+  const formKey = editTransaction ? `edit-${editTransaction.id}` : `new-${loan.id}`
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
@@ -235,160 +382,12 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             <Trash2 className="h-5 w-5 text-destructive" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex justify-between items-baseline">
-              <span className="text-2xl font-bold">
-                {formatCurrency(displayRemaining, loan.currency)}
-              </span>
-              <span className="text-sm text-muted-foreground">{t('remaining')}</span>
-            </div>
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
-                style={{ width: `${(loan.paidAmount / loan.amount) * 100}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>
-                {formatCurrency(loan.paidAmount, loan.currency)} {t('paid').toLowerCase()}
-              </span>
-              <span>
-                {formatCurrency(loan.amount, loan.currency)} {t('total').toLowerCase()}
-              </span>
-            </div>
-          </div>
-
-          {isMultiCurrency ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 space-y-1">
-                  <label className="text-xs text-muted-foreground">{loan.currency}</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {getCurrencySymbol(loan.currency)}
-                    </span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={amount}
-                      onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                      className="pl-8 text-lg"
-                      placeholder="0.00"
-                      autoFocus
-                      required
-                    />
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
-                <div className="flex-1 space-y-1">
-                  <label className="text-xs text-muted-foreground">
-                    {selectedAccount?.currency}
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {getCurrencySymbol(selectedAccount?.currency || 'USD')}
-                    </span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={accountAmount}
-                      onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
-                      className="pl-8 text-lg"
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">
-                  {getCurrencySymbol(loan.currency)}
-                </span>
-                <Input
-                  id="amount"
-                  type="text"
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                  className="pl-8 text-lg h-12"
-                  placeholder="0.00"
-                  autoFocus
-                  required
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>{t('paymentAccount')}</Label>
-            <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectAccount')}>
-                  {selectedAccount
-                    ? `${selectedAccount.name} (${selectedAccount.currency})`
-                    : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id!.toString()}>
-                    {a.name} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {!isEditMode && displayRemaining > 0 && (
-            <button
-              type="button"
-              onClick={() => setAmount(effectiveRemaining.toString())}
-              className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
-            >
-              {t('payFullRemaining')} ({formatCurrency(effectiveRemaining, loan.currency)})
-            </button>
-          )}
-
-          {isEditMode && (
-            <div className="space-y-2">
-              <Label htmlFor="comment">{t('comment')}</Label>
-              <Input
-                id="comment"
-                type="text"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder={t('addComment')}
-              />
-            </div>
-          )}
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              className="flex-1 sm:flex-none"
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                !amount ||
-                !selectedAccountId ||
-                (!!isMultiCurrency && !accountAmount) ||
-                parseFloat(amount) > effectiveRemaining
-              }
-              className="flex-1 sm:flex-none"
-            >
-              {isEditMode ? t('update') : t('recordPayment')}
-            </Button>
-          </DialogFooter>
-        </form>
+        <PaymentForm
+          key={formKey}
+          loan={loan}
+          editTransaction={editTransaction}
+          onClose={handleClose}
+        />
       </DialogContent>
     </Dialog>
   )

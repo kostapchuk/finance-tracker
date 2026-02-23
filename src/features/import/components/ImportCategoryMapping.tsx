@@ -14,8 +14,8 @@ import { useLanguage } from '@/hooks/useLanguage'
 interface ImportCategoryMappingProps {
   uniqueCategories: string[]
   categories: Category[]
-  mapping: Map<string, number>
-  onMappingChange: (budgetOkName: string, categoryId: number | null) => void
+  mapping: Map<string, string>
+  onMappingChange: (budgetOkName: string, categoryId: string | null) => void
   onNext: () => void
   onBack: () => void
 }
@@ -104,10 +104,8 @@ export function ImportCategoryMapping({
                   </div>
                 </div>
                 <Select
-                  value={mappedId?.toString() ?? ''}
-                  onValueChange={(value) =>
-                    onMappingChange(budgetOkName, value ? parseInt(value, 10) : null)
-                  }
+                  value={mappedId ?? ''}
+                  onValueChange={(value) => onMappingChange(budgetOkName, value || null)}
                 >
                   <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder={t('importSelectCategory')}>
@@ -116,7 +114,7 @@ export function ImportCategoryMapping({
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id!.toString()}>
+                      <SelectItem key={category.id} value={category.id!}>
                         <div className="flex items-center gap-2">
                           <div
                             className="w-3 h-3 rounded-full"

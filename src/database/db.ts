@@ -48,10 +48,9 @@ db.version(3)
     loans: '++id, type, status, personName, accountId, createdAt',
     settings: '++id',
     customCurrencies: '++id, code, createdAt',
-    investments: null, // Delete table
+    investments: null,
   })
   .upgrade(async (tx) => {
-    // Clear investments table before deletion (if it exists from v2)
     try {
       const count = await tx.table('investments').count()
       if (count > 0) {
@@ -59,6 +58,39 @@ db.version(3)
       }
     } catch {
       // Table doesn't exist, ignore error
+    }
+  })
+
+db.version(4)
+  .stores({
+    accounts: 'id, name, type, currency, createdAt',
+    incomeSources: 'id, name, createdAt',
+    categories: 'id, name, createdAt',
+    transactions: 'id, type, date, accountId, categoryId, incomeSourceId, loanId, createdAt',
+    loans: 'id, type, status, personName, accountId, createdAt',
+    settings: 'id',
+    customCurrencies: 'id, code, createdAt',
+  })
+  .upgrade(async (tx) => {
+    const tables = [
+      'accounts',
+      'incomeSources',
+      'categories',
+      'transactions',
+      'loans',
+      'settings',
+      'customCurrencies',
+    ]
+    for (const tableName of tables) {
+      const table = tx.table(tableName)
+      const records = await table.toArray()
+      for (const record of records) {
+        if (record.id && typeof record.id === 'number') {
+          const newId = crypto.randomUUID()
+          await table.delete(record.id)
+          await table.add({ ...record, id: newId })
+        }
+      }
     }
   })
 

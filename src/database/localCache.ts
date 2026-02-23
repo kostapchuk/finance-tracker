@@ -47,33 +47,8 @@ export const localCache = {
       )
     },
 
-    async getById(id: number | string): Promise<Account | undefined> {
-      // Try the ID as-is first
-      let account = await db.accounts
-        .where('id')
-        .equals(id as never)
-        .first()
-
-      // If not found and ID is a string that looks like a number, try as number
-      if (!account && typeof id === 'string') {
-        const numericId = parseInt(id, 10)
-        if (!isNaN(numericId)) {
-          account = await db.accounts
-            .where('id')
-            .equals(numericId as never)
-            .first()
-        }
-      }
-
-      // If not found and ID is a number, try as string
-      if (!account && typeof id === 'number') {
-        account = await db.accounts
-          .where('id')
-          .equals(String(id) as never)
-          .first()
-      }
-
-      return account
+    async getById(id: string): Promise<Account | undefined> {
+      return db.accounts.where('id').equals(id).first()
     },
 
     async put(account: Account): Promise<void> {
@@ -84,14 +59,11 @@ export const localCache = {
       await db.accounts.bulkPut(accounts)
     },
 
-    async delete(id: number | string): Promise<void> {
-      await db.accounts
-        .where('id')
-        .equals(id as never)
-        .delete()
+    async delete(id: string): Promise<void> {
+      await db.accounts.where('id').equals(id).delete()
     },
 
-    async bulkUpdateBalance(deltas: { id: number; delta: number }[]): Promise<void> {
+    async bulkUpdateBalance(deltas: { id: string; delta: number }[]): Promise<void> {
       if (deltas.length === 0) return
 
       const ids = deltas.map((d) => d.id)
@@ -132,8 +104,8 @@ export const localCache = {
       )
     },
 
-    async getById(id: number): Promise<IncomeSource | undefined> {
-      return db.incomeSources.get(id)
+    async getById(id: string): Promise<IncomeSource | undefined> {
+      return db.incomeSources.where('id').equals(id).first()
     },
 
     async put(source: IncomeSource): Promise<void> {
@@ -144,8 +116,8 @@ export const localCache = {
       await db.incomeSources.bulkPut(sources)
     },
 
-    async delete(id: number): Promise<void> {
-      await db.incomeSources.delete(id)
+    async delete(id: string): Promise<void> {
+      await db.incomeSources.where('id').equals(id).delete()
     },
 
     async clear(): Promise<void> {
@@ -165,8 +137,8 @@ export const localCache = {
       )
     },
 
-    async getById(id: number): Promise<Category | undefined> {
-      return db.categories.get(id)
+    async getById(id: string): Promise<Category | undefined> {
+      return db.categories.where('id').equals(id).first()
     },
 
     async put(category: Category): Promise<void> {
@@ -177,8 +149,8 @@ export const localCache = {
       await db.categories.bulkPut(categories)
     },
 
-    async delete(id: number): Promise<void> {
-      await db.categories.delete(id)
+    async delete(id: string): Promise<void> {
+      await db.categories.where('id').equals(id).delete()
     },
 
     async clear(): Promise<void> {
@@ -195,105 +167,27 @@ export const localCache = {
       return db.transactions.orderBy('date').reverse().toArray()
     },
 
-    async getById(id: number | string): Promise<Transaction | undefined> {
-      // Try the ID as-is first
-      let item = await db.transactions
-        .where('id')
-        .equals(id as never)
-        .first()
-
-      // If not found and ID is a string that looks like a number, try as number
-      if (!item && typeof id === 'string') {
-        const numericId = parseInt(id, 10)
-        if (!isNaN(numericId)) {
-          item = await db.transactions
-            .where('id')
-            .equals(numericId as never)
-            .first()
-        }
-      }
-
-      // If not found and ID is a number, try as string
-      if (!item && typeof id === 'number') {
-        item = await db.transactions
-          .where('id')
-          .equals(String(id) as never)
-          .first()
-      }
-
-      return item
+    async getById(id: string): Promise<Transaction | undefined> {
+      return db.transactions.where('id').equals(id).first()
     },
 
     async getByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
       return db.transactions.where('date').between(startDate, endDate).reverse().toArray()
     },
 
-    async getByAccount(accountId: number | string): Promise<Transaction[]> {
-      // Try both string and numeric ID
-      let items = await db.transactions
-        .where('accountId')
-        .equals(accountId as never)
-        .reverse()
-        .toArray()
-
-      if (items.length === 0 && typeof accountId === 'string') {
-        const numericId = parseInt(accountId, 10)
-        if (!isNaN(numericId)) {
-          items = await db.transactions
-            .where('accountId')
-            .equals(numericId as never)
-            .reverse()
-            .toArray()
-        }
-      }
-
-      return items
+    async getByAccount(accountId: string): Promise<Transaction[]> {
+      return db.transactions.where('accountId').equals(accountId).reverse().toArray()
     },
 
-    async getByCategory(categoryId: number | string): Promise<Transaction[]> {
-      let items = await db.transactions
-        .where('categoryId')
-        .equals(categoryId as never)
-        .reverse()
-        .toArray()
-
-      if (items.length === 0 && typeof categoryId === 'string') {
-        const numericId = parseInt(categoryId, 10)
-        if (!isNaN(numericId)) {
-          items = await db.transactions
-            .where('categoryId')
-            .equals(numericId as never)
-            .reverse()
-            .toArray()
-        }
-      }
-
-      return items
+    async getByCategory(categoryId: string): Promise<Transaction[]> {
+      return db.transactions.where('categoryId').equals(categoryId).reverse().toArray()
     },
 
-    async getByLoan(loanId: number | string): Promise<Transaction[]> {
-      let items = await db.transactions
-        .where('loanId')
-        .equals(loanId as never)
-        .reverse()
-        .toArray()
-
-      if (items.length === 0 && typeof loanId === 'string') {
-        const numericId = parseInt(loanId, 10)
-        if (!isNaN(numericId)) {
-          items = await db.transactions
-            .where('loanId')
-            .equals(numericId as never)
-            .reverse()
-            .toArray()
-        }
-      }
-
-      return items
+    async getByLoan(loanId: string): Promise<Transaction[]> {
+      return db.transactions.where('loanId').equals(loanId).reverse().toArray()
     },
 
     async put(transaction: Transaction): Promise<void> {
-      // Normalize date fields to Date objects for consistent indexing
       const normalizedTransaction = {
         ...transaction,
         date: transaction.date instanceof Date ? transaction.date : new Date(transaction.date),
@@ -310,7 +204,6 @@ export const localCache = {
     },
 
     async putAll(transactions: Transaction[]): Promise<void> {
-      // Normalize date fields to Date objects for consistent indexing
       const normalizedTransactions = transactions.map((t) => ({
         ...t,
         date: t.date instanceof Date ? t.date : new Date(t.date),
@@ -320,11 +213,8 @@ export const localCache = {
       await db.transactions.bulkPut(normalizedTransactions)
     },
 
-    async delete(id: number | string): Promise<void> {
-      await db.transactions
-        .where('id')
-        .equals(id as never)
-        .delete()
+    async delete(id: string): Promise<void> {
+      await db.transactions.where('id').equals(id).delete()
     },
 
     async clear(): Promise<void> {
@@ -355,33 +245,8 @@ export const localCache = {
       return db.loans.orderBy('createdAt').reverse().toArray()
     },
 
-    async getById(id: number | string): Promise<Loan | undefined> {
-      // Try the ID as-is first
-      let item = await db.loans
-        .where('id')
-        .equals(id as never)
-        .first()
-
-      // If not found and ID is a string that looks like a number, try as number
-      if (!item && typeof id === 'string') {
-        const numericId = parseInt(id, 10)
-        if (!isNaN(numericId)) {
-          item = await db.loans
-            .where('id')
-            .equals(numericId as never)
-            .first()
-        }
-      }
-
-      // If not found and ID is a number, try as string
-      if (!item && typeof id === 'number') {
-        item = await db.loans
-          .where('id')
-          .equals(String(id) as never)
-          .first()
-      }
-
-      return item
+    async getById(id: string): Promise<Loan | undefined> {
+      return db.loans.where('id').equals(id).first()
     },
 
     async getActive(): Promise<Loan[]> {
@@ -396,11 +261,8 @@ export const localCache = {
       await db.loans.bulkPut(loans)
     },
 
-    async delete(id: number | string): Promise<void> {
-      await db.loans
-        .where('id')
-        .equals(id as never)
-        .delete()
+    async delete(id: string): Promise<void> {
+      await db.loans.where('id').equals(id).delete()
     },
 
     async clear(): Promise<void> {
@@ -428,8 +290,8 @@ export const localCache = {
       return db.customCurrencies.orderBy('code').toArray()
     },
 
-    async getById(id: number): Promise<CustomCurrency | undefined> {
-      return db.customCurrencies.get(id)
+    async getById(id: string): Promise<CustomCurrency | undefined> {
+      return db.customCurrencies.where('id').equals(id).first()
     },
 
     async put(currency: CustomCurrency): Promise<void> {
@@ -440,8 +302,8 @@ export const localCache = {
       await db.customCurrencies.bulkPut(currencies)
     },
 
-    async delete(id: number): Promise<void> {
-      await db.customCurrencies.delete(id)
+    async delete(id: string): Promise<void> {
+      await db.customCurrencies.where('id').equals(id).delete()
     },
 
     async clear(): Promise<void> {
@@ -484,7 +346,7 @@ export const localCache = {
       await db.syncQueue.delete(id)
     },
 
-    async deleteByRecordId(recordId: number | string): Promise<void> {
+    async deleteByRecordId(recordId: string): Promise<void> {
       await db.syncQueue.where('recordId').equals(recordId).delete()
     },
 

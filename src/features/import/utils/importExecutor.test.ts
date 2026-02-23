@@ -34,10 +34,10 @@ describe('executeImport', () => {
       },
     ]
 
-    const accountMapping = new Map([['Wallet', 1]])
-    const categoryMapping = new Map([['Food', 2]])
-    const incomeSourceMapping = new Map([['Salary', 3]])
-    const accounts = [{ id: 1, currency: 'USD' }]
+    const accountMapping = new Map([['Wallet', 'acc-1']])
+    const categoryMapping = new Map([['Food', 'cat-2']])
+    const incomeSourceMapping = new Map([['Salary', 'inc-3']])
+    const accounts = [{ id: 'acc-1', currency: 'USD' }]
 
     const result = await executeImport({
       rows,
@@ -80,10 +80,10 @@ describe('executeImport', () => {
       },
     ]
 
-    const accountMapping = new Map([['Cash', 1]])
-    const categoryMapping = new Map([['Food', 2]])
+    const accountMapping = new Map([['Cash', 'acc-1']])
+    const categoryMapping = new Map([['Food', 'cat-2']])
     const incomeSourceMapping = new Map()
-    const accounts = [{ id: 1, currency: 'USD' }]
+    const accounts = [{ id: 'acc-1', currency: 'USD' }]
 
     const result = await executeImport({
       rows,
@@ -114,14 +114,14 @@ describe('executeImport', () => {
     ]
 
     const accountMapping = new Map([
-      ['Cash', 1],
-      ['Bank', 2],
+      ['Cash', 'acc-1'],
+      ['Bank', 'acc-2'],
     ])
     const categoryMapping = new Map()
     const incomeSourceMapping = new Map()
     const accounts = [
-      { id: 1, currency: 'USD' },
-      { id: 2, currency: 'USD' },
+      { id: 'acc-1', currency: 'USD' },
+      { id: 'acc-2', currency: 'USD' },
     ]
 
     const result = await executeImport({
@@ -150,10 +150,10 @@ describe('executeImport', () => {
       lineNumber: i + 2,
     }))
 
-    const accountMapping = new Map([['Cash', 1]])
-    const categoryMapping = new Map([['Food', 2]])
+    const accountMapping = new Map([['Cash', 'acc-1']])
+    const categoryMapping = new Map([['Food', 'cat-2']])
     const incomeSourceMapping = new Map()
-    const accounts = [{ id: 1, currency: 'USD' }]
+    const accounts = [{ id: 'acc-1', currency: 'USD' }]
 
     const result = await executeImport({
       rows,
@@ -183,10 +183,10 @@ describe('executeImport', () => {
       },
     ]
 
-    const accountMapping = new Map([['Card', 1]])
+    const accountMapping = new Map([['Card', 'acc-1']])
     const categoryMapping = new Map()
-    const incomeSourceMapping = new Map([['Salary', 3]])
-    const accounts = [{ id: 1, currency: 'USD' }]
+    const incomeSourceMapping = new Map([['Salary', 'inc-3']])
+    const accounts = [{ id: 'acc-1', currency: 'USD' }]
 
     const result = await executeImport({
       rows,
@@ -218,8 +218,8 @@ describe('executeImport', () => {
 
     const accountMapping = new Map()
     const categoryMapping = new Map()
-    const incomeSourceMapping = new Map([['Salary', 3]])
-    const accounts = [{ id: 1, currency: 'USD' }]
+    const incomeSourceMapping = new Map([['Salary', 'inc-3']])
+    const accounts = [{ id: 'acc-1', currency: 'USD' }]
 
     const result = await executeImport({
       rows,
@@ -241,9 +241,9 @@ describe('validateMappings', () => {
       uniqueCategories: ['Food'],
       uniqueIncomeSources: ['Salary'],
     }
-    const accountMapping = new Map([['Wallet', 1]])
-    const categoryMapping = new Map([['Food', 2]])
-    const incomeSourceMapping = new Map([['Salary', 3]])
+    const accountMapping = new Map([['Wallet', 'acc-1']])
+    const categoryMapping = new Map([['Food', 'cat-2']])
+    const incomeSourceMapping = new Map([['Salary', 'inc-3']])
 
     const result = validateMappings(
       parsedData,
@@ -282,8 +282,8 @@ describe('validateMappings', () => {
       uniqueCategories: ['Food', 'Transport'],
       uniqueIncomeSources: [],
     }
-    const accountMapping = new Map([['Wallet', 1]])
-    const categoryMapping = new Map([['Food', 2]])
+    const accountMapping = new Map([['Wallet', 'acc-1']])
+    const categoryMapping = new Map([['Food', 'cat-2']])
     const incomeSourceMapping = new Map()
 
     const result = validateMappings(
@@ -304,7 +304,7 @@ describe('validateMappings', () => {
       uniqueCategories: [],
       uniqueIncomeSources: ['Salary'],
     }
-    const accountMapping = new Map([['Wallet', 1]])
+    const accountMapping = new Map([['Wallet', 'acc-1']])
     const categoryMapping = new Map()
     const incomeSourceMapping = new Map()
 

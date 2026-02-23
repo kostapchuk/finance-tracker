@@ -28,7 +28,7 @@ export function useAccounts() {
   })
 }
 
-export function useAccount(id: number | undefined) {
+export function useAccount(id: string | undefined) {
   return useQuery({
     queryKey: ['accounts', id],
     queryFn: () => (id ? accountRepo.getById(id) : undefined),
@@ -54,7 +54,7 @@ export function useUpdateAccount() {
       id,
       updates,
     }: {
-      id: number | string
+      id: string
       updates: Partial<Omit<Account, 'id' | 'createdAt' | 'userId'>>
     }) => accountRepo.update(id, updates),
     onSuccess: () => {
@@ -66,7 +66,7 @@ export function useUpdateAccount() {
 export function useDeleteAccount() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number | string) => accountRepo.delete(id),
+    mutationFn: (id: string) => accountRepo.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
@@ -80,7 +80,7 @@ export function useIncomeSources() {
   })
 }
 
-export function useIncomeSource(id: number | undefined) {
+export function useIncomeSource(id: string | undefined) {
   return useQuery({
     queryKey: ['incomeSources', id],
     queryFn: () => (id ? incomeSourceRepo.getById(id) : undefined),
@@ -106,7 +106,7 @@ export function useUpdateIncomeSource() {
       id,
       updates,
     }: {
-      id: number | string
+      id: string
       updates: Partial<Omit<IncomeSource, 'id' | 'createdAt' | 'userId'>>
     }) => incomeSourceRepo.update(id, updates),
     onSuccess: () => {
@@ -118,7 +118,7 @@ export function useUpdateIncomeSource() {
 export function useDeleteIncomeSource() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number | string) => incomeSourceRepo.delete(id),
+    mutationFn: (id: string) => incomeSourceRepo.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incomeSources'] })
     },
@@ -132,7 +132,7 @@ export function useCategories() {
   })
 }
 
-export function useCategory(id: number | undefined) {
+export function useCategory(id: string | undefined) {
   return useQuery({
     queryKey: ['categories', id],
     queryFn: () => (id ? categoryRepo.getById(id) : undefined),
@@ -158,7 +158,7 @@ export function useUpdateCategory() {
       id,
       updates,
     }: {
-      id: number | string
+      id: string
       updates: Partial<Omit<Category, 'id' | 'createdAt' | 'userId'>>
     }) => categoryRepo.update(id, updates),
     onSuccess: () => {
@@ -170,7 +170,7 @@ export function useUpdateCategory() {
 export function useDeleteCategory() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number | string) => categoryRepo.delete(id),
+    mutationFn: (id: string) => categoryRepo.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
     },
@@ -186,7 +186,7 @@ export function useTransactions() {
   })
 }
 
-export function useTransaction(id: number | undefined) {
+export function useTransaction(id: string | undefined) {
   return useQuery({
     queryKey: ['transactions', id],
     queryFn: () => (id ? transactionRepo.getById(id) : undefined),
@@ -202,7 +202,7 @@ export function useTransactionsByDateRange(startDate: Date, endDate: Date, enabl
   })
 }
 
-export function useTransactionsByAccount(accountId: number | undefined) {
+export function useTransactionsByAccount(accountId: string | undefined) {
   return useQuery({
     queryKey: ['transactions', 'account', accountId],
     queryFn: () => (accountId ? transactionRepo.getByAccount(accountId) : []),
@@ -210,7 +210,7 @@ export function useTransactionsByAccount(accountId: number | undefined) {
   })
 }
 
-export function useTransactionsByCategory(categoryId: number | undefined) {
+export function useTransactionsByCategory(categoryId: string | undefined) {
   return useQuery({
     queryKey: ['transactions', 'category', categoryId],
     queryFn: () => (categoryId ? transactionRepo.getByCategory(categoryId) : []),
@@ -244,7 +244,7 @@ export function useUpdateTransaction() {
       id,
       updates,
     }: {
-      id: number | string
+      id: string
       updates: Partial<Omit<Transaction, 'id' | 'createdAt' | 'userId'>>
     }) => transactionRepo.update(id, updates),
     onSuccess: async () => {
@@ -257,7 +257,7 @@ export function useUpdateTransaction() {
 export function useDeleteTransaction() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number | string) => transactionRepo.delete(id),
+    mutationFn: (id: string) => transactionRepo.delete(id),
     onSuccess: async () => {
       queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
       queryClient.setQueryData(['accounts'], await accountRepo.getAll())
@@ -274,7 +274,7 @@ export function useLoans() {
   })
 }
 
-export function useLoan(id: number | undefined) {
+export function useLoan(id: string | undefined) {
   return useQuery({
     queryKey: ['loans', id],
     queryFn: () => (id ? loanRepo.getById(id) : undefined),
@@ -308,7 +308,7 @@ export function useUpdateLoan() {
       id,
       updates,
     }: {
-      id: number | string
+      id: string
       updates: Partial<Omit<Loan, 'id' | 'createdAt' | 'userId'>>
     }) => loanRepo.update(id, updates),
     onSuccess: async () => {
@@ -320,7 +320,7 @@ export function useUpdateLoan() {
 export function useDeleteLoan() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number | string) => loanRepo.delete(id),
+    mutationFn: (id: string) => loanRepo.delete(id),
     onSuccess: async () => {
       queryClient.setQueryData(['loans'], await loanRepo.getAll())
       queryClient.setQueryData(['accounts'], await accountRepo.getAll())
@@ -364,7 +364,7 @@ export function useCustomCurrencies() {
   })
 }
 
-export function useCustomCurrency(id: number | undefined) {
+export function useCustomCurrency(id: string | undefined) {
   return useQuery({
     queryKey: ['customCurrencies', id],
     queryFn: () => (id ? customCurrencyRepo.getById(id) : undefined),
@@ -390,7 +390,7 @@ export function useUpdateCustomCurrency() {
       id,
       updates,
     }: {
-      id: number | string
+      id: string
       updates: Partial<Omit<CustomCurrency, 'id' | 'createdAt' | 'userId'>>
     }) => customCurrencyRepo.update(id, updates),
     onSuccess: () => {
@@ -402,7 +402,7 @@ export function useUpdateCustomCurrency() {
 export function useDeleteCustomCurrency() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number | string) => customCurrencyRepo.delete(id),
+    mutationFn: (id: string) => customCurrencyRepo.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customCurrencies'] })
     },

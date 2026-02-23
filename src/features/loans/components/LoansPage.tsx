@@ -82,7 +82,7 @@ export function LoansPage() {
     return <LoadingSkeleton />
   }
 
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
+  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: string) => {
     if (isEdit && loanId) {
       // Get existing loan
       const existingLoan = loans.find((l) => String(l.id) === String(loanId))

@@ -235,8 +235,8 @@ export function SettingsPage() {
   const handleReorder = useCallback(
     async (
       event: DragEndEvent,
-      items: { id?: number }[],
-      repo: { update: (id: number, updates: Record<string, unknown>) => Promise<unknown> },
+      items: { id?: string }[],
+      repo: { update: (id: string, updates: Record<string, unknown>) => Promise<unknown> },
       refresh: () => Promise<void>
     ) => {
       const { active, over } = event
@@ -348,7 +348,7 @@ export function SettingsPage() {
           }
           const account = {
             ...a,
-            id: newId as unknown as number,
+            id: newId,
             userId,
             createdAt: new Date(a.createdAt as string),
             updatedAt: new Date(a.updatedAt as string),
@@ -374,7 +374,7 @@ export function SettingsPage() {
           }
           const source = {
             ...s,
-            id: newId as unknown as number,
+            id: newId,
             userId,
             createdAt: new Date(s.createdAt as string),
             updatedAt: new Date(s.updatedAt as string),
@@ -400,7 +400,7 @@ export function SettingsPage() {
           }
           const category = {
             ...c,
-            id: newId as unknown as number,
+            id: newId,
             userId,
             createdAt: new Date(c.createdAt as string),
             updatedAt: new Date(c.updatedAt as string),
@@ -426,11 +426,9 @@ export function SettingsPage() {
           }
           const loan = {
             ...l,
-            id: newId as unknown as number,
+            id: newId,
             userId,
-            accountId: l.accountId
-              ? (accountIdMap.get(l.accountId as number) as unknown as number)
-              : undefined,
+            accountId: l.accountId ? accountIdMap.get(l.accountId as number) : undefined,
             dueDate: l.dueDate ? new Date(l.dueDate as string) : undefined,
             createdAt: new Date(l.createdAt as string),
             updatedAt: new Date(l.updatedAt as string),
@@ -452,21 +450,15 @@ export function SettingsPage() {
           const newId = generateTempId()
           const transaction = {
             ...t,
-            id: newId as unknown as number,
+            id: newId,
             userId,
-            accountId: t.accountId
-              ? (accountIdMap.get(t.accountId as number) as unknown as number)
-              : undefined,
-            toAccountId: t.toAccountId
-              ? (accountIdMap.get(t.toAccountId as number) as unknown as number)
-              : undefined,
-            categoryId: t.categoryId
-              ? (categoryIdMap.get(t.categoryId as number) as unknown as number)
-              : undefined,
+            accountId: t.accountId ? accountIdMap.get(t.accountId as number) : undefined,
+            toAccountId: t.toAccountId ? accountIdMap.get(t.toAccountId as number) : undefined,
+            categoryId: t.categoryId ? categoryIdMap.get(t.categoryId as number) : undefined,
             incomeSourceId: t.incomeSourceId
-              ? (incomeSourceIdMap.get(t.incomeSourceId as number) as unknown as number)
+              ? incomeSourceIdMap.get(t.incomeSourceId as number)
               : undefined,
-            loanId: t.loanId ? (loanIdMap.get(t.loanId as number) as unknown as number) : undefined,
+            loanId: t.loanId ? loanIdMap.get(t.loanId as number) : undefined,
             date: new Date(t.date as string),
             createdAt: new Date(t.createdAt as string),
             updatedAt: new Date(t.updatedAt as string),
@@ -1282,7 +1274,7 @@ function SortableManagementItem({
   onEdit,
   onDelete,
 }: {
-  id: number
+  id: string
   color: string
   title: string
   subtitle?: React.ReactNode

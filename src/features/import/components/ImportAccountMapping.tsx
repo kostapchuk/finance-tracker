@@ -16,8 +16,8 @@ import { useLanguage } from '@/hooks/useLanguage'
 interface ImportAccountMappingProps {
   uniqueAccounts: SourceAccountInfo[]
   accounts: Account[]
-  mapping: Map<string, number>
-  onMappingChange: (budgetOkName: string, accountId: number | null) => void
+  mapping: Map<string, string>
+  onMappingChange: (budgetOkName: string, accountId: string | null) => void
   onNext: () => void
   onBack: () => void
 }
@@ -86,10 +86,8 @@ export function ImportAccountMapping({
                   </div>
                 </div>
                 <Select
-                  value={mappedId?.toString() ?? ''}
-                  onValueChange={(value) =>
-                    onMappingChange(sourceAccount.name, value ? parseInt(value, 10) : null)
-                  }
+                  value={mappedId ?? ''}
+                  onValueChange={(value) => onMappingChange(sourceAccount.name, value || null)}
                 >
                   <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder={t('selectAccount')}>
@@ -98,7 +96,7 @@ export function ImportAccountMapping({
                   </SelectTrigger>
                   <SelectContent>
                     {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id!.toString()}>
+                      <SelectItem key={account.id} value={account.id!}>
                         {account.name} ({account.currency})
                       </SelectItem>
                     ))}

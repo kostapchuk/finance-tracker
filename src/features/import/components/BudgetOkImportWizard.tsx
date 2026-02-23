@@ -32,9 +32,9 @@ export interface SavedImportState {
   file: File | null
   fileName: string
   parsedData: ParsedImportData | null
-  accountMapping: Map<string, number>
-  categoryMapping: Map<string, number>
-  incomeSourceMapping: Map<string, number>
+  accountMapping: Map<string, string>
+  categoryMapping: Map<string, string>
+  incomeSourceMapping: Map<string, string>
 }
 
 export function BudgetOkImportWizard({
@@ -63,13 +63,13 @@ export function BudgetOkImportWizard({
   const [parsedData, setParsedData] = useState<ParsedImportData | null>(
     savedState?.parsedData ?? null
   )
-  const [accountMapping, setAccountMapping] = useState<Map<string, number>>(
+  const [accountMapping, setAccountMapping] = useState<Map<string, string>>(
     savedState?.accountMapping ?? new Map()
   )
-  const [categoryMapping, setCategoryMapping] = useState<Map<string, number>>(
+  const [categoryMapping, setCategoryMapping] = useState<Map<string, string>>(
     savedState?.categoryMapping ?? new Map()
   )
-  const [incomeSourceMapping, setIncomeSourceMapping] = useState<Map<string, number>>(
+  const [incomeSourceMapping, setIncomeSourceMapping] = useState<Map<string, string>>(
     savedState?.incomeSourceMapping ?? new Map()
   )
   const [isImporting, setIsImporting] = useState(false)
@@ -147,7 +147,7 @@ export function BudgetOkImportWizard({
         setParsedData(parsed)
 
         // Auto-map accounts with exact name matches
-        const autoAccountMap = new Map<string, number>()
+        const autoAccountMap = new Map<string, string>()
         for (const sourceAccount of parsed.uniqueAccounts) {
           const matchingAccount = accounts.find(
             (a) => a.name.toLowerCase() === sourceAccount.name.toLowerCase()
@@ -159,7 +159,7 @@ export function BudgetOkImportWizard({
         setAccountMapping(autoAccountMap)
 
         // Auto-map categories with exact name matches
-        const autoCategoryMap = new Map<string, number>()
+        const autoCategoryMap = new Map<string, string>()
         for (const budgetOkName of parsed.uniqueCategories) {
           const matchingCategory = categories.find(
             (c) => c.name.toLowerCase() === budgetOkName.toLowerCase()
@@ -171,7 +171,7 @@ export function BudgetOkImportWizard({
         setCategoryMapping(autoCategoryMap)
 
         // Auto-map income sources with exact name matches
-        const autoIncomeMap = new Map<string, number>()
+        const autoIncomeMap = new Map<string, string>()
         for (const budgetOkName of parsed.uniqueIncomeSources) {
           const matchingSource = incomeSources.find(
             (s) => s.name.toLowerCase() === budgetOkName.toLowerCase()
@@ -192,7 +192,7 @@ export function BudgetOkImportWizard({
 
   // Account mapping change
   const handleAccountMappingChange = useCallback(
-    (budgetOkName: string, accountId: number | null) => {
+    (budgetOkName: string, accountId: string | null) => {
       setAccountMapping((prev) => {
         const next = new Map(prev)
         if (accountId === null) {
@@ -208,7 +208,7 @@ export function BudgetOkImportWizard({
 
   // Category mapping change
   const handleCategoryMappingChange = useCallback(
-    (budgetOkName: string, categoryId: number | null) => {
+    (budgetOkName: string, categoryId: string | null) => {
       setCategoryMapping((prev) => {
         const next = new Map(prev)
         if (categoryId === null) {
@@ -224,7 +224,7 @@ export function BudgetOkImportWizard({
 
   // Income source mapping change
   const handleIncomeSourceMappingChange = useCallback(
-    (budgetOkName: string, incomeSourceId: number | null) => {
+    (budgetOkName: string, incomeSourceId: string | null) => {
       setIncomeSourceMapping((prev) => {
         const next = new Map(prev)
         if (incomeSourceId === null) {
@@ -258,12 +258,13 @@ export function BudgetOkImportWizard({
 
       if (result.success) {
         // Directly set query data from database to ensure UI updates
+        const repos = await import('@/database/repositories')
         const [accounts, incomeSources, categories, transactions, loans] = await Promise.all([
-          (await import('@/database/repositories')).accountRepo.getAll(),
-          (await import('@/database/repositories')).incomeSourceRepo.getAll(),
-          (await import('@/database/repositories')).categoryRepo.getAll(),
-          (await import('@/database/repositories')).transactionRepo.getAll(),
-          (await import('@/database/repositories')).loanRepo.getAll(),
+          repos.accountRepo.getAll(),
+          repos.incomeSourceRepo.getAll(),
+          repos.categoryRepo.getAll(),
+          repos.transactionRepo.getAll(),
+          repos.loanRepo.getAll(),
         ])
 
         queryClient.setQueryData(['accounts'], accounts)

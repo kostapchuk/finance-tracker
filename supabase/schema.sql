@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Accounts table
 CREATE TABLE IF NOT EXISTS accounts (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   type TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 -- Income Sources table
 CREATE TABLE IF NOT EXISTS income_sources (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   currency TEXT NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS income_sources (
 
 -- Categories table
 CREATE TABLE IF NOT EXISTS categories (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   color TEXT NOT NULL,
@@ -52,19 +52,19 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- Transactions table
 CREATE TABLE IF NOT EXISTS transactions (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   type TEXT NOT NULL,
   amount DECIMAL(18,6) NOT NULL,
   currency TEXT NOT NULL,
   date TIMESTAMPTZ NOT NULL,
   comment TEXT,
-  income_source_id BIGINT,
-  category_id BIGINT,
-  account_id BIGINT,
-  to_account_id BIGINT,
+  income_source_id UUID,
+  category_id UUID,
+  account_id UUID,
+  to_account_id UUID,
   to_amount DECIMAL(18,6),
-  loan_id BIGINT,
+  loan_id UUID,
   main_currency_amount DECIMAL(18,6),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 
 -- Loans table
 CREATE TABLE IF NOT EXISTS loans (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   type TEXT NOT NULL,
   person_name TEXT NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS loans (
   currency TEXT NOT NULL,
   paid_amount DECIMAL(18,6) NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'active',
-  account_id BIGINT,
+  account_id UUID,
   due_date TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS loans (
 
 -- Settings table
 CREATE TABLE IF NOT EXISTS settings (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL UNIQUE,
   default_currency TEXT NOT NULL DEFAULT 'USD',
   blur_financial_figures BOOLEAN DEFAULT FALSE,
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS settings (
 
 -- Custom Currencies table
 CREATE TABLE IF NOT EXISTS custom_currencies (
-  id BIGSERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id TEXT NOT NULL,
   code TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -107,6 +107,23 @@ CREATE TABLE IF NOT EXISTS custom_currencies (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, code)
+);
+
+-- Report Cache table
+CREATE TABLE IF NOT EXISTS report_cache (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  period_key TEXT NOT NULL,
+  inflows DECIMAL(18,6) NOT NULL,
+  outflows DECIMAL(18,6) NOT NULL,
+  net DECIMAL(18,6) NOT NULL,
+  category_breakdown JSONB,
+  income_source_breakdown JSONB,
+  transaction_count INTEGER NOT NULL,
+  last_transaction_date TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ,
+  UNIQUE(user_id, period_key)
 );
 
 -- Indexes for efficient queries
@@ -131,6 +148,7 @@ ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_currencies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE report_cache ENABLE ROW LEVEL SECURITY;
 
 -- For Phase 1 (no auth), allow all operations based on user_id matching
 -- These policies allow anonymous access but filter by user_id
@@ -216,6 +234,18 @@ CREATE POLICY "users_can_update_own_custom_currencies" ON custom_currencies
 CREATE POLICY "users_can_delete_own_custom_currencies" ON custom_currencies
   FOR DELETE USING (true);
 
+CREATE POLICY "users_can_read_own_report_cache" ON report_cache
+  FOR SELECT USING (true);
+
+CREATE POLICY "users_can_insert_own_report_cache" ON report_cache
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "users_can_update_own_report_cache" ON report_cache
+  FOR UPDATE USING (true);
+
+CREATE POLICY "users_can_delete_own_report_cache" ON report_cache
+  FOR DELETE USING (true);
+
 -- Function to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -252,4 +282,8 @@ CREATE TRIGGER update_settings_updated_at
 
 CREATE TRIGGER update_custom_currencies_updated_at
   BEFORE UPDATE ON custom_currencies
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_report_cache_updated_at
+  BEFORE UPDATE ON report_cache
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

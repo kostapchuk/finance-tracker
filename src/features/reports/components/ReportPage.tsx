@@ -76,19 +76,19 @@ export function ReportPage() {
 
     const byCategory = monthlyExpenses.reduce(
       (acc, t) => {
-        const categoryId = t.categoryId || 0
+        const categoryId = t.categoryId || 'unknown'
         if (!acc[categoryId]) {
           acc[categoryId] = 0
         }
         acc[categoryId] += t.mainCurrencyAmount ?? t.amount
         return acc
       },
-      {} as Record<number, number>
+      {} as Record<string, number>
     )
 
     return Object.entries(byCategory)
       .map(([categoryId, amount]) => {
-        const category = categories.find((c) => c.id === parseInt(categoryId))
+        const category = categories.find((c) => c.id === categoryId)
         return {
           name: category?.name || 'Unknown',
           value: amount,

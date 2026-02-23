@@ -74,8 +74,8 @@ type FilterAction =
   | { type: 'SET_CUSTOM_DATE_TO'; payload: string }
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_SHOW_FILTERS'; payload: boolean }
-  | { type: 'APPLY_CATEGORY_NAV'; payload: number }
-  | { type: 'APPLY_ACCOUNT_NAV'; payload: number }
+  | { type: 'APPLY_CATEGORY_NAV'; payload: string }
+  | { type: 'APPLY_ACCOUNT_NAV'; payload: string }
 
 function getInitialFilterState(): FilterState {
   const selectedMonth = useAppStore.getState().selectedMonth
@@ -116,7 +116,7 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
     case 'APPLY_CATEGORY_NAV':
       return {
         ...state,
-        categoryFilter: String(action.payload),
+        categoryFilter: action.payload,
         typeFilter: 'expense',
         dateFilter: 'month',
         showFilters: true,
@@ -124,7 +124,7 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
     case 'APPLY_ACCOUNT_NAV':
       return {
         ...state,
-        accountFilter: String(action.payload),
+        accountFilter: action.payload,
         showFilters: true,
       }
     default:
@@ -377,7 +377,7 @@ export function HistoryPage() {
     setEditingLoan(null)
   }
 
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
+  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: string) => {
     if (!isEdit || !loanId || !editingTransaction) return
 
     const oldTransaction = editingTransaction
@@ -568,7 +568,7 @@ export function HistoryPage() {
                 <span className="truncate">
                   {accountFilter === 'all'
                     ? t('allAccounts')
-                    : getAccountNameWithCurrency(parseInt(accountFilter))}
+                    : getAccountNameWithCurrency(accountFilter)}
                 </span>
               </SelectTrigger>
               <SelectContent>

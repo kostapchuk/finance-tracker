@@ -11,11 +11,10 @@ export type TransactionType =
 export type LoanType = 'given' | 'received'
 export type LoanStatus = 'active' | 'partially_paid' | 'fully_paid'
 
-// Category types: regular expense or loan payment
 export type CategoryType = 'expense' | 'loan'
 
 export interface Account {
-  id?: number
+  id: string
   userId?: string
   name: string
   type: AccountType
@@ -30,7 +29,7 @@ export interface Account {
 }
 
 export interface IncomeSource {
-  id?: number
+  id: string
   userId?: string
   name: string
   currency: string
@@ -43,12 +42,12 @@ export interface IncomeSource {
 }
 
 export interface Category {
-  id?: number
+  id: string
   userId?: string
   name: string
   color: string
   icon?: string
-  categoryType?: CategoryType // 'expense' (default) or 'loan'
+  categoryType?: CategoryType
   budget?: number
   budgetPeriod?: 'monthly' | 'weekly' | 'yearly'
   sortOrder?: number
@@ -58,7 +57,7 @@ export interface Category {
 }
 
 export interface Transaction {
-  id?: number
+  id: string
   userId?: string
   type: TransactionType
   amount: number
@@ -66,23 +65,12 @@ export interface Transaction {
   date: Date
   comment?: string
 
-  // For income
-  incomeSourceId?: number
-
-  // For expense
-  categoryId?: number
-
-  // For all types that involve accounts
-  accountId?: number | string
-
-  // For transfers
-  toAccountId?: number
-  toAmount?: number // Amount in target account currency (for multi-currency transfers)
-
-  // For loan transactions
-  loanId?: number | string
-
-  // Amount in mainCurrency when account currency differs (for reporting/budgets)
+  incomeSourceId?: string
+  categoryId?: string
+  accountId?: string
+  toAccountId?: string
+  toAmount?: number
+  loanId?: string
   mainCurrencyAmount?: number
 
   createdAt: Date
@@ -90,7 +78,7 @@ export interface Transaction {
 }
 
 export interface Loan {
-  id?: number | string
+  id: string
   userId?: string
   type: LoanType
   personName: string
@@ -99,14 +87,14 @@ export interface Loan {
   currency: string
   paidAmount: number
   status: LoanStatus
-  accountId?: number | string
+  accountId?: string
   dueDate?: Date
   createdAt: Date
   updatedAt: Date
 }
 
 export interface AppSettings {
-  id?: number
+  id: string
   userId?: string
   defaultCurrency: string
   blurFinancialFigures?: boolean
@@ -115,7 +103,7 @@ export interface AppSettings {
 }
 
 export interface CustomCurrency {
-  id?: number
+  id: string
   userId?: string
   code: string
   name: string
@@ -130,7 +118,7 @@ export interface SyncQueueItem {
   id?: number
   operation: SyncOperation
   entity: string
-  recordId: number | string
+  recordId: string
   data?: Record<string, unknown>
   createdAt: Date
   attempts: number
@@ -139,14 +127,14 @@ export interface SyncQueueItem {
 }
 
 export interface ReportCache {
-  id?: number
+  id?: string
   userId?: string
   periodKey: string
   inflows: number
   outflows: number
   net: number
-  categoryBreakdown: { categoryId: number; amount: number }[]
-  incomeSourceBreakdown: { incomeSourceId: number; amount: number }[]
+  categoryBreakdown: { categoryId: string; amount: number }[]
+  incomeSourceBreakdown: { incomeSourceId: string; amount: number }[]
   transactionCount: number
   lastTransactionDate?: Date
   updatedAt: Date

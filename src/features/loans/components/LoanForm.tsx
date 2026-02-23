@@ -27,7 +27,7 @@ export interface LoanFormData {
   description?: string
   amount: number
   currency: string
-  accountId: number | string
+  accountId: string
   accountAmount?: number // set when account currency ≠ loan currency
   dueDate?: Date
 }
@@ -36,7 +36,7 @@ interface LoanFormProps {
   loan?: Loan | null
   open: boolean
   onClose: () => void
-  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number | string) => Promise<void>
+  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: string) => Promise<void>
 }
 
 function LoanFormContent({
@@ -46,7 +46,7 @@ function LoanFormContent({
 }: {
   loan?: Loan | null
   onClose: () => void
-  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number | string) => Promise<void>
+  onSave?: (data: LoanFormData, isEdit: boolean, loanId?: string) => Promise<void>
 }) {
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()

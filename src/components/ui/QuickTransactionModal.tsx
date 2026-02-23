@@ -20,14 +20,14 @@ import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 
 export type TransactionMode =
-  | { type: 'income'; source: IncomeSource; preselectedAccountId?: number | string }
-  | { type: 'expense'; category: Category; preselectedAccountId?: number | string }
+  | { type: 'income'; source: IncomeSource; preselectedAccountId?: string }
+  | { type: 'expense'; category: Category; preselectedAccountId?: string }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
 
 interface QuickTransactionModalProps {
   mode: TransactionMode
   accounts: Account[]
-  preselectedAccountId?: number | string
+  preselectedAccountId?: string
   editTransaction?: Transaction
   disableAutoFocus?: boolean
   onDelete?: (transaction: Transaction) => void
@@ -75,13 +75,13 @@ export function QuickTransactionModal({
   const [activeField, setActiveField] = useState<
     'source' | 'target' | 'account' | 'comment' | 'date' | null
   >('source')
-  const [selectedAccountId, setSelectedAccountId] = useState<number | string | undefined>(
+  const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>(
     preselectedAccountId ?? accounts[0]?.id
   )
-  const [selectedSourceId, setSelectedSourceId] = useState<number | string | undefined>(
+  const [selectedSourceId, setSelectedSourceId] = useState<string | undefined>(
     mode.type === 'income' ? mode.source.id : undefined
   )
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | string | undefined>(
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(
     mode.type === 'expense' ? mode.category.id : undefined
   )
   const [showAccountPicker, setShowAccountPicker] = useState(false)
@@ -89,10 +89,10 @@ export function QuickTransactionModal({
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
   const [showFromAccountPicker, setShowFromAccountPicker] = useState(false)
   const [showToAccountPicker, setShowToAccountPicker] = useState(false)
-  const [fromAccountId, setFromAccountId] = useState<number | undefined>(
+  const [fromAccountId, setFromAccountId] = useState<string | undefined>(
     mode.type === 'transfer' ? mode.fromAccount.id : undefined
   )
-  const [toAccountId, setToAccountId] = useState<number | undefined>(
+  const [toAccountId, setToAccountId] = useState<string | undefined>(
     mode.type === 'transfer' ? mode.toAccount.id : undefined
   )
   const [date, setDate] = useState(
@@ -310,11 +310,10 @@ export function QuickTransactionModal({
     mode.type === 'income' && selectedAccount?.currency !== sourceCurrency
 
   // Reset amounts when account or source changes
-  const handleAccountChange = (newAccountId: number) => {
-    const newAccount = accounts.find((a) => String(a.id) === String(newAccountId))
+  const handleAccountChange = (newAccountId: string) => {
+    const newAccount = accounts.find((a) => a.id === newAccountId)
     const oldAccount = selectedAccount
     if (newAccount && oldAccount && newAccount.currency !== oldAccount.currency) {
-      // Currency changed, reset conversion amounts
       setTargetAmount('')
       setAccountAmount('')
     }
@@ -322,11 +321,10 @@ export function QuickTransactionModal({
     setShowAccountPicker(false)
   }
 
-  const handleSourceChange = (newSourceId: number) => {
-    const newSource = incomeSources.find((s) => String(s.id) === String(newSourceId))
+  const handleSourceChange = (newSourceId: string) => {
+    const newSource = incomeSources.find((s) => s.id === newSourceId)
     const oldSource = selectedSource
     if (newSource && oldSource && newSource.currency !== oldSource.currency) {
-      // Currency changed, reset amounts
       setAmount('')
       setTargetAmount('')
       setAccountAmount('')
@@ -335,19 +333,19 @@ export function QuickTransactionModal({
     setShowSourcePicker(false)
   }
 
-  const handleCategoryChange = (newCategoryId: number) => {
+  const handleCategoryChange = (newCategoryId: string) => {
     setSelectedCategoryId(newCategoryId)
     setShowCategoryPicker(false)
   }
 
-  const handleFromAccountChange = (newAccountId: number) => {
+  const handleFromAccountChange = (newAccountId: string) => {
     if (newAccountId === toAccountId) return
     setFromAccountId(newAccountId)
     setTargetAmount('')
     setShowFromAccountPicker(false)
   }
 
-  const handleToAccountChange = (newAccountId: number) => {
+  const handleToAccountChange = (newAccountId: string) => {
     if (newAccountId === fromAccountId) return
     setToAccountId(newAccountId)
     setTargetAmount('')
@@ -998,7 +996,7 @@ export function QuickTransactionModal({
             {accounts.map((account) => (
               <button
                 key={account.id}
-                onClick={() => handleAccountChange(account.id!)}
+                onClick={() => handleAccountChange(account.id)}
                 className={cn(
                   'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
                   account.id === selectedAccountId ? 'bg-primary/20' : 'hover:bg-secondary/50'
@@ -1045,7 +1043,7 @@ export function QuickTransactionModal({
             {incomeSources.map((source) => (
               <button
                 key={source.id}
-                onClick={() => handleSourceChange(source.id!)}
+                onClick={() => handleSourceChange(source.id)}
                 className={cn(
                   'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
                   source.id === selectedSourceId ? 'bg-primary/20' : 'hover:bg-secondary/50'
@@ -1087,7 +1085,7 @@ export function QuickTransactionModal({
             {expenseCategories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => handleCategoryChange(category.id!)}
+                onClick={() => handleCategoryChange(category.id)}
                 className={cn(
                   'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
                   category.id === selectedCategoryId ? 'bg-primary/20' : 'hover:bg-secondary/50'
@@ -1133,7 +1131,7 @@ export function QuickTransactionModal({
               .map((account) => (
                 <button
                   key={account.id}
-                  onClick={() => handleFromAccountChange(account.id!)}
+                  onClick={() => handleFromAccountChange(account.id)}
                   className={cn(
                     'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
                     account.id === fromAccountId ? 'bg-primary/20' : 'hover:bg-secondary/50'
@@ -1182,7 +1180,7 @@ export function QuickTransactionModal({
               .map((account) => (
                 <button
                   key={account.id}
-                  onClick={() => handleToAccountChange(account.id!)}
+                  onClick={() => handleToAccountChange(account.id)}
                   className={cn(
                     'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
                     account.id === toAccountId ? 'bg-primary/20' : 'hover:bg-secondary/50'

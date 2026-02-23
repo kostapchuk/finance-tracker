@@ -143,7 +143,7 @@ function sortTransactions(txs: Transaction[]) {
     if (createdAtA !== createdAtB) {
       return createdAtB - createdAtA
     }
-    return (b.id || 0) - (a.id || 0)
+    return String(b.id || '').localeCompare(String(a.id || ''))
   })
 }
 
@@ -191,7 +191,7 @@ export function usePaginatedTransactions(
   // This prevents the blink effect when opening the history page
   const isLoading = false
 
-  const cursorRef = useRef<{ date: Date; id: number } | null>(null)
+  const cursorRef = useRef<{ date: Date; id: string } | null>(null)
   const loadedFilterKeyRef = useRef<string>('')
 
   const filterKey = useMemo(() => JSON.stringify(filterOptions), [filterOptions])

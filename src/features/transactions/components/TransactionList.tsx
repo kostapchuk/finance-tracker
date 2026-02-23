@@ -123,7 +123,7 @@ export function TransactionList() {
         if (createdAtA !== createdAtB) {
           return createdAtB - createdAtA
         }
-        return (b.id || 0) - (a.id || 0)
+        return String(b.id || '').localeCompare(String(a.id || ''))
       })
   }, [transactions, typeFilter, accountFilter, searchQuery, accounts, categories, incomeSources])
 
@@ -178,7 +178,7 @@ export function TransactionList() {
           <Select value={accountFilter} onValueChange={setAccountFilter}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder={t('account')}>
-                {accountFilter !== 'all' && getAccountName(parseInt(accountFilter))}
+                {accountFilter !== 'all' && getAccountName(accountFilter)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>

@@ -12,8 +12,7 @@ import type {
 import { getDeviceId } from '@/lib/deviceId'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
-type DbRecord<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'> & {
-  id?: number
+type DbRecord<T> = Omit<T, 'createdAt' | 'updatedAt'> & {
   created_at?: string
   updated_at?: string
 }
@@ -22,7 +21,7 @@ function toSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
 }
 
-function toDbRecord<T extends { id?: number | string; createdAt?: Date; updatedAt?: Date }>(
+function toDbRecord<T extends { id?: string; createdAt?: Date; updatedAt?: Date }>(
   item: Partial<T>,
   includeUserId = true
 ): DbRecord<T> {
@@ -47,7 +46,6 @@ function toDbRecord<T extends { id?: number | string; createdAt?: Date; updatedA
     delete record.updatedAt
   }
 
-  delete record.id
   delete record.userId
 
   return record as DbRecord<T>
@@ -57,7 +55,7 @@ function toCamelCase(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
 }
 
-function fromDbRecord<T extends { id?: number | string; createdAt?: Date; updatedAt?: Date }>(
+function fromDbRecord<T extends { id?: string; createdAt?: Date; updatedAt?: Date }>(
   record: Record<string, unknown>
 ): T {
   const item: Record<string, unknown> = {}
@@ -69,7 +67,7 @@ function fromDbRecord<T extends { id?: number | string; createdAt?: Date; update
   return item as T
 }
 
-function fromDbRecords<T extends { id?: number | string; createdAt?: Date; updatedAt?: Date }>(
+function fromDbRecords<T extends { id?: string; createdAt?: Date; updatedAt?: Date }>(
   records: Record<string, unknown>[]
 ): T[] {
   return records.map((r) => fromDbRecord<T>(r))
@@ -99,7 +97,7 @@ export const supabaseApi = {
       if (error) throw error
     },
 
-    async getById(id: number): Promise<Account | null> {
+    async getById(id: string): Promise<Account | null> {
       if (!isSupabaseConfigured() || !supabase) return null
 
       const { data, error } = await supabase
@@ -113,33 +111,15 @@ export const supabaseApi = {
       return data ? fromDbRecord<Account>(data) : null
     },
 
-    async create(
-      account: Omit<Account, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
-    ): Promise<Account> {
+    async upsert(account: Omit<Account, 'createdAt' | 'updatedAt' | 'userId'>): Promise<Account> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
       const record = toDbRecord({ ...account, createdAt: now, updatedAt: now })
 
-      const { data, error } = await supabase.from('accounts').insert(record).select().single()
-
-      if (error) throw error
-      return fromDbRecord<Account>(data)
-    },
-
-    async update(
-      id: number,
-      updates: Partial<Omit<Account, 'id' | 'createdAt' | 'userId'>>
-    ): Promise<Account> {
-      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
-
-      const record = toDbRecord({ ...updates, updatedAt: new Date() }, false)
-
       const { data, error } = await supabase
         .from('accounts')
-        .update(record)
-        .eq('id', id)
-        .eq('user_id', getDeviceId())
+        .upsert(record, { onConflict: 'id' })
         .select()
         .single()
 
@@ -147,7 +127,7 @@ export const supabaseApi = {
       return fromDbRecord<Account>(data)
     },
 
-    async delete(id: number): Promise<void> {
+    async delete(id: string): Promise<void> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const { error } = await supabase
@@ -183,7 +163,7 @@ export const supabaseApi = {
       if (error) throw error
     },
 
-    async getById(id: number): Promise<IncomeSource | null> {
+    async getById(id: string): Promise<IncomeSource | null> {
       if (!isSupabaseConfigured() || !supabase) return null
 
       const { data, error } = await supabase
@@ -197,33 +177,17 @@ export const supabaseApi = {
       return data ? fromDbRecord<IncomeSource>(data) : null
     },
 
-    async create(
-      source: Omit<IncomeSource, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+    async upsert(
+      source: Omit<IncomeSource, 'createdAt' | 'updatedAt' | 'userId'>
     ): Promise<IncomeSource> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
       const record = toDbRecord({ ...source, createdAt: now, updatedAt: now })
 
-      const { data, error } = await supabase.from('income_sources').insert(record).select().single()
-
-      if (error) throw error
-      return fromDbRecord<IncomeSource>(data)
-    },
-
-    async update(
-      id: number,
-      updates: Partial<Omit<IncomeSource, 'id' | 'createdAt' | 'userId'>>
-    ): Promise<IncomeSource> {
-      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
-
-      const record = toDbRecord({ ...updates, updatedAt: new Date() }, false)
-
       const { data, error } = await supabase
         .from('income_sources')
-        .update(record)
-        .eq('id', id)
-        .eq('user_id', getDeviceId())
+        .upsert(record, { onConflict: 'id' })
         .select()
         .single()
 
@@ -231,7 +195,7 @@ export const supabaseApi = {
       return fromDbRecord<IncomeSource>(data)
     },
 
-    async delete(id: number): Promise<void> {
+    async delete(id: string): Promise<void> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const { error } = await supabase
@@ -267,7 +231,7 @@ export const supabaseApi = {
       if (error) throw error
     },
 
-    async getById(id: number): Promise<Category | null> {
+    async getById(id: string): Promise<Category | null> {
       if (!isSupabaseConfigured() || !supabase) return null
 
       const { data, error } = await supabase
@@ -281,33 +245,17 @@ export const supabaseApi = {
       return data ? fromDbRecord<Category>(data) : null
     },
 
-    async create(
-      category: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+    async upsert(
+      category: Omit<Category, 'createdAt' | 'updatedAt' | 'userId'>
     ): Promise<Category> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
       const record = toDbRecord({ ...category, createdAt: now, updatedAt: now })
 
-      const { data, error } = await supabase.from('categories').insert(record).select().single()
-
-      if (error) throw error
-      return fromDbRecord<Category>(data)
-    },
-
-    async update(
-      id: number,
-      updates: Partial<Omit<Category, 'id' | 'createdAt' | 'userId'>>
-    ): Promise<Category> {
-      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
-
-      const record = toDbRecord({ ...updates, updatedAt: new Date() }, false)
-
       const { data, error } = await supabase
         .from('categories')
-        .update(record)
-        .eq('id', id)
-        .eq('user_id', getDeviceId())
+        .upsert(record, { onConflict: 'id' })
         .select()
         .single()
 
@@ -315,7 +263,7 @@ export const supabaseApi = {
       return fromDbRecord<Category>(data)
     },
 
-    async delete(id: number): Promise<void> {
+    async delete(id: string): Promise<void> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const { error } = await supabase
@@ -342,7 +290,7 @@ export const supabaseApi = {
       return fromDbRecords<Transaction>(data ?? [])
     },
 
-    async getById(id: number): Promise<Transaction | null> {
+    async getById(id: string): Promise<Transaction | null> {
       if (!isSupabaseConfigured() || !supabase) return null
 
       const { data, error } = await supabase
@@ -385,7 +333,7 @@ export const supabaseApi = {
       return fromDbRecords<Transaction>(data ?? [])
     },
 
-    async getByAccount(accountId: number): Promise<Transaction[]> {
+    async getByAccount(accountId: string): Promise<Transaction[]> {
       if (!isSupabaseConfigured() || !supabase) return []
 
       const { data, error } = await supabase
@@ -399,7 +347,7 @@ export const supabaseApi = {
       return fromDbRecords<Transaction>(data ?? [])
     },
 
-    async getByCategory(categoryId: number): Promise<Transaction[]> {
+    async getByCategory(categoryId: string): Promise<Transaction[]> {
       if (!isSupabaseConfigured() || !supabase) return []
 
       const { data, error } = await supabase
@@ -413,7 +361,7 @@ export const supabaseApi = {
       return fromDbRecords<Transaction>(data ?? [])
     },
 
-    async getByLoan(loanId: number): Promise<Transaction[]> {
+    async getByLoan(loanId: string): Promise<Transaction[]> {
       if (!isSupabaseConfigured() || !supabase) return []
 
       const { data, error } = await supabase
@@ -429,7 +377,7 @@ export const supabaseApi = {
 
     async getPaginated(options?: {
       beforeDate?: Date
-      beforeId?: number
+      beforeId?: string
       limit?: number
       startDate?: Date
       endDate?: Date
@@ -500,8 +448,8 @@ export const supabaseApi = {
       return { inflows, outflows, net: inflows - outflows }
     },
 
-    async create(
-      transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+    async upsert(
+      transaction: Omit<Transaction, 'createdAt' | 'updatedAt' | 'userId'>
     ): Promise<Transaction> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
@@ -513,19 +461,22 @@ export const supabaseApi = {
       })
 
       if (transaction.date) {
-        // Handle both Date objects and string dates
         record.date =
           transaction.date instanceof Date ? transaction.date.toISOString() : transaction.date
       }
 
-      const { data, error } = await supabase.from('transactions').insert(record).select().single()
+      const { data, error } = await supabase
+        .from('transactions')
+        .upsert(record, { onConflict: 'id' })
+        .select()
+        .single()
 
       if (error) throw error
       return fromDbRecord<Transaction>(data)
     },
 
-    async bulkCreate(
-      transactions: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[]
+    async bulkUpsert(
+      transactions: Omit<Transaction, 'createdAt' | 'updatedAt' | 'userId'>[]
     ): Promise<Transaction[]> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
       if (transactions.length === 0) return []
@@ -538,47 +489,21 @@ export const supabaseApi = {
           updatedAt: now,
         })
         if (tx.date) {
-          // Handle both Date objects and string dates
           record.date = tx.date instanceof Date ? tx.date.toISOString() : tx.date
         }
         return record
       })
 
-      const { data, error } = await supabase.from('transactions').insert(records).select()
+      const { data, error } = await supabase
+        .from('transactions')
+        .upsert(records, { onConflict: 'id' })
+        .select()
 
       if (error) throw error
       return fromDbRecords<Transaction>(data ?? [])
     },
 
-    async update(
-      id: number,
-      updates: Partial<Omit<Transaction, 'id' | 'createdAt' | 'userId'>>
-    ): Promise<Transaction> {
-      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
-
-      const record: Record<string, unknown> = toDbRecord(
-        { ...updates, updatedAt: new Date() },
-        false
-      )
-
-      if (updates.date) {
-        // Handle both Date objects and string dates
-        record.date = updates.date instanceof Date ? updates.date.toISOString() : updates.date
-      }
-
-      const { data, error } = await supabase
-        .from('transactions')
-        .update(record)
-        .eq('id', id)
-        .eq('user_id', getDeviceId())
-        .select()
-        .single()
-
-      if (error) throw error
-      return fromDbRecord<Transaction>(data)
-    },
-
-    async delete(id: number): Promise<void> {
+    async delete(id: string): Promise<void> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const { error } = await supabase
@@ -613,7 +538,7 @@ export const supabaseApi = {
       return fromDbRecords<Loan>(data ?? [])
     },
 
-    async getById(id: number): Promise<Loan | null> {
+    async getById(id: string): Promise<Loan | null> {
       if (!isSupabaseConfigured() || !supabase) return null
 
       const { data, error } = await supabase
@@ -640,7 +565,7 @@ export const supabaseApi = {
       return fromDbRecords<Loan>(data ?? [])
     },
 
-    async create(loan: Omit<Loan, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<Loan> {
+    async upsert(loan: Omit<Loan, 'createdAt' | 'updatedAt' | 'userId'>): Promise<Loan> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
@@ -651,40 +576,13 @@ export const supabaseApi = {
       })
 
       if (loan.dueDate) {
-        // Handle both Date objects and string dates
         record.due_date = loan.dueDate instanceof Date ? loan.dueDate.toISOString() : loan.dueDate
-        delete record.dueDate
-      }
-
-      const { data, error } = await supabase.from('loans').insert(record).select().single()
-
-      if (error) throw error
-      return fromDbRecord<Loan>(data)
-    },
-
-    async update(
-      id: number,
-      updates: Partial<Omit<Loan, 'id' | 'createdAt' | 'userId'>>
-    ): Promise<Loan> {
-      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
-
-      const record: Record<string, unknown> = toDbRecord(
-        { ...updates, updatedAt: new Date() },
-        false
-      )
-
-      if (updates.dueDate) {
-        // Handle both Date objects and string dates
-        record.due_date =
-          updates.dueDate instanceof Date ? updates.dueDate.toISOString() : updates.dueDate
         delete record.dueDate
       }
 
       const { data, error } = await supabase
         .from('loans')
-        .update(record)
-        .eq('id', id)
-        .eq('user_id', getDeviceId())
+        .upsert(record, { onConflict: 'id' })
         .select()
         .single()
 
@@ -692,7 +590,7 @@ export const supabaseApi = {
       return fromDbRecord<Loan>(data)
     },
 
-    async delete(id: number): Promise<void> {
+    async delete(id: string): Promise<void> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const { error } = await supabase
@@ -727,35 +625,17 @@ export const supabaseApi = {
       return data ? fromDbRecord<AppSettings>(data) : null
     },
 
-    async create(
-      settings: Omit<AppSettings, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+    async upsert(
+      settings: Omit<AppSettings, 'createdAt' | 'updatedAt' | 'userId'>
     ): Promise<AppSettings> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
       const record = toDbRecord({ ...settings, createdAt: now, updatedAt: now })
 
-      const { data, error } = await supabase.from('settings').insert(record).select().single()
-
-      if (error) throw error
-      return fromDbRecord<AppSettings>(data)
-    },
-
-    async update(
-      updates: Partial<Omit<AppSettings, 'id' | 'createdAt' | 'userId'>>
-    ): Promise<AppSettings | null> {
-      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
-
-      const existing = await this.get()
-      if (!existing?.id) return null
-
-      const record = toDbRecord({ ...updates, updatedAt: new Date() }, false)
-
       const { data, error } = await supabase
         .from('settings')
-        .update(record)
-        .eq('id', existing.id)
-        .eq('user_id', getDeviceId())
+        .upsert(record, { onConflict: 'user_id' })
         .select()
         .single()
 
@@ -778,7 +658,7 @@ export const supabaseApi = {
       return fromDbRecords<CustomCurrency>(data ?? [])
     },
 
-    async getById(id: number): Promise<CustomCurrency | null> {
+    async getById(id: string): Promise<CustomCurrency | null> {
       if (!isSupabaseConfigured() || !supabase) return null
 
       const { data, error } = await supabase
@@ -792,8 +672,8 @@ export const supabaseApi = {
       return data ? fromDbRecord<CustomCurrency>(data) : null
     },
 
-    async create(
-      currency: Omit<CustomCurrency, 'id' | 'createdAt' | 'updatedAt' | 'userId'>
+    async upsert(
+      currency: Omit<CustomCurrency, 'createdAt' | 'updatedAt' | 'userId'>
     ): Promise<CustomCurrency> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
@@ -802,7 +682,7 @@ export const supabaseApi = {
 
       const { data, error } = await supabase
         .from('custom_currencies')
-        .insert(record)
+        .upsert(record, { onConflict: 'id' })
         .select()
         .single()
 
@@ -810,27 +690,7 @@ export const supabaseApi = {
       return fromDbRecord<CustomCurrency>(data)
     },
 
-    async update(
-      id: number,
-      updates: Partial<Omit<CustomCurrency, 'id' | 'createdAt' | 'userId'>>
-    ): Promise<CustomCurrency> {
-      if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
-
-      const record = toDbRecord({ ...updates, updatedAt: new Date() }, false)
-
-      const { data, error } = await supabase
-        .from('custom_currencies')
-        .update(record)
-        .eq('id', id)
-        .eq('user_id', getDeviceId())
-        .select()
-        .single()
-
-      if (error) throw error
-      return fromDbRecord<CustomCurrency>(data)
-    },
-
-    async delete(id: number): Promise<void> {
+    async delete(id: string): Promise<void> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const { error } = await supabase

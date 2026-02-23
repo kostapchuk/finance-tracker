@@ -30,12 +30,12 @@ interface AppState {
   migration: MigrationState
   activeView: 'dashboard' | 'history' | 'loans' | 'report' | 'settings'
   selectedMonth: Date
-  historyCategoryFilter: number | null
-  historyAccountFilter: number | null
+  historyCategoryFilter: string | null
+  historyAccountFilter: string | null
   onboardingStep: number
   setActiveView: (view: AppState['activeView']) => void
-  navigateToHistoryWithCategory: (categoryId: number) => void
-  navigateToHistoryWithAccount: (accountId: number) => void
+  navigateToHistoryWithCategory: (categoryId: string) => void
+  navigateToHistoryWithAccount: (accountId: string) => void
   setSelectedMonth: (date: Date) => void
   setMainCurrency: (currency: string) => Promise<void>
   setBlurFinancialFigures: (blur: boolean) => Promise<void>

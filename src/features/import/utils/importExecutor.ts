@@ -7,16 +7,16 @@ const BATCH_SIZE = 100
 
 interface ExecuteImportParams {
   rows: BudgetOkRow[]
-  accountMapping: Map<string, number>
-  categoryMapping: Map<string, number>
-  incomeSourceMapping: Map<string, number>
-  accounts: { id?: number; currency: string }[]
+  accountMapping: Map<string, string>
+  categoryMapping: Map<string, string>
+  incomeSourceMapping: Map<string, string>
+  accounts: { id?: string; currency: string }[]
 }
 
 export async function executeImport(params: ExecuteImportParams): Promise<ImportResult> {
   const { rows, accountMapping, categoryMapping, incomeSourceMapping, accounts } = params
 
-  const accountCurrencyMap = new Map<number, string>()
+  const accountCurrencyMap = new Map<string, string>()
   for (const acc of accounts) {
     if (acc.id) {
       accountCurrencyMap.set(acc.id, acc.currency)
@@ -64,13 +64,13 @@ interface TransformResult {
 
 function transformRowsToTransactions(
   rows: BudgetOkRow[],
-  accountMapping: Map<string, number>,
-  categoryMapping: Map<string, number>,
-  incomeSourceMapping: Map<string, number>,
-  accountCurrencyMap: Map<number, string>
+  accountMapping: Map<string, string>,
+  categoryMapping: Map<string, string>,
+  incomeSourceMapping: Map<string, string>,
+  accountCurrencyMap: Map<string, string>
 ): TransformResult {
   const transactions: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'userId'>[] = []
-  const balanceDeltaMap = new Map<number, number>()
+  const balanceDeltaMap = new Map<string, number>()
 
   for (const row of rows) {
     const accountId = accountMapping.get(row.account)!
@@ -183,7 +183,7 @@ function normalizeCurrency(currency: string): string {
   return currency.toUpperCase().trim()
 }
 
-function addDelta(map: Map<number, number>, accountId: number, delta: number): void {
+function addDelta(map: Map<string, number>, accountId: string, delta: number): void {
   const current = map.get(accountId) || 0
   map.set(accountId, current + delta)
 }
@@ -194,9 +194,9 @@ export function validateMappings(
     uniqueCategories: string[]
     uniqueIncomeSources: string[]
   },
-  accountMapping: Map<string, number>,
-  categoryMapping: Map<string, number>,
-  incomeSourceMapping: Map<string, number>
+  accountMapping: Map<string, string>,
+  categoryMapping: Map<string, string>,
+  incomeSourceMapping: Map<string, string>
 ): string | null {
   const unmappedAccounts = parsedData.uniqueAccounts
     .filter((a) => !accountMapping.has(a.name))

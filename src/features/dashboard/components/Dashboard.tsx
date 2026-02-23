@@ -49,8 +49,8 @@ const defaultAccountIcons: Record<AccountType, string> = {
 }
 
 type TransactionMode =
-  | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
-  | { type: 'expense'; category: Category; preselectedAccountId?: number }
+  | { type: 'income'; source: IncomeSource; preselectedAccountId?: string }
+  | { type: 'expense'; category: Category; preselectedAccountId?: string }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
   | null
 
@@ -115,7 +115,7 @@ export function Dashboard() {
       (t) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    const incomeBySource: Record<number, number> = {}
+    const incomeBySource: Record<string, number> = {}
     let totalIncome = 0
     monthlyTransactions
       .filter((t) => t.type === 'income' && t.incomeSourceId)
@@ -124,7 +124,7 @@ export function Dashboard() {
         totalIncome += t.mainCurrencyAmount ?? t.amount
       })
 
-    const expensesByCategory: Record<number, number> = {}
+    const expensesByCategory: Record<string, number> = {}
     let totalExpenses = 0
     monthlyTransactions
       .filter((t) => t.type === 'expense' && t.categoryId)

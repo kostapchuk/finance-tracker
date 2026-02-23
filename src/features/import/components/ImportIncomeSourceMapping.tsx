@@ -14,8 +14,8 @@ import { useLanguage } from '@/hooks/useLanguage'
 interface ImportIncomeSourceMappingProps {
   uniqueIncomeSources: string[]
   incomeSources: IncomeSource[]
-  mapping: Map<string, number>
-  onMappingChange: (budgetOkName: string, incomeSourceId: number | null) => void
+  mapping: Map<string, string>
+  onMappingChange: (budgetOkName: string, incomeSourceId: string | null) => void
   onNext: () => void
   onBack: () => void
 }
@@ -104,10 +104,8 @@ export function ImportIncomeSourceMapping({
                   </div>
                 </div>
                 <Select
-                  value={mappedId?.toString() ?? ''}
-                  onValueChange={(value) =>
-                    onMappingChange(budgetOkName, value ? parseInt(value, 10) : null)
-                  }
+                  value={mappedId ?? ''}
+                  onValueChange={(value) => onMappingChange(budgetOkName, value || null)}
                 >
                   <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder={t('importSelectIncomeSource')}>
@@ -116,7 +114,7 @@ export function ImportIncomeSourceMapping({
                   </SelectTrigger>
                   <SelectContent>
                     {incomeSources.map((source) => (
-                      <SelectItem key={source.id} value={source.id!.toString()}>
+                      <SelectItem key={source.id} value={source.id!}>
                         <div className="flex items-center gap-2">
                           <div
                             className="w-3 h-3 rounded-full"
