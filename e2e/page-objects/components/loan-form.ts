@@ -22,7 +22,7 @@ export class LoanForm {
   getAccountSelect(): Locator {
     return this.getDialog()
       .locator('div.space-y-2')
-      .filter({ hasText: /related.*account|связан.*счет|account$/i })
+      .filter({ hasText: /^account|счёт$/i })
       .locator('button[class*="border"]')
       .first()
   }
@@ -89,11 +89,14 @@ export class LoanForm {
   async selectCurrency(currency: string): Promise<void> {
     const select = this.getCurrencySelect()
     await select.click()
-    await this.page.waitForTimeout(200)
-    await this.page.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 3000 })
-    await this.page
+    await this.page.waitForTimeout(300)
+    // Wait for dropdown content to be visible and find options within it
+    const dropdown = this.page.locator('.bg-popover:visible')
+    await dropdown.waitFor({ state: 'visible', timeout: 3000 })
+    // Currency options are formatted as "$ USD", "€ EUR", etc.
+    await dropdown
       .locator('[role="option"]')
-      .filter({ hasText: new RegExp(`${currency}\\s*-|${currency}$`, 'i') })
+      .filter({ hasText: new RegExp(`${currency}`, 'i') })
       .first()
       .click()
     await this.page.waitForTimeout(200)
@@ -123,7 +126,9 @@ export class LoanForm {
 
   async save(): Promise<void> {
     await this.getSaveButton().click()
-    await this.page.waitForTimeout(500)
+    // Wait for dialog to close (indicates save completed)
+    await this.getDialog().waitFor({ state: 'hidden', timeout: 5000 })
+    await this.page.waitForTimeout(300)
   }
 
   async cancel(): Promise<void> {

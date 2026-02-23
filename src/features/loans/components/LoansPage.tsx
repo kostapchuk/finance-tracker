@@ -168,15 +168,8 @@ export function LoansPage() {
         dueDate: data.dueDate,
       })
 
-      // Update query cache
-      const [updatedLoans, updatedAccounts, updatedTransactions] = await Promise.all([
-        loanRepo.getAll(),
-        accountRepo.getAll(),
-        transactionRepo.getAll(),
-      ])
-      queryClient.setQueryData(['loans'], updatedLoans)
-      queryClient.setQueryData(['accounts'], updatedAccounts)
-      queryClient.setQueryData(['transactions'], updatedTransactions)
+      // Only refetch loans - accounts/transactions will refresh when user navigates
+      await queryClient.invalidateQueries({ queryKey: ['loans'] })
     } else {
       const newLoanId = await loanRepo.create({
         type: data.type,
@@ -209,15 +202,8 @@ export function LoansPage() {
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })
 
-      // Update query cache directly
-      const [updatedLoans2, updatedAccounts, updatedTransactions] = await Promise.all([
-        loanRepo.getAll(),
-        accountRepo.getAll(),
-        transactionRepo.getAll(),
-      ])
-      queryClient.setQueryData(['loans'], updatedLoans2)
-      queryClient.setQueryData(['accounts'], updatedAccounts)
-      queryClient.setQueryData(['transactions'], updatedTransactions)
+      // Only refetch loans - accounts/transactions will refresh when user navigates to those pages
+      await queryClient.invalidateQueries({ queryKey: ['loans'] })
     }
   }
 

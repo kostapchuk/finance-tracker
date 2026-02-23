@@ -23,8 +23,6 @@ export function useAccounts() {
   return useQuery({
     queryKey: ['accounts'],
     queryFn: () => accountRepo.getAll(),
-    staleTime: 0,
-    refetchOnMount: 'always',
   })
 }
 
@@ -181,8 +179,6 @@ export function useTransactions() {
   return useQuery({
     queryKey: ['transactions'],
     queryFn: () => transactionRepo.getAll(),
-    staleTime: 0,
-    refetchOnMount: 'always',
   })
 }
 
@@ -269,8 +265,6 @@ export function useLoans() {
   return useQuery({
     queryKey: ['loans'],
     queryFn: () => loanRepo.getAll(),
-    staleTime: 0,
-    refetchOnMount: 'always',
   })
 }
 

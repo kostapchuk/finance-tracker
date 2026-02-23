@@ -7,6 +7,7 @@ const mockTransactionGetById = vi.fn()
 const mockTransactionPut = vi.fn()
 const mockReportCacheInvalidate = vi.fn()
 const mockReportCacheDeleteByPeriod = vi.fn()
+const mockReportCacheInvalidateForTransaction = vi.fn()
 const mockSyncQueueDeleteByRecordId = vi.fn()
 
 vi.mock('./localCache', () => ({
@@ -19,6 +20,7 @@ vi.mock('./localCache', () => ({
     reportCache: {
       invalidatePeriodsAfterDate: () => mockReportCacheInvalidate(),
       deleteByPeriod: () => mockReportCacheDeleteByPeriod(),
+      invalidateForTransaction: () => mockReportCacheInvalidateForTransaction(),
     },
     syncQueue: {
       deleteByRecordId: (id: string) => mockSyncQueueDeleteByRecordId(id),
@@ -31,6 +33,7 @@ vi.mock('./supabaseApi', () => ({
     reportCache: {
       invalidatePeriodsAfterDate: vi.fn().mockRejectedValue(new Error('Network error')),
       deleteByPeriod: vi.fn().mockRejectedValue(new Error('Network error')),
+      invalidateForTransaction: vi.fn().mockRejectedValue(new Error('Network error')),
     },
   },
 }))

@@ -752,34 +752,15 @@ function isCacheExpired(cache: ReportCache): boolean {
 }
 
 async function invalidateReportCache(transactionDate?: Date): Promise<void> {
-  const invalidateRemote = async () => {
-    if (!isCloudReady() || !navigator.onLine) return
+  // Update local cache
+  await localCache.reportCache.invalidateForTransaction(transactionDate)
 
+  // Update remote cache
+  if (isCloudReady() && navigator.onLine) {
     try {
-      const promises: Promise<void>[] = []
-
-      if (transactionDate) {
-        promises.push(supabaseApi.reportCache.invalidatePeriodsAfterDate(new Date(transactionDate)))
-      }
-
-      const now = new Date()
-      const currentMonthKey = getPeriodKeyFromDate(now)
-      promises.push(supabaseApi.reportCache.deleteByPeriod(currentMonthKey))
-
-      await Promise.all(promises)
+      await supabaseApi.reportCache.invalidateForTransaction(transactionDate)
     } catch {
       // Ignore network errors
     }
   }
-
-  invalidateRemote()
-
-  if (transactionDate) {
-    const date = new Date(transactionDate)
-    await localCache.reportCache.invalidatePeriodsAfterDate(date)
-  }
-
-  const now = new Date()
-  const currentMonthKey = getPeriodKeyFromDate(now)
-  await localCache.reportCache.deleteByPeriod(currentMonthKey)
 }

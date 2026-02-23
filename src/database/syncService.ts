@@ -1,4 +1,3 @@
-import { QueryClient } from '@tanstack/react-query'
 import React from 'react'
 
 import { localCache } from './localCache'
@@ -15,12 +14,6 @@ import type {
   CustomCurrency,
   AppSettings,
 } from './types'
-
-let queryClient: QueryClient | null = null
-
-export function setSyncQueryClient(client: QueryClient): void {
-  queryClient = client
-}
 
 const INITIAL_RETRY_DELAY = 5000
 const MAX_RETRY_DELAY = 60000
@@ -143,22 +136,9 @@ class SyncService {
     this.listeners.forEach((listener) => listener(this.state))
   }
 
-  private invalidateQueries(entities?: string[]): void {
-    if (!queryClient) return
-
-    const toInvalidate = entities ?? [
-      'accounts',
-      'incomeSources',
-      'categories',
-      'transactions',
-      'loans',
-      'settings',
-      'customCurrencies',
-    ]
-
-    for (const entity of toInvalidate) {
-      queryClient.invalidateQueries({ queryKey: [entity] })
-    }
+  private invalidateQueries(_entities?: string[]): void {
+    // Disabled - let components handle their own invalidation
+    // This prevents unnecessary refetches when sync completes
   }
 
   async syncAll(): Promise<void> {
@@ -311,11 +291,19 @@ class SyncService {
     }
   }
 
+  private isValidUUID(id: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  }
+
   private async processAccountOperation(
     operation: SyncOperation,
     recordId: string,
     _data?: Record<string, unknown>
   ): Promise<void> {
+    if (!this.isValidUUID(recordId)) {
+      console.warn('[SYNC] Skipping account with invalid UUID:', recordId)
+      return
+    }
     switch (operation) {
       case 'create':
       case 'update': {
@@ -338,6 +326,10 @@ class SyncService {
     recordId: string,
     _data?: Record<string, unknown>
   ): Promise<void> {
+    if (!this.isValidUUID(recordId)) {
+      console.warn('[SYNC] Skipping incomeSource with invalid UUID:', recordId)
+      return
+    }
     switch (operation) {
       case 'create':
       case 'update': {
@@ -360,6 +352,10 @@ class SyncService {
     recordId: string,
     _data?: Record<string, unknown>
   ): Promise<void> {
+    if (!this.isValidUUID(recordId)) {
+      console.warn('[SYNC] Skipping category with invalid UUID:', recordId)
+      return
+    }
     switch (operation) {
       case 'create':
       case 'update': {
@@ -382,6 +378,11 @@ class SyncService {
     recordId: string,
     _data?: Record<string, unknown>
   ): Promise<void> {
+    if (!this.isValidUUID(recordId)) {
+      console.warn('[SYNC] Skipping transaction with invalid UUID:', recordId)
+      return
+    }
+
     switch (operation) {
       case 'create':
       case 'update': {
@@ -392,7 +393,7 @@ class SyncService {
         await supabaseApi.transactions.upsert(fullData)
 
         if (fullData.date) {
-          await supabaseApi.reportCache.invalidatePeriodsAfterDate(new Date(fullData.date))
+          await supabaseApi.reportCache.invalidateForTransaction(new Date(fullData.date))
         }
         break
       }
@@ -408,6 +409,10 @@ class SyncService {
     recordId: string,
     _data?: Record<string, unknown>
   ): Promise<void> {
+    if (!this.isValidUUID(recordId)) {
+      console.warn('[SYNC] Skipping loan with invalid UUID:', recordId)
+      return
+    }
     switch (operation) {
       case 'create':
       case 'update': {
@@ -430,6 +435,10 @@ class SyncService {
     recordId: string,
     _data?: Record<string, unknown>
   ): Promise<void> {
+    if (!this.isValidUUID(recordId)) {
+      console.warn('[SYNC] Skipping customCurrency with invalid UUID:', recordId)
+      return
+    }
     switch (operation) {
       case 'create':
       case 'update': {

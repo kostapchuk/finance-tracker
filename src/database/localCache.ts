@@ -12,6 +12,11 @@ import type {
   ReportCache,
 } from './types'
 
+function getPeriodKeyFromDate(date: Date): string {
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 const CACHE_LIMIT = 50
 
 const db = new Dexie('FinanceTrackerCache') as Dexie & {
@@ -374,6 +379,30 @@ export const localCache = {
     async deleteByPeriods(periodKeys: string[]): Promise<void> {
       if (periodKeys.length === 0) return
       await db.reportCache.where('periodKey').anyOf(periodKeys).delete()
+    },
+
+    async invalidateForTransaction(transactionDate?: Date): Promise<void> {
+      const currentMonthKey = getPeriodKeyFromDate(new Date())
+
+      // Get all cache entries and filter in memory
+      const allCache = await db.reportCache.toArray()
+      const idsToDelete: string[] = []
+
+      for (const cache of allCache) {
+        const isCurrentMonth = cache.periodKey === currentMonthKey
+        const hasAffectedTransaction =
+          transactionDate &&
+          cache.lastTransactionDate &&
+          new Date(cache.lastTransactionDate) >= new Date(transactionDate)
+
+        if ((isCurrentMonth || hasAffectedTransaction) && cache.id) {
+          idsToDelete.push(cache.id)
+        }
+      }
+
+      if (idsToDelete.length > 0) {
+        await db.reportCache.bulkDelete(idsToDelete)
+      }
     },
 
     async invalidatePeriodsAfterDate(date: Date): Promise<void> {

@@ -12,6 +12,11 @@ import type {
 import { getDeviceId } from '@/lib/deviceId'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
+function getPeriodKeyFromDate(date: Date): string {
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 type DbRecord<T> = Omit<T, 'createdAt' | 'updatedAt'> & {
   created_at?: string
   updated_at?: string
@@ -55,13 +60,30 @@ function toCamelCase(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
 }
 
+/** Date fields that need to be converted from ISO strings to Date objects */
+const dateFields = new Set([
+  'createdAt',
+  'updatedAt',
+  'date',
+  'dueDate',
+  'lastAttemptAt',
+  'lastTransactionDate',
+  'expiresAt',
+])
+
 function fromDbRecord<T extends { id?: string; createdAt?: Date; updatedAt?: Date }>(
   record: Record<string, unknown>
 ): T {
   const item: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(record)) {
-    item[toCamelCase(key)] = value
+    const camelKey = toCamelCase(key)
+    // Convert ISO date strings to Date objects for known date fields
+    if (dateFields.has(camelKey) && typeof value === 'string') {
+      item[camelKey] = new Date(value)
+    } else {
+      item[camelKey] = value
+    }
   }
 
   return item as T
@@ -784,6 +806,28 @@ export const supabaseApi = {
 
       if (error) throw error
       return fromDbRecord<ReportCache>(data)
+    },
+
+    async invalidateForTransaction(transactionDate?: Date): Promise<void> {
+      if (!isSupabaseConfigured() || !supabase) return
+
+      const currentMonthKey = getPeriodKeyFromDate(new Date())
+
+      // Build the OR condition:
+      // - Always delete current month's cache
+      // - If transactionDate provided, also delete periods with last_transaction_date >= transactionDate
+      let orCondition = `period_key.eq.${currentMonthKey}`
+      if (transactionDate) {
+        orCondition += `,last_transaction_date.gte.${transactionDate.toISOString()}`
+      }
+
+      const { error } = await supabase
+        .from('report_cache')
+        .delete()
+        .eq('user_id', getDeviceId())
+        .or(orCondition)
+
+      if (error) throw error
     },
 
     async invalidatePeriodsAfterDate(date: Date): Promise<void> {

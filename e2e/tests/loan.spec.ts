@@ -31,12 +31,16 @@ for (const mode of syncModes) {
       await loanForm.selectType('given')
       await loanForm.fillPersonName('John Doe')
       await loanForm.fillDescription('Vacation loan')
-      await loanForm.fillAmount('500')
+      // Select USD currency BEFORE account to avoid multi-currency mode
+      await loanForm.selectCurrency('USD')
       await loanForm.selectAccount('USD Cash')
+      await loanForm.fillAmount('500')
       await loanForm.save()
 
       await expect(loansPage.getLoanByPersonName('John Doe')).toBeVisible()
 
+      // Refresh store data to get updated account balance
+      await dbHelper.refreshStoreData()
       const newBalance = await dbHelper.getAccountBalance(accountId)
       expect(newBalance).toBe(initialBalance - 500)
 
@@ -71,8 +75,10 @@ for (const mode of syncModes) {
       await loanForm.selectType('received')
       await loanForm.fillPersonName('Jane Smith')
       await loanForm.fillDescription('Personal loan')
-      await loanForm.fillAmount('1000')
+      // Select USD currency BEFORE account to avoid multi-currency mode
+      await loanForm.selectCurrency('USD')
       await loanForm.selectAccount('USD Cash')
+      await loanForm.fillAmount('1000')
       await loanForm.save()
 
       await expect(loansPage.getLoanByPersonName('Jane Smith')).toBeVisible()
@@ -144,9 +150,11 @@ for (const mode of syncModes) {
 
       await loanForm.selectType('given')
       await loanForm.fillPersonName('Bob')
+      // Select USD currency BEFORE account to avoid multi-currency mode
+      await loanForm.selectCurrency('USD')
+      await loanForm.selectAccount('USD Cash')
       await loanForm.fillAmount('300')
       await loanForm.setDueDate('2025-06-15')
-      await loanForm.selectAccount('USD Cash')
       await loanForm.save()
 
       await expect(loansPage.getLoanByPersonName('Bob')).toBeVisible()
@@ -174,15 +182,19 @@ for (const mode of syncModes) {
       await loansPage.clickAdd()
       await loanForm.selectType('given')
       await loanForm.fillPersonName('Person A')
-      await loanForm.fillAmount('1000')
+      // Select USD currency BEFORE account to avoid multi-currency mode
+      await loanForm.selectCurrency('USD')
       await loanForm.selectAccount('USD Cash')
+      await loanForm.fillAmount('1000')
       await loanForm.save()
 
       await loansPage.clickAdd()
       await loanForm.selectType('received')
       await loanForm.fillPersonName('Person B')
-      await loanForm.fillAmount('500')
+      // Select USD currency BEFORE account to avoid multi-currency mode
+      await loanForm.selectCurrency('USD')
       await loanForm.selectAccount('USD Cash')
+      await loanForm.fillAmount('500')
       await loanForm.save()
 
       await expect(loansPage.getOwedToYouAmount()).toContainText('1,000')
@@ -217,8 +229,10 @@ for (const mode of syncModes) {
 
       await loanForm.selectType('given')
       await loanForm.fillPersonName('Offline Loan')
-      await loanForm.fillAmount('750')
+      // Select USD currency BEFORE account to avoid multi-currency mode
+      await loanForm.selectCurrency('USD')
       await loanForm.selectAccount('USD Cash')
+      await loanForm.fillAmount('750')
       await loanForm.save()
 
       await expect(loansPage.getLoanByPersonName('Offline Loan')).toBeVisible()
