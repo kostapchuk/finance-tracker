@@ -235,23 +235,25 @@ export function QuickTransactionModal({
   // Get the currently selected income source
   const selectedSource =
     mode.type === 'income'
-      ? incomeSources.find((s) => s.id === selectedSourceId) || mode.source
+      ? incomeSources.find((s) => String(s.id) === String(selectedSourceId)) || mode.source
       : null
 
   // Get the currently selected category (filter out loan categories)
   const expenseCategories = categories.filter((c) => c.categoryType !== 'loan')
   const selectedCategory =
     mode.type === 'expense'
-      ? expenseCategories.find((c) => c.id === selectedCategoryId) || mode.category
+      ? expenseCategories.find((c) => String(c.id) === String(selectedCategoryId)) || mode.category
       : null
 
   // Get transfer accounts
   const fromAccount =
     mode.type === 'transfer'
-      ? accounts.find((a) => a.id === fromAccountId) || mode.fromAccount
+      ? accounts.find((a) => String(a.id) === String(fromAccountId)) || mode.fromAccount
       : null
   const toAccount =
-    mode.type === 'transfer' ? accounts.find((a) => a.id === toAccountId) || mode.toAccount : null
+    mode.type === 'transfer'
+      ? accounts.find((a) => String(a.id) === String(toAccountId)) || mode.toAccount
+      : null
 
   // Calculate monthly total for selected category
   const categoryMonthlyTotal = useMemo(() => {
@@ -290,7 +292,7 @@ export function QuickTransactionModal({
     mode.type === 'transfer' && fromAccount?.currency !== toAccount?.currency
 
   // Detect multi-currency for income/expense
-  const selectedAccount = accounts.find((a) => a.id === selectedAccountId)
+  const selectedAccount = accounts.find((a) => String(a.id) === String(selectedAccountId))
   // For income: need SEPARATE mainCurrency field only if source != mainCurrency AND account != mainCurrency
   // If account IS mainCurrency, the accountAmount serves as mainCurrencyAmount (no separate field needed)
   const sourceCurrency =
@@ -309,7 +311,7 @@ export function QuickTransactionModal({
 
   // Reset amounts when account or source changes
   const handleAccountChange = (newAccountId: number) => {
-    const newAccount = accounts.find((a) => a.id === newAccountId)
+    const newAccount = accounts.find((a) => String(a.id) === String(newAccountId))
     const oldAccount = selectedAccount
     if (newAccount && oldAccount && newAccount.currency !== oldAccount.currency) {
       // Currency changed, reset conversion amounts
@@ -321,7 +323,7 @@ export function QuickTransactionModal({
   }
 
   const handleSourceChange = (newSourceId: number) => {
-    const newSource = incomeSources.find((s) => s.id === newSourceId)
+    const newSource = incomeSources.find((s) => String(s.id) === String(newSourceId))
     const oldSource = selectedSource
     if (newSource && oldSource && newSource.currency !== oldSource.currency) {
       // Currency changed, reset amounts
@@ -365,9 +367,9 @@ export function QuickTransactionModal({
   // Get current currency symbol for display
   const getCurrentCurrency = () => {
     if (mode.type === 'income')
-      return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
+      return accounts.find((a) => String(a.id) === String(selectedAccountId))?.currency || 'USD'
     if (mode.type === 'expense')
-      return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
+      return accounts.find((a) => String(a.id) === String(selectedAccountId))?.currency || 'USD'
     return activeField === 'source' ? fromAccount?.currency || 'USD' : toAccount?.currency || 'USD'
   }
 
@@ -443,7 +445,7 @@ export function QuickTransactionModal({
         await accountRepo.updateBalance(fromAccountId!, -numAmount)
         await accountRepo.updateBalance(toAccountId!, numTargetAmount)
       } else {
-        const account = accounts.find((a) => a.id === selectedAccountId)
+        const account = accounts.find((a) => String(a.id) === String(selectedAccountId))
         if (!account) return
 
         if (mode.type === 'income') {

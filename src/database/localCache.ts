@@ -48,12 +48,32 @@ export const localCache = {
     },
 
     async getById(id: number | string): Promise<Account | undefined> {
-      // Dexie supports both number and string keys, but we need to pass the actual value
-      // without type coercion that could break temp IDs
-      return db.accounts
+      // Try the ID as-is first
+      let account = await db.accounts
         .where('id')
         .equals(id as never)
         .first()
+
+      // If not found and ID is a string that looks like a number, try as number
+      if (!account && typeof id === 'string') {
+        const numericId = parseInt(id, 10)
+        if (!isNaN(numericId)) {
+          account = await db.accounts
+            .where('id')
+            .equals(numericId as never)
+            .first()
+        }
+      }
+
+      // If not found and ID is a number, try as string
+      if (!account && typeof id === 'number') {
+        account = await db.accounts
+          .where('id')
+          .equals(String(id) as never)
+          .first()
+      }
+
+      return account
     },
 
     async put(account: Account): Promise<void> {
@@ -176,10 +196,32 @@ export const localCache = {
     },
 
     async getById(id: number | string): Promise<Transaction | undefined> {
-      return db.transactions
+      // Try the ID as-is first
+      let item = await db.transactions
         .where('id')
         .equals(id as never)
         .first()
+
+      // If not found and ID is a string that looks like a number, try as number
+      if (!item && typeof id === 'string') {
+        const numericId = parseInt(id, 10)
+        if (!isNaN(numericId)) {
+          item = await db.transactions
+            .where('id')
+            .equals(numericId as never)
+            .first()
+        }
+      }
+
+      // If not found and ID is a number, try as string
+      if (!item && typeof id === 'number') {
+        item = await db.transactions
+          .where('id')
+          .equals(String(id) as never)
+          .first()
+      }
+
+      return item
     },
 
     async getByDateRange(startDate: Date, endDate: Date): Promise<Transaction[]> {
@@ -187,27 +229,67 @@ export const localCache = {
     },
 
     async getByAccount(accountId: number | string): Promise<Transaction[]> {
-      return db.transactions
+      // Try both string and numeric ID
+      let items = await db.transactions
         .where('accountId')
         .equals(accountId as never)
         .reverse()
         .toArray()
+
+      if (items.length === 0 && typeof accountId === 'string') {
+        const numericId = parseInt(accountId, 10)
+        if (!isNaN(numericId)) {
+          items = await db.transactions
+            .where('accountId')
+            .equals(numericId as never)
+            .reverse()
+            .toArray()
+        }
+      }
+
+      return items
     },
 
     async getByCategory(categoryId: number | string): Promise<Transaction[]> {
-      return db.transactions
+      let items = await db.transactions
         .where('categoryId')
         .equals(categoryId as never)
         .reverse()
         .toArray()
+
+      if (items.length === 0 && typeof categoryId === 'string') {
+        const numericId = parseInt(categoryId, 10)
+        if (!isNaN(numericId)) {
+          items = await db.transactions
+            .where('categoryId')
+            .equals(numericId as never)
+            .reverse()
+            .toArray()
+        }
+      }
+
+      return items
     },
 
     async getByLoan(loanId: number | string): Promise<Transaction[]> {
-      return db.transactions
+      let items = await db.transactions
         .where('loanId')
         .equals(loanId as never)
         .reverse()
         .toArray()
+
+      if (items.length === 0 && typeof loanId === 'string') {
+        const numericId = parseInt(loanId, 10)
+        if (!isNaN(numericId)) {
+          items = await db.transactions
+            .where('loanId')
+            .equals(numericId as never)
+            .reverse()
+            .toArray()
+        }
+      }
+
+      return items
     },
 
     async put(transaction: Transaction): Promise<void> {
@@ -274,10 +356,32 @@ export const localCache = {
     },
 
     async getById(id: number | string): Promise<Loan | undefined> {
-      return db.loans
+      // Try the ID as-is first
+      let item = await db.loans
         .where('id')
         .equals(id as never)
         .first()
+
+      // If not found and ID is a string that looks like a number, try as number
+      if (!item && typeof id === 'string') {
+        const numericId = parseInt(id, 10)
+        if (!isNaN(numericId)) {
+          item = await db.loans
+            .where('id')
+            .equals(numericId as never)
+            .first()
+        }
+      }
+
+      // If not found and ID is a number, try as string
+      if (!item && typeof id === 'number') {
+        item = await db.loans
+          .where('id')
+          .equals(String(id) as never)
+          .first()
+      }
+
+      return item
     },
 
     async getActive(): Promise<Loan[]> {

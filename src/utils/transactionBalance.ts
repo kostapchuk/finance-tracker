@@ -88,7 +88,7 @@ export async function reverseTransactionBalance(
 
         // Reverse account balance change
         if (accountId) {
-          const loan = loans.find((l) => l.id === loanId)
+          const loan = loans.find((l) => String(l.id) === String(loanId))
           if (loan?.type === 'given') {
             // Payment on given loan: money came back → reverse: subtract
             await accountRepo.updateBalance(accountId, -amount)
@@ -156,7 +156,7 @@ export async function applyTransactionBalance(
 
         // Update account balance
         if (accountId) {
-          const loan = loans.find((l) => l.id === loanId)
+          const loan = loans.find((l) => String(l.id) === String(loanId))
           if (loan?.type === 'given') {
             // Payment on given loan: money comes back → balance increases
             await accountRepo.updateBalance(accountId, amount)

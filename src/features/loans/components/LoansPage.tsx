@@ -84,6 +84,80 @@ export function LoansPage() {
 
   const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number | string) => {
     if (isEdit && loanId) {
+      // Get existing loan
+      const existingLoan = loans.find((l) => String(l.id) === String(loanId))
+      if (!existingLoan) return
+
+      // Get the initial transaction for this loan
+      const existingTransactions = await transactionRepo.getByLoan(loanId)
+      const initialTransaction = existingTransactions.find(
+        (t) => t.type === 'loan_given' || t.type === 'loan_received'
+      )
+
+      const oldAccountId = existingLoan.accountId
+      const newAccountId = data.accountId
+      const accountChanged = String(oldAccountId) !== String(newAccountId)
+      const typeChanged = existingLoan.type !== data.type
+
+      // Get old transaction amount (what was actually deducted/added to account)
+      const oldTxAmount = initialTransaction?.amount ?? existingLoan.amount
+
+      // Determine new transaction amount
+      const newTxAmount = data.accountAmount ?? data.amount
+
+      // Calculate balance adjustments
+      // For "given": money goes OUT (balance decreases)
+      // For "received": money comes IN (balance increases)
+      const oldBalanceEffect =
+        initialTransaction?.type === 'loan_given' ? -oldTxAmount : oldTxAmount
+      const newBalanceEffect = data.type === 'given' ? -newTxAmount : newTxAmount
+
+      if (accountChanged) {
+        // Reverse balance on old account
+        if (oldAccountId) {
+          await accountRepo.updateBalance(oldAccountId, -oldBalanceEffect)
+        }
+        // Apply balance on new account
+        await accountRepo.updateBalance(newAccountId, newBalanceEffect)
+      } else {
+        // Same account - adjust by the difference
+        const balanceDiff = newBalanceEffect - oldBalanceEffect
+        if (balanceDiff !== 0) {
+          await accountRepo.updateBalance(newAccountId, balanceDiff)
+        }
+      }
+
+      // Update or recreate initial transaction if needed
+      if (initialTransaction?.id) {
+        const accountForTx = accounts.find((a) => String(a.id) === String(newAccountId))
+        if (typeChanged) {
+          // Type changed - need to delete old transaction and create new one
+          await transactionRepo.delete(initialTransaction.id)
+          const transactionType =
+            data.type === 'given' ? ('loan_given' as const) : ('loan_received' as const)
+          await transactionRepo.create({
+            type: transactionType,
+            amount: newTxAmount,
+            currency: accountForTx?.currency || data.currency,
+            date: initialTransaction.date,
+            loanId: loanId,
+            accountId: newAccountId,
+            mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
+            comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
+          })
+        } else {
+          // Just update the transaction
+          await transactionRepo.update(initialTransaction.id, {
+            amount: newTxAmount,
+            currency: accountForTx?.currency || data.currency,
+            accountId: newAccountId,
+            mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
+            comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
+          })
+        }
+      }
+
+      // Update the loan record
       await loanRepo.update(loanId, {
         type: data.type,
         personName: data.personName,
@@ -94,9 +168,15 @@ export function LoansPage() {
         dueDate: data.dueDate,
       })
 
-      // Update query cache directly
-      const updatedLoans = await loanRepo.getAll()
+      // Update query cache
+      const [updatedLoans, updatedAccounts, updatedTransactions] = await Promise.all([
+        loanRepo.getAll(),
+        accountRepo.getAll(),
+        transactionRepo.getAll(),
+      ])
       queryClient.setQueryData(['loans'], updatedLoans)
+      queryClient.setQueryData(['accounts'], updatedAccounts)
+      queryClient.setQueryData(['transactions'], updatedTransactions)
     } else {
       const newLoanId = await loanRepo.create({
         type: data.type,

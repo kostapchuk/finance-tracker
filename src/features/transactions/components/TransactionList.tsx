@@ -256,8 +256,8 @@ export function TransactionList() {
                         →{' '}
                         {formatCurrency(
                           transaction.toAmount,
-                          accounts.find((a) => a.id === transaction.toAccountId)?.currency ||
-                            transaction.currency
+                          accounts.find((a) => String(a.id) === String(transaction.toAccountId))
+                            ?.currency || transaction.currency
                         )}
                       </span>
                     )}

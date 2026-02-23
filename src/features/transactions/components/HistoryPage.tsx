@@ -209,11 +209,11 @@ export function HistoryPage() {
     const query = searchQuery.toLowerCase()
     return paginatedTransactions.filter((tx) => {
       const comment = tx.comment?.toLowerCase() || ''
-      const account = accounts.find((a) => a.id === tx.accountId)
+      const account = accounts.find((a) => String(a.id) === String(tx.accountId))
       const accountName = account ? `${account.name} (${account.currency})`.toLowerCase() : ''
-      const category = categories.find((c) => c.id === tx.categoryId)
+      const category = categories.find((c) => String(c.id) === String(tx.categoryId))
       const categoryName = category?.name.toLowerCase() || ''
-      const source = incomeSources.find((s) => s.id === tx.incomeSourceId)
+      const source = incomeSources.find((s) => String(s.id) === String(tx.incomeSourceId))
       const sourceName = source?.name.toLowerCase() || ''
 
       return (
@@ -321,7 +321,9 @@ export function HistoryPage() {
       case 'transfer': {
         switch (transaction.type) {
           case 'income': {
-            const source = incomeSources.find((s) => s.id === transaction.incomeSourceId)
+            const source = incomeSources.find(
+              (s) => String(s.id) === String(transaction.incomeSourceId)
+            )
             if (source) {
               setEditTransactionMode({ type: 'income', source })
               setEditModalType('quick')
@@ -329,7 +331,7 @@ export function HistoryPage() {
             break
           }
           case 'expense': {
-            const category = categories.find((c) => c.id === transaction.categoryId)
+            const category = categories.find((c) => String(c.id) === String(transaction.categoryId))
             if (category) {
               setEditTransactionMode({ type: 'expense', category })
               setEditModalType('quick')
@@ -337,8 +339,8 @@ export function HistoryPage() {
             break
           }
           case 'transfer': {
-            const fromAccount = accounts.find((a) => a.id === transaction.accountId)
-            const toAccount = accounts.find((a) => a.id === transaction.toAccountId)
+            const fromAccount = accounts.find((a) => String(a.id) === String(transaction.accountId))
+            const toAccount = accounts.find((a) => String(a.id) === String(transaction.toAccountId))
             if (fromAccount && toAccount) {
               setEditTransactionMode({ type: 'transfer', fromAccount, toAccount })
               setEditModalType('quick')
@@ -350,7 +352,7 @@ export function HistoryPage() {
       }
       case 'loan_given':
       case 'loan_received': {
-        const loan = loans.find((l) => l.id === transaction.loanId)
+        const loan = loans.find((l) => String(l.id) === String(transaction.loanId))
         if (loan) {
           setEditingLoan(loan)
           setEditModalType('loan')
@@ -358,7 +360,7 @@ export function HistoryPage() {
         break
       }
       case 'loan_payment': {
-        const loan = loans.find((l) => l.id === transaction.loanId)
+        const loan = loans.find((l) => String(l.id) === String(transaction.loanId))
         if (loan) {
           setEditingLoan(loan)
           setEditModalType('payment')
@@ -740,7 +742,7 @@ export function HistoryPage() {
                               const fromCurrency = transaction.currency
                               const toAmount = transaction.toAmount
                               const toAccount = accounts.find(
-                                (a) => a.id === transaction.toAccountId
+                                (a) => String(a.id) === String(transaction.toAccountId)
                               )
                               const toCurrency = toAccount?.currency || fromCurrency
 
