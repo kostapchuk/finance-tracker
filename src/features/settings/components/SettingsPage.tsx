@@ -111,6 +111,11 @@ function generateTempId(): string {
   return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
 }
 
+// Helper to generate UUID for cloud sync
+function generateUUID(): string {
+  return crypto.randomUUID()
+}
+
 // Helper to format time until next retry
 function formatTimeUntil(date: Date | null): string {
   if (!date) return ''
@@ -175,6 +180,9 @@ export function SettingsPage() {
   const [firstClickTime, setFirstClickTime] = useState<number | null>(null)
   const [cloudUnlocked, setCloudUnlockedState] = useState(isCloudUnlocked())
   const [migrationComplete, setMigrationCompleteState] = useState(isMigrationComplete())
+  const showCloudSyncEnabledDialog = useAppStore(
+    (state) => state.migration.showCloudSyncEnabledDialog
+  )
 
   // Timer tick for updating next retry time display
   const [, setTick] = useState(0)
@@ -183,6 +191,16 @@ export function SettingsPage() {
     setCloudUnlockedState(isCloudUnlocked())
     setMigrationCompleteState(isMigrationComplete())
   }, [])
+
+  // Update migration complete state when cloud sync enabled dialog closes
+  const prevShowDialogRef = useRef(showCloudSyncEnabledDialog)
+  useEffect(() => {
+    if (prevShowDialogRef.current && !showCloudSyncEnabledDialog) {
+      // Dialog was just closed, check if migration completed
+      setMigrationCompleteState(isMigrationComplete())
+    }
+    prevShowDialogRef.current = showCloudSyncEnabledDialog
+  }, [showCloudSyncEnabledDialog])
 
   // Update timer every second for next retry display
   useEffect(() => {
@@ -342,7 +360,7 @@ export function SettingsPage() {
       if (data.accounts?.length) {
         const accountsToImport = data.accounts.map((a: Record<string, unknown>) => {
           const oldId = a.id as number | undefined
-          const newId = generateTempId()
+          const newId = cloudReady ? generateUUID() : generateTempId()
           if (oldId !== undefined) {
             accountIdMap.set(oldId, newId)
           }
@@ -368,7 +386,7 @@ export function SettingsPage() {
       if (data.incomeSources?.length) {
         const sourcesToImport = data.incomeSources.map((s: Record<string, unknown>) => {
           const oldId = s.id as number | undefined
-          const newId = generateTempId()
+          const newId = cloudReady ? generateUUID() : generateTempId()
           if (oldId !== undefined) {
             incomeSourceIdMap.set(oldId, newId)
           }
@@ -394,7 +412,7 @@ export function SettingsPage() {
       if (data.categories?.length) {
         const categoriesToImport = data.categories.map((c: Record<string, unknown>) => {
           const oldId = c.id as number | undefined
-          const newId = generateTempId()
+          const newId = cloudReady ? generateUUID() : generateTempId()
           if (oldId !== undefined) {
             categoryIdMap.set(oldId, newId)
           }
@@ -420,7 +438,7 @@ export function SettingsPage() {
       if (data.loans?.length) {
         const loansToImport = data.loans.map((l: Record<string, unknown>) => {
           const oldId = l.id as number | undefined
-          const newId = generateTempId()
+          const newId = cloudReady ? generateUUID() : generateTempId()
           if (oldId !== undefined) {
             loanIdMap.set(oldId, newId)
           }
@@ -447,7 +465,7 @@ export function SettingsPage() {
       // Import transactions with new IDs and updated references
       if (data.transactions?.length) {
         const transactionsToImport = data.transactions.map((t: Record<string, unknown>) => {
-          const newId = generateTempId()
+          const newId = cloudReady ? generateUUID() : generateTempId()
           const transaction = {
             ...t,
             id: newId,

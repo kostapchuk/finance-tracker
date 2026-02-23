@@ -7,12 +7,17 @@ import type { Transaction, TransactionType } from '@/database/types'
 
 const mockGetPaginated = vi.fn()
 const mockGetSummaryByDateRange = vi.fn()
+const mockIsCloudReady = vi.fn()
 
 vi.mock('@/database/repositories', () => ({
   transactionRepo: {
     getPaginated: () => mockGetPaginated(),
     getSummaryByDateRange: () => mockGetSummaryByDateRange(),
   },
+}))
+
+vi.mock('@/database/migration', () => ({
+  isCloudReady: () => mockIsCloudReady(),
 }))
 
 type DateFilterType =
@@ -66,6 +71,8 @@ describe('usePaginatedTransactions', () => {
     vi.clearAllMocks()
     mockGetPaginated.mockResolvedValue([])
     mockGetSummaryByDateRange.mockResolvedValue({ inflows: 0, outflows: 0, net: 0 })
+    // Default to sync disabled (offline mode shouldn't affect data availability)
+    mockIsCloudReady.mockReturnValue(false)
   })
 
   afterEach(() => {
@@ -124,6 +131,52 @@ describe('usePaginatedTransactions', () => {
 
       expect(mockGetSummaryByDateRange).not.toHaveBeenCalled()
       expect(mockGetPaginated).not.toHaveBeenCalled()
+    })
+
+    it('shows hasMore=true when offline but sync is disabled', async () => {
+      // Create 50 transactions (exactly PAGE_SIZE)
+      const localTransactions: Transaction[] = Array.from({ length: 50 }, (_, i) =>
+        createMockTransaction(`tx-${i}`, i % 2 === 0 ? 'income' : 'expense', 100)
+      )
+
+      vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+      mockIsCloudReady.mockReturnValue(false) // Sync disabled
+
+      const { result } = renderHook(() =>
+        usePaginatedTransactions(defaultFilterOptions, localTransactions)
+      )
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // When sync is disabled, offline mode should NOT block pagination
+      expect(result.current.hasMore).toBe(true)
+      expect(result.current.isCloudSyncEnabled).toBe(false)
+      expect(result.current.isOffline).toBe(true)
+    })
+
+    it('shows hasMore=false when offline and sync is enabled', async () => {
+      // Create 50 transactions (exactly PAGE_SIZE)
+      const localTransactions: Transaction[] = Array.from({ length: 50 }, (_, i) =>
+        createMockTransaction(`tx-${i}`, i % 2 === 0 ? 'income' : 'expense', 100)
+      )
+
+      vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+      mockIsCloudReady.mockReturnValue(true) // Sync enabled
+
+      const { result } = renderHook(() =>
+        usePaginatedTransactions(defaultFilterOptions, localTransactions)
+      )
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false)
+      })
+
+      // When sync is enabled and offline, hasMore should be false
+      expect(result.current.hasMore).toBe(false)
+      expect(result.current.isCloudSyncEnabled).toBe(true)
+      expect(result.current.isOffline).toBe(true)
     })
 
     it('uses mainCurrencyAmount when calculating summary', async () => {

@@ -111,11 +111,17 @@ export const supabaseApi = {
       return data ? fromDbRecord<Account>(data) : null
     },
 
-    async upsert(account: Omit<Account, 'createdAt' | 'updatedAt' | 'userId'>): Promise<Account> {
+    async upsert(
+      account: Omit<Account, 'userId'> & { createdAt?: Date; updatedAt?: Date }
+    ): Promise<Account> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
-      const record = toDbRecord({ ...account, createdAt: now, updatedAt: now })
+      const record = toDbRecord({
+        ...account,
+        createdAt: account.createdAt ?? now,
+        updatedAt: account.updatedAt ?? now,
+      })
 
       const { data, error } = await supabase
         .from('accounts')
@@ -178,12 +184,16 @@ export const supabaseApi = {
     },
 
     async upsert(
-      source: Omit<IncomeSource, 'createdAt' | 'updatedAt' | 'userId'>
+      source: Omit<IncomeSource, 'userId'> & { createdAt?: Date; updatedAt?: Date }
     ): Promise<IncomeSource> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
-      const record = toDbRecord({ ...source, createdAt: now, updatedAt: now })
+      const record = toDbRecord({
+        ...source,
+        createdAt: source.createdAt ?? now,
+        updatedAt: source.updatedAt ?? now,
+      })
 
       const { data, error } = await supabase
         .from('income_sources')
@@ -246,12 +256,16 @@ export const supabaseApi = {
     },
 
     async upsert(
-      category: Omit<Category, 'createdAt' | 'updatedAt' | 'userId'>
+      category: Omit<Category, 'userId'> & { createdAt?: Date; updatedAt?: Date }
     ): Promise<Category> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
-      const record = toDbRecord({ ...category, createdAt: now, updatedAt: now })
+      const record = toDbRecord({
+        ...category,
+        createdAt: category.createdAt ?? now,
+        updatedAt: category.updatedAt ?? now,
+      })
 
       const { data, error } = await supabase
         .from('categories')
@@ -449,15 +463,15 @@ export const supabaseApi = {
     },
 
     async upsert(
-      transaction: Omit<Transaction, 'createdAt' | 'updatedAt' | 'userId'>
+      transaction: Omit<Transaction, 'userId'> & { createdAt?: Date; updatedAt?: Date }
     ): Promise<Transaction> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
       const record: Record<string, unknown> = toDbRecord({
         ...transaction,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: transaction.createdAt ?? now,
+        updatedAt: transaction.updatedAt ?? now,
       })
 
       if (transaction.date) {
@@ -476,7 +490,7 @@ export const supabaseApi = {
     },
 
     async bulkUpsert(
-      transactions: Omit<Transaction, 'createdAt' | 'updatedAt' | 'userId'>[]
+      transactions: (Omit<Transaction, 'userId'> & { createdAt?: Date; updatedAt?: Date })[]
     ): Promise<Transaction[]> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
       if (transactions.length === 0) return []
@@ -485,8 +499,8 @@ export const supabaseApi = {
       const records: Record<string, unknown>[] = transactions.map((tx) => {
         const record: Record<string, unknown> = toDbRecord({
           ...tx,
-          createdAt: now,
-          updatedAt: now,
+          createdAt: tx.createdAt ?? now,
+          updatedAt: tx.updatedAt ?? now,
         })
         if (tx.date) {
           record.date = tx.date instanceof Date ? tx.date.toISOString() : tx.date
@@ -565,14 +579,16 @@ export const supabaseApi = {
       return fromDbRecords<Loan>(data ?? [])
     },
 
-    async upsert(loan: Omit<Loan, 'createdAt' | 'updatedAt' | 'userId'>): Promise<Loan> {
+    async upsert(
+      loan: Omit<Loan, 'userId'> & { createdAt?: Date; updatedAt?: Date }
+    ): Promise<Loan> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
       const record: Record<string, unknown> = toDbRecord({
         ...loan,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: loan.createdAt ?? now,
+        updatedAt: loan.updatedAt ?? now,
       })
 
       if (loan.dueDate) {
@@ -626,12 +642,16 @@ export const supabaseApi = {
     },
 
     async upsert(
-      settings: Omit<AppSettings, 'createdAt' | 'updatedAt' | 'userId'>
+      settings: Omit<AppSettings, 'userId'> & { createdAt?: Date; updatedAt?: Date }
     ): Promise<AppSettings> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
-      const record = toDbRecord({ ...settings, createdAt: now, updatedAt: now })
+      const record = toDbRecord({
+        ...settings,
+        createdAt: settings.createdAt ?? now,
+        updatedAt: settings.updatedAt ?? now,
+      })
 
       const { data, error } = await supabase
         .from('settings')
@@ -673,12 +693,16 @@ export const supabaseApi = {
     },
 
     async upsert(
-      currency: Omit<CustomCurrency, 'createdAt' | 'updatedAt' | 'userId'>
+      currency: Omit<CustomCurrency, 'userId'> & { createdAt?: Date; updatedAt?: Date }
     ): Promise<CustomCurrency> {
       if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
 
       const now = new Date()
-      const record = toDbRecord({ ...currency, createdAt: now, updatedAt: now })
+      const record = toDbRecord({
+        ...currency,
+        createdAt: currency.createdAt ?? now,
+        updatedAt: currency.updatedAt ?? now,
+      })
 
       const { data, error } = await supabase
         .from('custom_currencies')

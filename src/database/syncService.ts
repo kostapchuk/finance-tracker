@@ -49,6 +49,8 @@ class SyncService {
   private listeners = new Set<SyncListener>()
   private retryTimer: ReturnType<typeof setTimeout> | null = null
   private fetchingEntities = new Set<string>()
+  private syncDebounceTimer: ReturnType<typeof setTimeout> | null = null
+  private readonly SYNC_DEBOUNCE_MS = 500
 
   constructor() {
     if (typeof globalThis !== 'undefined') {
@@ -180,8 +182,6 @@ class SyncService {
         return
       }
 
-      console.error('[SYNC] Total items to sync:', items.length)
-
       const entityOrder = [
         'accounts',
         'categories',
@@ -195,17 +195,8 @@ class SyncService {
       for (const entity of entityOrder) {
         const entityItems = items.filter((item) => item.entity === entity)
 
-        if (entityItems.length > 0) {
-          console.error(`[SYNC] Processing ${entity}:`, entityItems.length, 'items')
-        }
-
         for (const item of entityItems) {
           try {
-            console.error('[SYNC] Processing:', {
-              operation: item.operation,
-              entity: item.entity,
-              recordId: item.recordId,
-            })
             await this.processQueueItem(item)
 
             if (item.id) {
@@ -218,7 +209,6 @@ class SyncService {
             if (item.entity === 'loans') {
               affectedEntities.add('accounts')
             }
-            console.error('[SYNC] Success:', item.operation, item.entity, item.recordId)
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
@@ -324,13 +314,16 @@ class SyncService {
   private async processAccountOperation(
     operation: SyncOperation,
     recordId: string,
-    data?: Record<string, unknown>
+    _data?: Record<string, unknown>
   ): Promise<void> {
     switch (operation) {
       case 'create':
       case 'update': {
-        const result = await supabaseApi.accounts.upsert(data as unknown as Account)
-        await localCache.accounts.put(result)
+        const fullData = await localCache.accounts.getById(recordId)
+        if (!fullData) {
+          return
+        }
+        await supabaseApi.accounts.upsert(fullData)
         break
       }
       case 'delete': {
@@ -343,13 +336,16 @@ class SyncService {
   private async processIncomeSourceOperation(
     operation: SyncOperation,
     recordId: string,
-    data?: Record<string, unknown>
+    _data?: Record<string, unknown>
   ): Promise<void> {
     switch (operation) {
       case 'create':
       case 'update': {
-        const result = await supabaseApi.incomeSources.upsert(data as unknown as IncomeSource)
-        await localCache.incomeSources.put(result)
+        const fullData = await localCache.incomeSources.getById(recordId)
+        if (!fullData) {
+          return
+        }
+        await supabaseApi.incomeSources.upsert(fullData)
         break
       }
       case 'delete': {
@@ -362,13 +358,16 @@ class SyncService {
   private async processCategoryOperation(
     operation: SyncOperation,
     recordId: string,
-    data?: Record<string, unknown>
+    _data?: Record<string, unknown>
   ): Promise<void> {
     switch (operation) {
       case 'create':
       case 'update': {
-        const result = await supabaseApi.categories.upsert(data as unknown as Category)
-        await localCache.categories.put(result)
+        const fullData = await localCache.categories.getById(recordId)
+        if (!fullData) {
+          return
+        }
+        await supabaseApi.categories.upsert(fullData)
         break
       }
       case 'delete': {
@@ -381,17 +380,19 @@ class SyncService {
   private async processTransactionOperation(
     operation: SyncOperation,
     recordId: string,
-    data?: Record<string, unknown>
+    _data?: Record<string, unknown>
   ): Promise<void> {
     switch (operation) {
       case 'create':
       case 'update': {
-        if (!data) throw new Error('Transaction data is required')
-        const result = await supabaseApi.transactions.upsert(data as unknown as Transaction)
-        await localCache.transactions.put(result)
+        const fullData = await localCache.transactions.getById(recordId)
+        if (!fullData) {
+          return
+        }
+        await supabaseApi.transactions.upsert(fullData)
 
-        if (data.date) {
-          await supabaseApi.reportCache.invalidatePeriodsAfterDate(new Date(data.date as string))
+        if (fullData.date) {
+          await supabaseApi.reportCache.invalidatePeriodsAfterDate(new Date(fullData.date))
         }
         break
       }
@@ -405,14 +406,16 @@ class SyncService {
   private async processLoanOperation(
     operation: SyncOperation,
     recordId: string,
-    data?: Record<string, unknown>
+    _data?: Record<string, unknown>
   ): Promise<void> {
     switch (operation) {
       case 'create':
       case 'update': {
-        if (!data) throw new Error('Loan data is required')
-        const result = await supabaseApi.loans.upsert(data as unknown as Loan)
-        await localCache.loans.put(result)
+        const fullData = await localCache.loans.getById(recordId)
+        if (!fullData) {
+          return
+        }
+        await supabaseApi.loans.upsert(fullData)
         break
       }
       case 'delete': {
@@ -425,13 +428,16 @@ class SyncService {
   private async processCustomCurrencyOperation(
     operation: SyncOperation,
     recordId: string,
-    data?: Record<string, unknown>
+    _data?: Record<string, unknown>
   ): Promise<void> {
     switch (operation) {
       case 'create':
       case 'update': {
-        const result = await supabaseApi.customCurrencies.upsert(data as unknown as CustomCurrency)
-        await localCache.customCurrencies.put(result)
+        const fullData = await localCache.customCurrencies.getById(recordId)
+        if (!fullData) {
+          return
+        }
+        await supabaseApi.customCurrencies.upsert(fullData)
         break
       }
       case 'delete': {
@@ -444,13 +450,16 @@ class SyncService {
   private async processSettingsOperation(
     operation: SyncOperation,
     _recordId: string,
-    data?: Record<string, unknown>
+    _data?: Record<string, unknown>
   ): Promise<void> {
     switch (operation) {
       case 'create':
       case 'update': {
-        const result = await supabaseApi.settings.upsert(data as unknown as AppSettings)
-        await localCache.settings.put(result)
+        const fullData = await localCache.settings.get()
+        if (!fullData) {
+          return
+        }
+        await supabaseApi.settings.upsert(fullData)
         break
       }
     }
@@ -462,6 +471,8 @@ class SyncService {
     recordId: string,
     data?: Record<string, unknown>
   ): Promise<void> {
+    await localCache.syncQueue.deleteByRecordId(recordId)
+
     await localCache.syncQueue.add({
       operation,
       entity,
@@ -473,7 +484,13 @@ class SyncService {
     this.updateState({ pendingCount: count })
 
     if (navigator.onLine) {
-      this.syncAll()
+      if (this.syncDebounceTimer) {
+        clearTimeout(this.syncDebounceTimer)
+      }
+      this.syncDebounceTimer = setTimeout(() => {
+        this.syncAll()
+        this.syncDebounceTimer = null
+      }, this.SYNC_DEBOUNCE_MS)
     }
   }
 

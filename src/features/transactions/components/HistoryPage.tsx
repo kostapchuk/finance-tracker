@@ -200,6 +200,7 @@ export function HistoryPage() {
     isLoadingMore,
     hasMore,
     isOffline,
+    isCloudSyncEnabled,
     loadMore,
   } = usePaginatedTransactions(paginationFilters, localTransactions)
 
@@ -838,14 +839,14 @@ export function HistoryPage() {
           </div>
         )}
 
-        {isOffline && !hasMore && filteredTransactions.length > 0 && (
+        {isOffline && isCloudSyncEnabled && !hasMore && filteredTransactions.length > 0 && (
           <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground">
             <WifiOff className="h-4 w-4" />
             <span className="text-sm">{t('olderDataUnavailableOffline')}</span>
           </div>
         )}
 
-        {!hasMore && !isOffline && filteredTransactions.length > 0 && (
+        {!hasMore && filteredTransactions.length > 0 && !(isOffline && isCloudSyncEnabled) && (
           <p className="text-center text-sm text-muted-foreground py-4">
             {t('showingAllTransactions').replace('{count}', String(filteredTransactions.length))}
           </p>

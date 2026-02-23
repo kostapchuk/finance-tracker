@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 
+import { isCloudReady } from '@/database/migration'
 import { transactionRepo } from '@/database/repositories'
 import type { Transaction, TransactionType } from '@/database/types'
 
@@ -35,6 +36,7 @@ interface UsePaginatedTransactionsResult {
   isLoadingMore: boolean
   hasMore: boolean
   isOffline: boolean
+  isCloudSyncEnabled: boolean
   loadMore: () => Promise<void>
 }
 
@@ -186,6 +188,7 @@ export function usePaginatedTransactions(
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(() => initialProcessed.sorted.length >= PAGE_SIZE)
   const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const isCloudSyncEnabled = isCloudReady()
 
   // isLoading is always false since we initialize synchronously from cached data
   // This prevents the blink effect when opening the history page
@@ -254,11 +257,13 @@ export function usePaginatedTransactions(
     }
 
     // If we have fewer transactions than PAGE_SIZE, we've loaded all available
-    setHasMore(sorted.length >= PAGE_SIZE && !isOffline)
-  }, [filterKey, transactionKey, initialTransactions, filterOptions, isOffline])
+    // Only consider offline status when cloud sync is enabled
+    setHasMore(sorted.length >= PAGE_SIZE && !(isOffline && isCloudSyncEnabled))
+  }, [filterKey, transactionKey, initialTransactions, filterOptions, isOffline, isCloudSyncEnabled])
 
   const loadMore = useCallback(async () => {
-    if (isLoadingMore || !hasMore || isOffline) return
+    // Only block loading when offline if cloud sync is enabled
+    if (isLoadingMore || !hasMore || (isOffline && isCloudSyncEnabled)) return
 
     if (!cursorRef.current && transactions.length > 0) {
       const oldest = transactions.at(-1)!
@@ -320,7 +325,7 @@ export function usePaginatedTransactions(
     } finally {
       setIsLoadingMore(false)
     }
-  }, [isLoadingMore, hasMore, isOffline, transactions, filterOptions])
+  }, [isLoadingMore, hasMore, isOffline, isCloudSyncEnabled, transactions, filterOptions])
 
   return {
     transactions,
@@ -329,6 +334,7 @@ export function usePaginatedTransactions(
     isLoadingMore,
     hasMore,
     isOffline,
+    isCloudSyncEnabled,
     loadMore,
   }
 }
