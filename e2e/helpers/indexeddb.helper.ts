@@ -116,7 +116,7 @@ export class IndexedDBHelper {
     }, DB_NAME)
   }
 
-  async seedAccount(account: TestAccount): Promise<number> {
+  async seedAccount(account: TestAccount): Promise<string> {
     await this.ensureDatabaseInitialized()
     const userId = await this.getUserId()
 
@@ -144,9 +144,9 @@ export class IndexedDBHelper {
         const tx = db.transaction('accounts', 'readwrite')
         const store = tx.objectStore('accounts')
         const now = new Date()
-        const id = Date.now()
+        const id = crypto.randomUUID()
 
-        const resultId = await new Promise<number>((resolve, reject) => {
+        const resultId = await new Promise<string>((resolve, reject) => {
           const addRequest = store.add({
             id,
             ...accountData,
@@ -172,10 +172,10 @@ export class IndexedDBHelper {
     return result
   }
 
-  async seedCategory(category: TestCategory): Promise<number> {
+  async seedCategory(category: TestCategory): Promise<string> {
     await this.ensureDatabaseInitialized()
     const userId = await this.getUserId()
-    const id = Date.now()
+    const id = crypto.randomUUID()
 
     await this.page.evaluate(
       async ({ categoryData, userId, id }) => {
@@ -211,10 +211,10 @@ export class IndexedDBHelper {
     return id
   }
 
-  async seedIncomeSource(incomeSource: TestIncomeSource): Promise<number> {
+  async seedIncomeSource(incomeSource: TestIncomeSource): Promise<string> {
     await this.ensureDatabaseInitialized()
     const userId = await this.getUserId()
-    const id = Date.now()
+    const id = crypto.randomUUID()
 
     await this.page.evaluate(
       async ({ incomeSourceData, userId, id }) => {
@@ -250,10 +250,10 @@ export class IndexedDBHelper {
     return id
   }
 
-  async seedLoan(loan: TestLoan): Promise<number> {
+  async seedLoan(loan: TestLoan): Promise<string> {
     await this.ensureDatabaseInitialized()
     const userId = await this.getUserId()
-    const id = Date.now()
+    const id = crypto.randomUUID()
 
     await this.page.evaluate(
       async ({ loanData, userId, id }) => {
@@ -290,10 +290,10 @@ export class IndexedDBHelper {
     return id
   }
 
-  async seedTransaction(transaction: TestTransaction): Promise<number> {
+  async seedTransaction(transaction: TestTransaction): Promise<string> {
     await this.ensureDatabaseInitialized()
     const userId = await this.getUserId()
-    const id = Date.now()
+    const id = crypto.randomUUID()
 
     await this.page.evaluate(
       async ({ transactionData, userId, id }) => {
@@ -330,10 +330,10 @@ export class IndexedDBHelper {
     return id
   }
 
-  async updateAccountBalance(accountId: number, newBalance: number): Promise<void> {
+  async updateAccountBalance(accountId: string, newBalance: number): Promise<void> {
     const data = { dbName: DB_NAME, id: accountId, balance: newBalance }
 
-    await this.page.evaluate((data: { dbName: string; id: number; balance: number }) => {
+    await this.page.evaluate((data: { dbName: string; id: string; balance: number }) => {
       return new Promise<void>((resolve, reject) => {
         const request = indexedDB.open(data.dbName)
         request.onsuccess = () => {
@@ -370,10 +370,10 @@ export class IndexedDBHelper {
     }, data)
   }
 
-  async getAccountBalance(accountId: number): Promise<number> {
+  async getAccountBalance(accountId: string): Promise<number> {
     const data = { dbName: DB_NAME, id: accountId }
 
-    return this.page.evaluate((data: { dbName: string; id: number }) => {
+    return this.page.evaluate((data: { dbName: string; id: string }) => {
       return new Promise<number>((resolve, reject) => {
         const request = indexedDB.open(data.dbName)
         request.onsuccess = () => {
@@ -395,10 +395,10 @@ export class IndexedDBHelper {
     }, data)
   }
 
-  async getLoanStatus(loanId: number): Promise<{ paidAmount: number; status: string } | null> {
+  async getLoanStatus(loanId: string): Promise<{ paidAmount: number; status: string } | null> {
     const data = { dbName: DB_NAME, id: loanId }
 
-    return this.page.evaluate((data: { dbName: string; id: number }) => {
+    return this.page.evaluate((data: { dbName: string; id: string }) => {
       return new Promise<{ paidAmount: number; status: string } | null>((resolve, reject) => {
         const request = indexedDB.open(data.dbName)
         request.onsuccess = () => {
@@ -448,11 +448,11 @@ export class IndexedDBHelper {
     }, DB_NAME)
   }
 
-  async updateAccount(accountId: number, updates: Record<string, unknown>): Promise<void> {
+  async updateAccount(accountId: string, updates: Record<string, unknown>): Promise<void> {
     const data = { dbName: DB_NAME, id: accountId, updates }
 
     await this.page.evaluate(
-      (data: { dbName: string; id: number; updates: Record<string, unknown> }) => {
+      (data: { dbName: string; id: string; updates: Record<string, unknown> }) => {
         return new Promise<void>((resolve, reject) => {
           const request = indexedDB.open(data.dbName)
           request.onsuccess = () => {
@@ -490,11 +490,11 @@ export class IndexedDBHelper {
     )
   }
 
-  async updateCategory(categoryId: number, updates: Record<string, unknown>): Promise<void> {
+  async updateCategory(categoryId: string, updates: Record<string, unknown>): Promise<void> {
     const data = { dbName: DB_NAME, id: categoryId, updates }
 
     await this.page.evaluate(
-      (data: { dbName: string; id: number; updates: Record<string, unknown> }) => {
+      (data: { dbName: string; id: string; updates: Record<string, unknown> }) => {
         return new Promise<void>((resolve, reject) => {
           const request = indexedDB.open(data.dbName)
           request.onsuccess = () => {
@@ -533,13 +533,13 @@ export class IndexedDBHelper {
   }
 
   async updateIncomeSource(
-    incomeSourceId: number,
+    incomeSourceId: string,
     updates: Record<string, unknown>
   ): Promise<void> {
     const data = { dbName: DB_NAME, id: incomeSourceId, updates }
 
     await this.page.evaluate(
-      (data: { dbName: string; id: number; updates: Record<string, unknown> }) => {
+      (data: { dbName: string; id: string; updates: Record<string, unknown> }) => {
         return new Promise<void>((resolve, reject) => {
           const request = indexedDB.open(data.dbName)
           request.onsuccess = () => {
@@ -666,7 +666,7 @@ export class IndexedDBHelper {
     await this.page.waitForTimeout(200)
   }
 
-  async seedTransactions(count: number, accountId: number, categoryId: number): Promise<void> {
+  async seedTransactions(count: number, accountId: string, categoryId: string): Promise<void> {
     await this.ensureDatabaseInitialized()
     const userId = await this.getUserId()
 
@@ -680,13 +680,12 @@ export class IndexedDBHelper {
         const tx = db.transaction('transactions', 'readwrite')
         const store = tx.objectStore('transactions')
         const now = new Date()
-        const baseId = Date.now()
 
         for (let i = 0; i < count; i++) {
           const date = new Date(now)
           date.setDate(date.getDate() - i)
           store.add({
-            id: baseId + i,
+            id: crypto.randomUUID(),
             type: 'expense',
             amount: 10 + i,
             currency: 'USD',

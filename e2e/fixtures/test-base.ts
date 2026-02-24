@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base } from '@playwright/test'
 import { IndexedDBHelper } from '../helpers/indexeddb.helper'
 import { SyncHelper, type SyncMode } from '../helpers/sync.helper'
@@ -19,13 +18,13 @@ type TestFixtures = {
   setupCleanState: (syncMode?: SyncMode) => Promise<void>
   setupSyncMode: (mode: SyncMode) => Promise<void>
   cleanupAllData: () => Promise<void>
-  seedAccount: (account: import('../fixtures/test-data').TestAccount) => Promise<number>
-  seedCategory: (category: import('../fixtures/test-data').TestCategory) => Promise<number>
+  seedAccount: (account: import('../fixtures/test-data').TestAccount) => Promise<string>
+  seedCategory: (category: import('../fixtures/test-data').TestCategory) => Promise<string>
   seedIncomeSource: (
     incomeSource: import('../fixtures/test-data').TestIncomeSource
-  ) => Promise<number>
-  seedLoan: (loan: import('../fixtures/test-data').TestLoan) => Promise<number>
-  seedTransaction: (transaction: import('../fixtures/test-data').TestTransaction) => Promise<number>
+  ) => Promise<string>
+  seedLoan: (loan: import('../fixtures/test-data').TestLoan) => Promise<string>
+  seedTransaction: (transaction: import('../fixtures/test-data').TestTransaction) => Promise<string>
 }
 
 export const test = base.extend<TestFixtures>({

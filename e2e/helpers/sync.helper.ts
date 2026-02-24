@@ -9,7 +9,7 @@ interface SyncHelperOptions {
     getUserId: () => Promise<string>
     clearDatabase: () => Promise<void>
     getTransactionCount: () => Promise<number>
-    getAccountBalance: (id: number) => Promise<number>
+    getAccountBalance: (id: string) => Promise<number>
   }
 }
 

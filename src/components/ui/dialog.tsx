@@ -145,11 +145,25 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
 
     return (
       <div className="fixed inset-0 z-[60]">
-        {/* Backdrop - click to close */}
-        {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-        <div className="fixed inset-0 bg-black/80" onClick={() => !modal && onOpenChange(false)} />
-        <div className="fixed inset-x-4 top-[50%] z-[60] translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg">
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        {/* Backdrop - click or press Enter/Space to close */}
+        <div
+          className="fixed inset-0 bg-black/80"
+          role="button"
+          tabIndex={-1}
+          onClick={() => !modal && onOpenChange(false)}
+          onKeyDown={(e) => {
+            if (!modal && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault()
+              onOpenChange(false)
+            }
+          }}
+          aria-label="Close dialog"
+        />
+        <div
+          className="fixed inset-x-4 top-[50%] z-[60] translate-y-[-50%] sm:inset-x-0 sm:left-[50%] sm:translate-x-[-50%] sm:w-full sm:max-w-lg"
+          role="presentation"
+          onKeyDown={handleTabTrap}
+        >
           <div
             ref={(node) => {
               dialogRef.current = node
@@ -163,7 +177,6 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            onKeyDown={handleTabTrap}
             className={cn(
               'grid w-full gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg',
               className
