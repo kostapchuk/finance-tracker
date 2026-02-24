@@ -14,65 +14,6 @@ for (const mode of syncModes) {
       await setupCleanState(mode)
     })
 
-    test('should edit expense transaction comment', async ({
-      page,
-      historyPage,
-      reportPage,
-      dbHelper,
-      syncHelper,
-      seedAccount,
-    }) => {
-      const accountId = await seedAccount(testAccounts.usdCash())
-      const catId = await dbHelper.seedCategory(testCategories.food())
-
-      await dbHelper.seedTransaction({
-        type: 'expense',
-        amount: 50,
-        currency: 'USD',
-        accountId,
-        categoryId: catId,
-        date: new Date(),
-        comment: 'Old comment',
-      })
-      await dbHelper.updateAccountBalance(accountId, 950)
-      await dbHelper.refreshStoreData()
-
-      // Navigate and edit
-      await historyPage.navigateTo('history')
-      await historyPage.filterByType('expense')
-      await historyPage.clickTransactionByComment('Old comment')
-      await page.waitForTimeout(300)
-
-      const commentTextarea = page.locator('textarea')
-      await commentTextarea.click()
-      await commentTextarea.fill('Updated grocery shopping')
-
-      await page
-        .locator('button')
-        .filter({ hasText: /update|обновить/i })
-        .click()
-      await page.waitForTimeout(500)
-
-      // 1. Verify updated comment visible in history
-      await expect(page.locator('text=Updated grocery shopping')).toBeVisible()
-      await expect(page.locator('text=Old comment')).not.toBeVisible()
-
-      // 2. Verify history page summary still shows expense
-      const outflowsText = await historyPage.getOutflowsAmount().textContent()
-      expect(outflowsText).toContain('50')
-
-      // 3. Verify report page shows expense
-      await reportPage.navigateTo('report')
-      const expensesAmount = await reportPage.getExpensesAmount().textContent()
-      expect(expensesAmount).toContain('50')
-
-      if (mode.startsWith('sync-enabled')) {
-        await syncHelper.waitForSyncToComplete()
-        const remoteTransactions = syncHelper.getMockRemoteData('transactions')
-        expect(remoteTransactions[0].comment).toBe('Updated grocery shopping')
-      }
-    })
-
     test('should edit transfer transaction amounts for multi-currency', async ({
       page,
       historyPage,
@@ -131,72 +72,6 @@ for (const mode of syncModes) {
         await syncHelper.waitForSyncToComplete()
         const remoteTransactions = syncHelper.getMockRemoteData('transactions')
         expect(remoteTransactions[0].amount).toBe(150)
-      }
-    })
-
-    test('should delete expense transaction and reverse balance', async ({
-      page,
-      historyPage,
-      reportPage,
-      dbHelper,
-      syncHelper,
-      seedAccount,
-    }) => {
-      const accountId = await seedAccount(testAccounts.usdCash())
-      const catId = await dbHelper.seedCategory(testCategories.food())
-
-      await dbHelper.seedTransaction({
-        type: 'expense',
-        amount: 75,
-        currency: 'USD',
-        accountId,
-        categoryId: catId,
-        date: new Date(),
-        comment: 'Expense to delete',
-      })
-      await dbHelper.updateAccountBalance(accountId, 925)
-      await dbHelper.refreshStoreData()
-
-      const balanceAfterCreate = await dbHelper.getAccountBalance(accountId)
-      expect(balanceAfterCreate).toBe(925)
-
-      page.on('dialog', async (dialog) => {
-        await dialog.accept()
-      })
-
-      // Navigate and delete
-      await historyPage.navigateTo('history')
-      await historyPage.filterByType('expense')
-      await historyPage.clickTransactionByComment('Expense to delete')
-      await page.waitForTimeout(300)
-
-      await page
-        .locator('button')
-        .filter({ has: page.locator('.lucide-trash-2') })
-        .click()
-      await page.waitForTimeout(500)
-
-      // 1. Verify account balance reversed
-      const finalBalance = await dbHelper.getAccountBalance(accountId)
-      expect(finalBalance).toBe(1000)
-
-      // 2. Verify transaction no longer in history
-      await historyPage.navigateTo('history')
-      await expect(historyPage.getTransactionByTitle('Expense to delete')).not.toBeVisible()
-
-      // 3. Verify history page summary shows no expenses
-      const outflowsText = await historyPage.getOutflowsAmount().textContent()
-      expect(outflowsText).toContain('0')
-
-      // 4. Verify report page shows no expenses
-      await reportPage.navigateTo('report')
-      const expensesAmount = await reportPage.getExpensesAmount().textContent()
-      expect(expensesAmount).toContain('0')
-
-      if (mode.startsWith('sync-enabled')) {
-        await syncHelper.waitForSyncToComplete()
-        const remoteTransactions = syncHelper.getMockRemoteData('transactions')
-        expect(remoteTransactions.length).toBe(0)
       }
     })
 

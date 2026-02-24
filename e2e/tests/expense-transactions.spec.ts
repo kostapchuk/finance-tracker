@@ -1,6 +1,6 @@
 import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { AccountForm } from '../page-objects/components/account-form'
-import { IncomeSourceForm } from '../page-objects/components/income-source-form'
+import { CategoryForm } from '../page-objects/components/category-form'
 
 type SyncModeType = SyncMode
 
@@ -60,13 +60,13 @@ function formatAmount(amount: number): string {
 }
 
 for (const mode of syncModes) {
-  test.describe(`[${mode}] Income Transaction Create Scenarios`, () => {
+  test.describe(`[${mode}] Expense Transaction Create Scenarios`, () => {
     test.beforeEach(async ({ setupCleanState }) => {
       await setupCleanState(mode)
     })
 
     for (const scenario of createScenarios) {
-      test(`should create income: ${scenario.name}`, async ({
+      test(`should create expense: ${scenario.name}`, async ({
         page,
         dashboardPage,
         historyPage,
@@ -85,16 +85,15 @@ for (const mode of syncModes) {
         await accountForm.save()
         await expect(dashboardPage.getAccountByName('USD Cash')).toBeVisible({ timeout: 5000 })
 
-        // Create income source via UI
-        const incomeForm = new IncomeSourceForm(page)
-        await dashboardPage.getAddIncomeSourceButton().click()
-        await incomeForm.fillName('Salary')
-        await incomeForm.selectCurrency('USD')
-        await incomeForm.save()
-        await expect(dashboardPage.getIncomeSourceByName('Salary')).toBeVisible({ timeout: 5000 })
+        // Create category via UI
+        const categoryForm = new CategoryForm(page)
+        await dashboardPage.getAddCategoryButton().click()
+        await categoryForm.fillName('Food')
+        await categoryForm.save()
+        await expect(dashboardPage.getCategoryByName('Food')).toBeVisible({ timeout: 5000 })
 
-        // Perform drag and drop
-        await dashboardPage.dragIncomeToAccount('Salary', 'USD Cash')
+        // Perform drag and drop (account -> category for expense)
+        await dashboardPage.dragAccountToCategory('USD Cash', 'Food')
 
         // Fill amount
         const amountInputs = page.locator('input[inputmode="decimal"], input[inputMode="decimal"]')
@@ -125,7 +124,7 @@ for (const mode of syncModes) {
         await page.waitForTimeout(500)
 
         // Calculate expected balance
-        const expectedBalance = 1000 + parseInt(scenario.amount)
+        const expectedBalance = 1000 - parseInt(scenario.amount)
         const amountNum = parseInt(scenario.amount)
 
         // Verify dashboard: account balance
@@ -134,28 +133,26 @@ for (const mode of syncModes) {
         const accountText = await accountElement.textContent()
         expect(accountText).toContain(formatAmount(expectedBalance))
 
-        // Verify dashboard: income source shows monthly amount
-        const incomeElement = dashboardPage.getIncomeSourceByName('Salary')
-        const incomeText = await incomeElement.textContent()
-        expect(incomeText).toContain(formatAmount(amountNum))
-
         // Verify history page
         await historyPage.navigateTo('history')
-        const txEl = historyPage.getTransactionByTitle('Salary')
+        const txEl = historyPage.getTransactionByTitle('Food')
         await expect(txEl).toBeVisible()
 
         // Verify amount
-        const amountText = await historyPage.getTransactionAmountByTitle('Salary').textContent()
+        const amountText = await historyPage.getTransactionAmountByTitle('Food').textContent()
         expect(amountText).toContain(formatAmount(amountNum))
 
-        // Verify account name
+        // Verify account name and comment if present
         const txFullText = await txEl.textContent()
         expect(txFullText).toContain('USD Cash')
+        if (scenario.comment) {
+          expect(txFullText).toContain(scenario.comment)
+        }
 
         // Verify report page
         await reportPage.navigateTo('report')
-        const incomeAmount = await reportPage.getIncomeAmount().textContent()
-        expect(incomeAmount).toContain(formatAmount(amountNum))
+        const expensesAmount = await reportPage.getExpensesAmount().textContent()
+        expect(expensesAmount).toContain(formatAmount(amountNum))
 
         // Verify sync for sync-enabled modes
         if (mode.startsWith('sync-enabled')) {
@@ -168,7 +165,7 @@ for (const mode of syncModes) {
     }
   })
 
-  test.describe(`[${mode}] Income Transaction Edit Scenarios`, () => {
+  test.describe(`[${mode}] Expense Transaction Edit Scenarios`, () => {
     test.beforeEach(async ({ setupCleanState }) => {
       await setupCleanState(mode)
     })
@@ -194,20 +191,19 @@ for (const mode of syncModes) {
         await accountForm.fillName('USD Cash')
         await accountForm.selectType('cash')
         await accountForm.selectCurrency('USD')
-        await accountForm.fillBalance('1000')
+        await accountForm.fillBalance('2000')
         await accountForm.save()
         await expect(dashboardPage.getAccountByName('USD Cash')).toBeVisible({ timeout: 5000 })
 
-        // Create income source via UI
-        const incomeForm = new IncomeSourceForm(page)
-        await dashboardPage.getAddIncomeSourceButton().click()
-        await incomeForm.fillName('Salary')
-        await incomeForm.selectCurrency('USD')
-        await incomeForm.save()
-        await expect(dashboardPage.getIncomeSourceByName('Salary')).toBeVisible({ timeout: 5000 })
+        // Create category via UI
+        const categoryForm = new CategoryForm(page)
+        await dashboardPage.getAddCategoryButton().click()
+        await categoryForm.fillName('Food')
+        await categoryForm.save()
+        await expect(dashboardPage.getCategoryByName('Food')).toBeVisible({ timeout: 5000 })
 
         // Create initial transaction
-        await dashboardPage.dragIncomeToAccount('Salary', 'USD Cash')
+        await dashboardPage.dragAccountToCategory('USD Cash', 'Food')
 
         const amountInputs = page.locator('input[inputmode="decimal"], input[inputMode="decimal"]')
         await expect(amountInputs.first()).toBeVisible({ timeout: 2000 })
@@ -236,7 +232,7 @@ for (const mode of syncModes) {
 
         // Navigate to history and edit
         await historyPage.navigateTo('history')
-        await historyPage.clickTransactionByComment(scenario.initialComment || 'Salary')
+        await historyPage.clickTransactionByComment(scenario.initialComment || 'Food')
         await page.waitForTimeout(300)
 
         // Edit fields based on scenario
@@ -269,44 +265,46 @@ for (const mode of syncModes) {
         await page.waitForTimeout(500)
 
         // Verify dashboard balance
-        const expectedBalance = 1000 + expectedFinalAmount
+        const expectedBalance = 2000 - expectedFinalAmount
         await dashboardPage.navigateTo('dashboard')
         const accountElement = dashboardPage.getAccountByName('USD Cash')
         const accountText = await accountElement.textContent()
         expect(accountText).toContain(formatAmount(expectedBalance))
 
-        // Verify income source amount
-        const incomeElement = dashboardPage.getIncomeSourceByName('Salary')
-        const incomeText = await incomeElement.textContent()
-        expect(incomeText).toContain(formatAmount(expectedFinalAmount))
-
         // Verify history
         await historyPage.navigateTo('history')
-        const txEl = historyPage.getTransactionByTitle('Salary')
+        const txEl = historyPage.getTransactionByTitle('Food')
         await expect(txEl).toBeVisible()
 
         // Verify amount
-        const amountText = await historyPage.getTransactionAmountByTitle('Salary').textContent()
+        const amountText = await historyPage.getTransactionAmountByTitle('Food').textContent()
         expect(amountText).toContain(formatAmount(expectedFinalAmount))
 
         // Verify account name
         const txFullText = await txEl.textContent()
         expect(txFullText).toContain('USD Cash')
 
+        // Verify comment (either edited or initial)
+        if (scenario.editComment !== undefined) {
+          expect(txFullText).toContain(scenario.editComment)
+        } else if (scenario.initialComment) {
+          expect(txFullText).toContain(scenario.initialComment)
+        }
+
         // Verify report
         await reportPage.navigateTo('report')
-        const incomeAmount = await reportPage.getIncomeAmount().textContent()
-        expect(incomeAmount).toContain(formatAmount(expectedFinalAmount))
+        const expensesAmount = await reportPage.getExpensesAmount().textContent()
+        expect(expensesAmount).toContain(formatAmount(expectedFinalAmount))
       })
     }
   })
 
-  test.describe(`[${mode}] Income Transaction Delete`, () => {
+  test.describe(`[${mode}] Expense Transaction Delete`, () => {
     test.beforeEach(async ({ setupCleanState }) => {
       await setupCleanState(mode)
     })
 
-    test('should delete income transaction and reverse balance', async ({
+    test('should delete expense transaction and reverse balance', async ({
       page,
       dashboardPage,
       historyPage,
@@ -325,16 +323,15 @@ for (const mode of syncModes) {
       await accountForm.save()
       await expect(dashboardPage.getAccountByName('USD Cash')).toBeVisible({ timeout: 5000 })
 
-      // Create income source via UI
-      const incomeForm = new IncomeSourceForm(page)
-      await dashboardPage.getAddIncomeSourceButton().click()
-      await incomeForm.fillName('Salary')
-      await incomeForm.selectCurrency('USD')
-      await incomeForm.save()
-      await expect(dashboardPage.getIncomeSourceByName('Salary')).toBeVisible({ timeout: 5000 })
+      // Create category via UI
+      const categoryForm = new CategoryForm(page)
+      await dashboardPage.getAddCategoryButton().click()
+      await categoryForm.fillName('Food')
+      await categoryForm.save()
+      await expect(dashboardPage.getCategoryByName('Food')).toBeVisible({ timeout: 5000 })
 
       // Create transaction
-      await dashboardPage.dragIncomeToAccount('Salary', 'USD Cash')
+      await dashboardPage.dragAccountToCategory('USD Cash', 'Food')
 
       const amountInputs = page.locator('input[inputmode="decimal"], input[inputMode="decimal"]')
       await expect(amountInputs.first()).toBeVisible({ timeout: 2000 })
@@ -350,11 +347,11 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
-      // Verify balance increased
+      // Verify balance decreased
       await dashboardPage.navigateTo('dashboard')
       const accountElement = dashboardPage.getAccountByName('USD Cash')
       const accountText = await accountElement.textContent()
-      expect(accountText).toContain(formatAmount(1500))
+      expect(accountText).toContain(formatAmount(500))
 
       // Accept delete confirmation dialog
       page.on('dialog', async (dialog) => {
@@ -363,7 +360,7 @@ for (const mode of syncModes) {
 
       // Navigate to history and delete
       await historyPage.navigateTo('history')
-      await historyPage.clickTransactionByComment('Salary')
+      await historyPage.clickTransactionByComment('Food')
       await page.waitForTimeout(300)
 
       await page
@@ -378,19 +375,14 @@ for (const mode of syncModes) {
       const accountTextAfterDelete = await accountAfterDelete.textContent()
       expect(accountTextAfterDelete).toContain(formatAmount(1000))
 
-      // Verify dashboard: income source shows no amount
-      const incomeElement = dashboardPage.getIncomeSourceByName('Salary')
-      const incomeText = await incomeElement.textContent()
-      expect(incomeText).not.toContain('500')
-
       // Verify history: transaction not visible
       await historyPage.navigateTo('history')
-      await expect(historyPage.getTransactionByTitle('Salary')).not.toBeVisible()
+      await expect(historyPage.getTransactionByTitle('Food')).not.toBeVisible()
 
-      // Verify report: income shows 0
+      // Verify report: expenses shows 0
       await reportPage.navigateTo('report')
-      const incomeAmount = await reportPage.getIncomeAmount().textContent()
-      expect(incomeAmount).toContain('0')
+      const expensesAmount = await reportPage.getExpensesAmount().textContent()
+      expect(expensesAmount).toContain('0')
 
       // Verify sync for sync-enabled modes
       if (mode.startsWith('sync-enabled')) {

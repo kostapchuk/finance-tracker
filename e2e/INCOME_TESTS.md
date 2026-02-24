@@ -1,11 +1,12 @@
-# E2E Tests - Income Transactions
+# E2E Tests - Income & Expense Transactions
 
-This document lists all E2E tests related to income functionality, organized by test file and sync mode.
+This document lists all E2E tests related to income and expense functionality, organized by test file and sync mode.
 
 ## Test Files
 
-- `e2e/tests/income-transactions.spec.ts` - Comprehensive create/edit scenario tests
-- `e2e/tests/transaction-edit.spec.ts` - Expense/transfer tests + offline persistence tests
+- `e2e/tests/income-transactions.spec.ts` - Income create/edit/delete scenario tests
+- `e2e/tests/expense-transactions.spec.ts` - Expense create/edit/delete scenario tests
+- `e2e/tests/transaction-edit.spec.ts` - Transfer tests + offline persistence tests
 - `e2e/tests/income-source.spec.ts` - Income source management tests
 - `e2e/tests/report.spec.ts` - Report page tests
 
@@ -15,7 +16,7 @@ This document lists all E2E tests related to income functionality, organized by 
 
 ### File: `e2e/tests/income-transactions.spec.ts`
 
-Tests all create scenarios in sync-disabled mode to verify functionality.
+Tests all create scenarios across all 4 sync modes.
 
 | Scenario                     | Amount | Comment        | Date       | Verification                      |
 | ---------------------------- | ------ | -------------- | ---------- | --------------------------------- |
@@ -30,8 +31,8 @@ Tests all create scenarios in sync-disabled mode to verify functionality.
 2. Dashboard: income source shows monthly amount
 3. History: transaction visible with correct amount
 4. History: shows account name
-5. History: shows comment (if present)
-6. Report: income shows correct amount
+5. Report: income shows correct amount
+6. Sync verification (for sync-enabled modes)
 
 ---
 
@@ -39,7 +40,7 @@ Tests all create scenarios in sync-disabled mode to verify functionality.
 
 ### File: `e2e/tests/income-transactions.spec.ts`
 
-Tests all edit combinations in sync-disabled mode to verify functionality.
+Tests all edit combinations across all 4 sync modes.
 
 | Scenario                    | Initial   | Edit                               | Verification                           |
 | --------------------------- | --------- | ---------------------------------- | -------------------------------------- |
@@ -84,54 +85,126 @@ Tests income transaction deletion across all 4 sync modes.
 
 ---
 
-## 4. Expense Transaction Edit
+## 4. Expense Transaction Create Scenarios
 
-### Test: `should edit expense transaction comment`
+### File: `e2e/tests/expense-transactions.spec.ts`
 
-**File:** `e2e/tests/transaction-edit.spec.ts`
+Tests all create scenarios across all 4 sync modes.
 
-Runs across all 4 sync modes.
+| Scenario                     | Amount | Comment        | Date       | Verification                    |
+| ---------------------------- | ------ | -------------- | ---------- | ------------------------------- |
+| Amount only                  | 100    | -              | today      | Balance: 900; Expense: 100      |
+| Amount with comment          | 200    | "Test comment" | today      | Balance: 800; Comment visible   |
+| Amount with date             | 300    | -              | yesterday  | Balance: 700; Date is yesterday |
+| Amount with comment and date | 400    | "Full test"    | 2 days ago | Balance: 600; Comment + date    |
 
-| Sync Mode             | Action                                                   |
-| --------------------- | -------------------------------------------------------- |
-| sync-disabled         | Edit comment: "Old comment" → "Updated grocery shopping" |
-| sync-disabled-offline | Same, verify persistence after going online              |
-| sync-enabled-online   | Same, verify remote data after sync                      |
-| sync-enabled-offline  | Same, verify persistence after sync                      |
+**For each scenario verify:**
+
+1. Dashboard: account balance (initial - expense)
+2. History: transaction visible with correct amount
+3. History: shows account name
+4. History: shows comment (if present)
+5. Report: expenses show correct amount
+6. Sync verification (for sync-enabled modes)
 
 ---
 
-## 5. Transfer Transaction Edit
+## 5. Expense Transaction Edit Scenarios
+
+### File: `e2e/tests/expense-transactions.spec.ts`
+
+Tests all edit combinations across all 4 sync modes.
+
+| Scenario                    | Initial   | Edit                               | Verification                       |
+| --------------------------- | --------- | ---------------------------------- | ---------------------------------- |
+| Amount only                 | 1000      | → 1500                             | Balance: 500; Amount: 1,500        |
+| Comment only                | "Initial" | → "Updated comment"                | Comment updated                    |
+| Date only                   | today     | → 3 days ago                       | Date updated                       |
+| Amount and comment          | 1000      | → 2000 + "New comment"             | Balance: 0; Comment: "New comment" |
+| Amount and date             | 1000      | → 2500 + yesterday                 | Balance: -500; Date: yesterday     |
+| Comment and date            | "Old"     | → "New" + 2 days ago               | Comment + date updated             |
+| All (amount, comment, date) | 1000      | → 3000 + "All updated" + yesterday | Balance: -1000; All fields updated |
+
+**For each scenario verify:**
+
+1. Dashboard: account balance updated
+2. History: transaction visible with updated amount
+3. History: shows account name
+4. History: shows updated comment (if edited)
+5. Report: expenses show updated amount
+
+---
+
+## 6. Expense Transaction Delete Scenarios
+
+### File: `e2e/tests/expense-transactions.spec.ts`
+
+Tests expense transaction deletion across all 4 sync modes.
+
+| Sync Mode             | Action                                  | Verification                     |
+| --------------------- | --------------------------------------- | -------------------------------- |
+| sync-disabled         | Delete expense, verify balance reversed | Balance: 500 → 1000              |
+| sync-disabled-offline | Same, verify persistence                | Balance reversed, tx not visible |
+| sync-enabled-online   | Same, verify remote data after sync     | Remote transactions empty        |
+| sync-enabled-offline  | Same, verify sync after coming online   | Remote transactions empty        |
+
+**For each scenario verify:**
+
+1. Dashboard: account balance reversed to original
+2. History: transaction not visible
+3. Report: expenses show 0
+4. Sync verification (for sync-enabled modes)
+
+---
+
+## 7. Transfer Transaction Edit
 
 ### Test: `should edit transfer transaction amounts for multi-currency`
 
 **File:** `e2e/tests/transaction-edit.spec.ts`
 
-Tests multi-currency transfer editing.
+Tests multi-currency transfer editing across all 4 sync modes.
+
+| Sync Mode             | Initial             | Edit                                | Verification                   |
+| --------------------- | ------------------- | ----------------------------------- | ------------------------------ |
+| sync-disabled         | USD: 900, EUR: 2090 | 100 USD → 150 USD, 90 EUR → 135 EUR | USD: 850, EUR: 2135            |
+| sync-disabled-offline | Same                | Same                                | Same, verify persistence       |
+| sync-enabled-online   | Same                | Same                                | Same, verify remote data       |
+| sync-enabled-offline  | Same                | Same                                | Same, verify sync after online |
+
+**For each scenario verify:**
+
+1. Both account balances updated correctly (from account decreases, to account increases)
+2. Transfer still visible in history with updated amounts
+3. Sync verification (for sync-enabled modes): remote transaction has updated amount
 
 ---
 
-## 6. Expense Transaction Delete
-
-### Test: `should delete expense transaction and reverse balance`
-
-**File:** `e2e/tests/transaction-edit.spec.ts`
-
-Runs across all 4 sync modes.
-
----
-
-## 7. Transfer Delete
+## 8. Transfer Delete
 
 ### Test: `should delete transfer and reverse both account balances`
 
 **File:** `e2e/tests/transaction-edit.spec.ts`
 
-Tests transfer deletion with balance reversal on both accounts.
+Tests transfer deletion with balance reversal on both accounts across all 4 sync modes.
+
+| Sync Mode             | Initial             | After Delete                   |
+| --------------------- | ------------------- | ------------------------------ |
+| sync-disabled         | USD: 900, EUR: 2090 | USD: 1000, EUR: 2000           |
+| sync-disabled-offline | Same                | Same, verify persistence       |
+| sync-enabled-online   | Same                | Same, verify remote data       |
+| sync-enabled-offline  | Same                | Same, verify sync after online |
+
+**For each scenario verify:**
+
+1. Both account balances reversed to original values
+2. Transfer no longer visible in history
+3. Transaction count is 0
+4. Sync verification (for sync-enabled modes): remote transactions empty
 
 ---
 
-## 8. Offline Persistence Tests
+## 9. Offline Persistence Tests
 
 ### File: `e2e/tests/transaction-edit.spec.ts`
 
@@ -149,7 +222,7 @@ Additional tests for offline scenarios:
 
 ---
 
-## 9. Income Source Management
+## 10. Income Source Management
 
 ### File: `e2e/tests/income-source.spec.ts`
 
@@ -166,7 +239,7 @@ Additional tests for offline scenarios:
 
 ---
 
-## 10. Report Page - Income Display
+## 11. Report Page - Income Display
 
 ### File: `e2e/tests/report.spec.ts`
 
@@ -177,7 +250,7 @@ Additional tests for offline scenarios:
 
 ---
 
-## 11. Dashboard - Income Source Visibility
+## 12. Dashboard - Income Source Visibility
 
 ### File: `e2e/tests/dashboard.spec.ts`
 
@@ -189,19 +262,20 @@ Additional tests for offline scenarios:
 
 ## Test Summary
 
-| Category                 | Test Count        | Modes         |
-| ------------------------ | ----------------- | ------------- |
-| Income Create Scenarios  | 4 tests           | sync-disabled |
-| Income Edit Scenarios    | 7 tests           | sync-disabled |
-| Income Delete Scenarios  | 1 test × 4 modes  | All           |
-| Expense Edit             | 1 test × 4 modes  | All           |
-| Transfer Edit            | 1 test × 4 modes  | All           |
-| Expense Delete           | 1 test × 4 modes  | All           |
-| Transfer Delete          | 1 test × 4 modes  | All           |
-| Offline Persistence      | 7 tests           | Various       |
-| Income Source Management | 8 tests × 4 modes | All           |
-| Report Income Display    | 2 tests × 4 modes | All           |
-| Dashboard Visibility     | 1 test × 4 modes  | All           |
+| Category                 | Test Count        | Modes   |
+| ------------------------ | ----------------- | ------- |
+| Income Create Scenarios  | 4 tests × 4 modes | All     |
+| Income Edit Scenarios    | 7 tests × 4 modes | All     |
+| Income Delete Scenarios  | 1 test × 4 modes  | All     |
+| Expense Create Scenarios | 4 tests × 4 modes | All     |
+| Expense Edit Scenarios   | 7 tests × 4 modes | All     |
+| Expense Delete Scenarios | 1 test × 4 modes  | All     |
+| Transfer Edit            | 1 test × 4 modes  | All     |
+| Transfer Delete          | 1 test × 4 modes  | All     |
+| Offline Persistence      | 7 tests           | Various |
+| Income Source Management | 8 tests × 4 modes | All     |
+| Report Income Display    | 2 tests × 4 modes | All     |
+| Dashboard Visibility     | 1 test × 4 modes  | All     |
 
 ---
 
