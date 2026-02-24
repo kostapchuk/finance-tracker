@@ -80,12 +80,15 @@ export const test = base.extend<TestFixtures>({
 
   setupCleanState: async ({ page, syncHelper, dbHelper }, use) => {
     const setup = async (syncMode: SyncMode = 'sync-disabled') => {
+      // Set the mode first so seed functions know what mode we're in
+      syncHelper.setMode(syncMode)
+
       await page.addInitScript((mode) => {
         localStorage.setItem('finance-tracker-language', 'en')
         localStorage.setItem('finance-tracker-onboarding-completed', 'true')
         localStorage.setItem('finance-tracker-migration-complete', 'true')
 
-        if (mode !== 'sync-disabled') {
+        if (mode.startsWith('sync-enabled')) {
           localStorage.setItem('finance-tracker-cloud-unlocked', 'true')
           ;(
             window as unknown as { __TEST_SUPABASE_CONFIGURED__: boolean }
@@ -109,6 +112,13 @@ export const test = base.extend<TestFixtures>({
         await page.waitForTimeout(300)
       }
 
+      // Clear database now that page is loaded and IndexedDB is accessible
+      await dbHelper.clearDatabase()
+      await syncHelper.clearRemoteData()
+
+      // Configure sync mode AFTER app loads and database is cleared
+      // For sync-enabled modes, set up route interception
+      // For offline modes, we delay going offline until after seeding
       await syncHelper.configureMode(syncMode)
 
       await dbHelper.waitForAppReady()
@@ -116,60 +126,106 @@ export const test = base.extend<TestFixtures>({
     await use(setup)
   },
 
-  seedAccount: async ({ dbHelper, syncHelper }, use) => {
+  seedAccount: async ({ page, dbHelper, syncHelper }, use) => {
     const seed = async (account: import('../fixtures/test-data').TestAccount) => {
       const id = await dbHelper.seedAccount(account)
       const mode = syncHelper.getMode()
-      if (mode !== 'sync-disabled') {
+      if (mode?.startsWith('sync-enabled')) {
         syncHelper.seedMockRemoteData('accounts', { ...account, id })
+      }
+
+      // For offline modes, reload page before going offline so React Query picks up seeded data
+      if (mode?.endsWith('-offline') && !syncHelper.isOfflineMode()) {
+        await page.reload()
+        await page.waitForLoadState('networkidle')
+        await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+        // Wait for data to load by checking that the app is ready
+        await dbHelper.waitForAppReady()
+        await syncHelper.goOffline()
       }
       return id
     }
     await use(seed)
   },
 
-  seedCategory: async ({ dbHelper, syncHelper }, use) => {
+  seedCategory: async ({ page, dbHelper, syncHelper }, use) => {
     const seed = async (category: import('../fixtures/test-data').TestCategory) => {
       const id = await dbHelper.seedCategory(category)
       const mode = syncHelper.getMode()
-      if (mode !== 'sync-disabled') {
+      if (mode?.startsWith('sync-enabled')) {
         syncHelper.seedMockRemoteData('categories', { ...category, id })
+      }
+
+      // For offline modes, reload page before going offline so React Query picks up seeded data
+      if (mode?.endsWith('-offline') && !syncHelper.isOfflineMode()) {
+        await page.reload()
+        await page.waitForLoadState('networkidle')
+        await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+        await dbHelper.waitForAppReady()
+        await syncHelper.goOffline()
       }
       return id
     }
     await use(seed)
   },
 
-  seedIncomeSource: async ({ dbHelper, syncHelper }, use) => {
+  seedIncomeSource: async ({ page, dbHelper, syncHelper }, use) => {
     const seed = async (incomeSource: import('../fixtures/test-data').TestIncomeSource) => {
       const id = await dbHelper.seedIncomeSource(incomeSource)
       const mode = syncHelper.getMode()
-      if (mode !== 'sync-disabled') {
+      if (mode?.startsWith('sync-enabled')) {
         syncHelper.seedMockRemoteData('income_sources', { ...incomeSource, id })
+      }
+
+      // For offline modes, reload page before going offline so React Query picks up seeded data
+      if (mode?.endsWith('-offline') && !syncHelper.isOfflineMode()) {
+        await page.reload()
+        await page.waitForLoadState('networkidle')
+        await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+        await dbHelper.waitForAppReady()
+        await syncHelper.goOffline()
       }
       return id
     }
     await use(seed)
   },
 
-  seedLoan: async ({ dbHelper, syncHelper }, use) => {
+  seedLoan: async ({ page, dbHelper, syncHelper }, use) => {
     const seed = async (loan: import('../fixtures/test-data').TestLoan) => {
       const id = await dbHelper.seedLoan(loan)
       const mode = syncHelper.getMode()
-      if (mode !== 'sync-disabled') {
+      if (mode?.startsWith('sync-enabled')) {
         syncHelper.seedMockRemoteData('loans', { ...loan, id })
+      }
+
+      // For offline modes, reload page before going offline so React Query picks up seeded data
+      if (mode?.endsWith('-offline') && !syncHelper.isOfflineMode()) {
+        await page.reload()
+        await page.waitForLoadState('networkidle')
+        await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+        await dbHelper.waitForAppReady()
+        await syncHelper.goOffline()
       }
       return id
     }
     await use(seed)
   },
 
-  seedTransaction: async ({ dbHelper, syncHelper }, use) => {
+  seedTransaction: async ({ page, dbHelper, syncHelper }, use) => {
     const seed = async (transaction: import('../fixtures/test-data').TestTransaction) => {
       const id = await dbHelper.seedTransaction(transaction)
       const mode = syncHelper.getMode()
-      if (mode !== 'sync-disabled') {
+      if (mode?.startsWith('sync-enabled')) {
         syncHelper.seedMockRemoteData('transactions', { ...transaction, id })
+      }
+
+      // For offline modes, reload page before going offline so React Query picks up seeded data
+      if (mode?.endsWith('-offline') && !syncHelper.isOfflineMode()) {
+        await page.reload()
+        await page.waitForLoadState('networkidle')
+        await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+        await dbHelper.waitForAppReady()
+        await syncHelper.goOffline()
       }
       return id
     }

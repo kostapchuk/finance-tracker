@@ -136,11 +136,6 @@ class SyncService {
     this.listeners.forEach((listener) => listener(this.state))
   }
 
-  private invalidateQueries(_entities?: string[]): void {
-    // Disabled - let components handle their own invalidation
-    // This prevents unnecessary refetches when sync completes
-  }
-
   async syncAll(): Promise<void> {
     if (!isCloudReady()) {
       return
@@ -218,10 +213,6 @@ class SyncService {
         pendingCount: remainingCount,
         nextRetryAt: remainingCount > 0 ? this.state.nextRetryAt : null,
       })
-
-      if (affectedEntities.size > 0) {
-        this.invalidateQueries([...affectedEntities])
-      }
 
       await supabaseApi.reportCache.deleteExpired()
 
@@ -665,8 +656,6 @@ class SyncService {
           }
         }
       }
-
-      this.invalidateQueries(toFetch)
     } catch (error) {
       console.error('Failed to pull from remote:', error)
     } finally {

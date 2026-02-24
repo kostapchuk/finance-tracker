@@ -25,17 +25,6 @@ class MockStorage {
 
   private currentUserId: string | null = null
 
-  private idCounters: Record<string, number> = {
-    accounts: 1,
-    income_sources: 1,
-    categories: 1,
-    transactions: 1,
-    loans: 1,
-    settings: 1,
-    custom_currencies: 1,
-    report_cache: 1,
-  }
-
   setUserId(userId: string): void {
     this.currentUserId = userId
   }
@@ -75,8 +64,10 @@ class MockStorage {
   }
 
   insert(table: keyof MockDatabase, record: Record<string, unknown>): Record<string, unknown> {
-    const id = this.idCounters[table]++
     const now = new Date().toISOString()
+
+    // Use provided ID if available (for UUID support), otherwise generate numeric ID
+    const id = record.id ?? Date.now()
 
     const dbRecord: Record<string, unknown> = {
       id,
@@ -99,10 +90,16 @@ class MockStorage {
 
   update(
     table: keyof MockDatabase,
-    id: number,
+    id: string | number,
     updates: Record<string, unknown>
   ): Record<string, unknown> | null {
-    const index = this.db[table].findIndex((r) => r.id === id && r.user_id === this.currentUserId)
+    // Find by ID, supporting both string and numeric IDs
+    const index = this.db[table].findIndex((r) => {
+      const recordId = r.id
+      const matchesUserId = r.user_id === this.currentUserId
+      // Compare as strings to handle both UUID and numeric IDs
+      return String(recordId) === String(id) && matchesUserId
+    })
     if (index === -1) return null
 
     const existing = this.db[table][index]
@@ -124,8 +121,12 @@ class MockStorage {
     return updated
   }
 
-  delete(table: keyof MockDatabase, id: number): boolean {
-    const index = this.db[table].findIndex((r) => r.id === id && r.user_id === this.currentUserId)
+  delete(table: keyof MockDatabase, id: string | number): boolean {
+    const index = this.db[table].findIndex((r) => {
+      const recordId = r.id
+      const matchesUserId = r.user_id === this.currentUserId
+      return String(recordId) === String(id) && matchesUserId
+    })
     if (index === -1) return false
     this.db[table].splice(index, 1)
     return true
@@ -137,8 +138,12 @@ class MockStorage {
       .map((r) => this.transformToCamelCase(r))
   }
 
-  getById(table: keyof MockDatabase, id: number): Record<string, unknown> | null {
-    const record = this.db[table].find((r) => r.id === id && r.user_id === this.currentUserId)
+  getById(table: keyof MockDatabase, id: string | number): Record<string, unknown> | null {
+    const record = this.db[table].find((r) => {
+      const recordId = r.id
+      const matchesUserId = r.user_id === this.currentUserId
+      return String(recordId) === String(id) && matchesUserId
+    })
     return record ? this.transformToCamelCase(record) : null
   }
 
@@ -156,16 +161,6 @@ class MockStorage {
       settings: [],
       custom_currencies: [],
       report_cache: [],
-    }
-    this.idCounters = {
-      accounts: 1,
-      income_sources: 1,
-      categories: 1,
-      transactions: 1,
-      loans: 1,
-      settings: 1,
-      custom_currencies: 1,
-      report_cache: 1,
     }
   }
 

@@ -1,6 +1,6 @@
 import { test, expect, type SyncMode } from '../fixtures/test-base'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test(`[${mode}] minimal IndexedDB test`, async ({ page, setupCleanState, dbHelper }) => {

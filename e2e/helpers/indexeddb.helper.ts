@@ -448,6 +448,39 @@ export class IndexedDBHelper {
     }, DB_NAME)
   }
 
+  async getAccountByName(name: string): Promise<{ id: string; balance: number } | null> {
+    return this.page.evaluate(
+      (data: { dbName: string; name: string }) => {
+        return new Promise<{ id: string; balance: number } | null>((resolve, reject) => {
+          const request = indexedDB.open(data.dbName)
+          request.onsuccess = () => {
+            const db = request.result
+            const tx = db.transaction('accounts', 'readonly')
+            const store = tx.objectStore('accounts')
+            const getAllRequest = store.getAll()
+            getAllRequest.onsuccess = () => {
+              db.close()
+              const account = getAllRequest.result.find(
+                (a: { name: string }) => a.name === data.name
+              )
+              if (account) {
+                resolve({ id: account.id, balance: account.balance })
+              } else {
+                resolve(null)
+              }
+            }
+            getAllRequest.onerror = () => {
+              db.close()
+              reject(getAllRequest.error)
+            }
+          }
+          request.onerror = () => reject(request.error)
+        })
+      },
+      { dbName: DB_NAME, name }
+    )
+  }
+
   async updateAccount(accountId: string, updates: Record<string, unknown>): Promise<void> {
     const data = { dbName: DB_NAME, id: accountId, updates }
 
@@ -633,6 +666,13 @@ export class IndexedDBHelper {
   }
 
   async refreshStoreData(): Promise<void> {
+    // Skip reload if offline - data should already be refreshed during seeding
+    const isOnline = await this.page.evaluate(() => navigator.onLine)
+    if (!isOnline) {
+      await this.page.waitForTimeout(300)
+      return
+    }
+
     await this.page.reload()
     await this.page.waitForLoadState('networkidle')
     await this.page.waitForSelector('nav', { state: 'visible', timeout: 10000 })

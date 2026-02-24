@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 
@@ -20,6 +19,12 @@ import { useAccounts, useSettings } from '@/hooks/useDataHooks'
 import { useLanguage } from '@/hooks/useLanguage'
 import { getAllCurrencies } from '@/utils/currency'
 import { formatDateForInput } from '@/utils/date'
+
+// Helper function to update React Query cache immediately (works offline)
+async function refreshLoansCache() {
+  const { queryClient } = await import('@/lib/queryClient')
+  queryClient.setQueryData(['loans'], await loanRepo.getAll())
+}
 
 export interface LoanFormData {
   type: LoanType
@@ -51,7 +56,6 @@ function LoanFormContent({
   const { data: accounts = [] } = useAccounts()
   const { data: settings } = useSettings()
   const mainCurrency = settings?.defaultCurrency || 'BYN'
-  const queryClient = useQueryClient()
   const { t, language } = useLanguage()
 
   const [type, setType] = useState<LoanType>(loan?.type ?? 'given')
@@ -67,12 +71,18 @@ function LoanFormContent({
     loan?.dueDate ? formatDateForInput(new Date(loan.dueDate)) : ''
   )
 
-  const selectedAccount = accountId ? accounts.find((a) => String(a.id) === accountId) : null
+  // When accounts load after mount and no account is selected, use the first account
+  // This is computed as a derived value to avoid setState during render
+  const effectiveAccountId = accountId || (accounts.length > 0 ? accounts[0].id!.toString() : '')
+
+  const selectedAccount = effectiveAccountId
+    ? accounts.find((a) => String(a.id) === effectiveAccountId)
+    : null
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!personName.trim() || !amount || !accountId) return
+    if (!personName.trim() || !amount || !effectiveAccountId) return
     if (isMultiCurrency && !accountAmount) return
 
     const parsedAmount = parseFloat(amount)
@@ -88,7 +98,7 @@ function LoanFormContent({
         description: description.trim() || undefined,
         amount: parsedAmount,
         currency,
-        accountId,
+        accountId: effectiveAccountId,
         accountAmount: parsedAccountAmount,
         dueDate: dueDate ? new Date(dueDate) : undefined,
       }
@@ -119,7 +129,8 @@ function LoanFormContent({
             dueDate: formData.dueDate,
           })
         }
-        queryClient.invalidateQueries({ queryKey: ['loans'] })
+        // Update React Query cache immediately (works offline)
+        await refreshLoansCache()
       }
       onClose()
     } catch (error) {
@@ -159,7 +170,7 @@ function LoanFormContent({
 
       <div className="space-y-2">
         <Label htmlFor="account">{t('relatedAccount')}</Label>
-        <Select value={accountId} onValueChange={setAccountId}>
+        <Select value={effectiveAccountId} onValueChange={setAccountId}>
           <SelectTrigger>
             <SelectValue placeholder={t('selectAccount')}>
               {selectedAccount
@@ -292,7 +303,7 @@ function LoanFormContent({
         <Button type="button" variant="outline" onClick={onClose}>
           {t('cancel')}
         </Button>
-        <Button type="submit" disabled={!accountId}>
+        <Button type="submit" disabled={!effectiveAccountId}>
           {loan ? t('update') : t('create')}
         </Button>
       </div>

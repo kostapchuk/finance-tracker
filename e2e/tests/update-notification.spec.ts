@@ -6,7 +6,7 @@ declare global {
   }
 }
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] PWA Update Notification`, () => {
@@ -22,7 +22,7 @@ for (const mode of syncModes) {
       const badge = settingsButton.locator('.rounded-full.bg-primary')
       await expect(badge).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -39,7 +39,7 @@ for (const mode of syncModes) {
       const badge = settingsButton.locator('.rounded-full.bg-primary')
       await expect(badge).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -59,7 +59,7 @@ for (const mode of syncModes) {
       await expect(page.getByText('A new version of the app is ready to install')).toBeVisible()
       await expect(page.getByRole('button', { name: 'Update' })).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -73,7 +73,7 @@ for (const mode of syncModes) {
 
       await expect(page.getByText('A new version of the app is ready to install')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })

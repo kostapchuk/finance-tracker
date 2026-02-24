@@ -53,8 +53,44 @@ export async function hasLocalData(): Promise<boolean> {
   return cacheAccounts > 0 || cacheTransactions > 0 || cacheIncomeSources > 0
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function isValidUUID(id: unknown): id is string {
+  return typeof id === 'string' && UUID_REGEX.test(id)
+}
+
 function generateUUID(): string {
   return crypto.randomUUID()
+}
+
+interface IdMapping {
+  accounts: Map<string | number, string>
+  incomeSources: Map<string | number, string>
+  categories: Map<string | number, string>
+  customCurrencies: Map<string | number, string>
+  loans: Map<string | number, string>
+}
+
+export function getOrCreateMappedId(
+  oldId: string | number | undefined,
+  mapping: Map<string | number, string>
+): string {
+  if (oldId === undefined || oldId === null) {
+    return generateUUID()
+  }
+
+  if (isValidUUID(oldId)) {
+    return oldId
+  }
+
+  const existing = mapping.get(oldId)
+  if (existing) {
+    return existing
+  }
+
+  const newId = generateUUID()
+  mapping.set(oldId, newId)
+  return newId
 }
 
 export async function migrateLocalToSupabase(
@@ -92,60 +128,100 @@ export async function migrateLocalToSupabase(
       onProgress?.({ current, total: totalItems, entity })
     }
 
+    const idMapping: IdMapping = {
+      accounts: new Map(),
+      incomeSources: new Map(),
+      categories: new Map(),
+      customCurrencies: new Map(),
+      loans: new Map(),
+    }
+
     for (const account of accounts) {
+      const newId = getOrCreateMappedId(account.id, idMapping.accounts)
       await supabaseApi.accounts.upsert({
         ...account,
-        id: generateUUID(),
+        id: newId,
       })
       updateProgress('accounts')
     }
 
     for (const source of incomeSources) {
+      const newId = getOrCreateMappedId(source.id, idMapping.incomeSources)
       await supabaseApi.incomeSources.upsert({
         ...source,
-        id: generateUUID(),
+        id: newId,
       })
       updateProgress('incomeSources')
     }
 
     for (const category of categories) {
+      const newId = getOrCreateMappedId(category.id, idMapping.categories)
       await supabaseApi.categories.upsert({
         ...category,
-        id: generateUUID(),
+        id: newId,
       })
       updateProgress('categories')
     }
 
-    for (const transaction of transactions) {
-      await supabaseApi.transactions.upsert({
-        ...transaction,
-        id: generateUUID(),
+    for (const currency of customCurrencies) {
+      const newId = getOrCreateMappedId(currency.id, idMapping.customCurrencies)
+      await supabaseApi.customCurrencies.upsert({
+        ...currency,
+        id: newId,
       })
-      updateProgress('transactions')
+      updateProgress('customCurrencies')
     }
 
     for (const loan of loans) {
+      const newId = getOrCreateMappedId(loan.id, idMapping.loans)
+      const mappedAccountId = loan.accountId
+        ? getOrCreateMappedId(loan.accountId, idMapping.accounts)
+        : undefined
       await supabaseApi.loans.upsert({
         ...loan,
-        id: generateUUID(),
+        id: newId,
+        accountId: mappedAccountId,
       })
       updateProgress('loans')
     }
 
-    if (settings.length > 0) {
-      await supabaseApi.settings.upsert({
-        ...settings[0],
-        id: generateUUID(),
+    for (const transaction of transactions) {
+      const newId = isValidUUID(transaction.id) ? transaction.id : generateUUID()
+      const mappedAccountId = transaction.accountId
+        ? getOrCreateMappedId(transaction.accountId, idMapping.accounts)
+        : undefined
+      const mappedToAccountId = transaction.toAccountId
+        ? getOrCreateMappedId(transaction.toAccountId, idMapping.accounts)
+        : undefined
+      const mappedCategoryId = transaction.categoryId
+        ? getOrCreateMappedId(transaction.categoryId, idMapping.categories)
+        : undefined
+      const mappedIncomeSourceId = transaction.incomeSourceId
+        ? getOrCreateMappedId(transaction.incomeSourceId, idMapping.incomeSources)
+        : undefined
+      const mappedLoanId = transaction.loanId
+        ? getOrCreateMappedId(transaction.loanId, idMapping.loans)
+        : undefined
+      await supabaseApi.transactions.upsert({
+        ...transaction,
+        id: newId,
+        accountId: mappedAccountId,
+        toAccountId: mappedToAccountId,
+        categoryId: mappedCategoryId,
+        incomeSourceId: mappedIncomeSourceId,
+        loanId: mappedLoanId,
       })
-      updateProgress('settings')
+      updateProgress('transactions')
     }
 
-    for (const currency of customCurrencies) {
-      await supabaseApi.customCurrencies.upsert({
-        ...currency,
-        id: generateUUID(),
+    if (settings.length > 0) {
+      const setting = settings[0]
+      const newId = isValidUUID(setting.id) ? setting.id : generateUUID()
+      await supabaseApi.settings.upsert({
+        ...setting,
+        id: newId,
       })
-      updateProgress('customCurrencies')
+      updateProgress('settings')
     }
 
     await db.accounts.clear()

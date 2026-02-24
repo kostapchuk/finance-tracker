@@ -1,7 +1,7 @@
 import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { testAccounts, testCategories } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] History Infinite Scroll`, () => {
@@ -35,7 +35,7 @@ for (const mode of syncModes) {
       const count = await historyPage.getTransactionCount()
       expect(count).toBe(50)
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -72,7 +72,7 @@ for (const mode of syncModes) {
       const newCount = await historyPage.getTransactionCount()
       expect(newCount).toBe(100)
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -110,7 +110,7 @@ for (const mode of syncModes) {
       count = await historyPage.getTransactionCount()
       expect(count).toBe(50)
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -141,7 +141,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=/showing all|показаны все/i')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })

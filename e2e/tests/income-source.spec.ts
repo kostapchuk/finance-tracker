@@ -2,7 +2,7 @@ import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { IncomeSourceForm } from '../page-objects/components/income-source-form'
 import { testIncomeSources } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] Income Source Management`, () => {
@@ -27,7 +27,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Main Job')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteSources = syncHelper.getMockRemoteData('income_sources')
         expect(remoteSources.length).toBe(1)
@@ -52,7 +52,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Freelance EUR')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteSources = syncHelper.getMockRemoteData('income_sources')
         expect(remoteSources.length).toBe(1)
@@ -83,7 +83,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Primary Job')).toBeVisible()
       await expect(page.locator('text=Side Project')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteSources = syncHelper.getMockRemoteData('income_sources')
         expect(remoteSources.length).toBe(2)
@@ -108,7 +108,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Updated Income')).toBeVisible()
       await expect(page.locator('p.font-medium:text-is("Test Income")')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteSources = syncHelper.getMockRemoteData('income_sources')
         expect(remoteSources.length).toBe(1)
@@ -141,7 +141,7 @@ for (const mode of syncModes) {
         'GBP'
       )
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteSources = syncHelper.getMockRemoteData('income_sources')
         expect(remoteSources[0].currency).toBe('GBP')
@@ -167,7 +167,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator(`text=${incomeData.name}`)).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteSources = syncHelper.getMockRemoteData('income_sources')
         expect(remoteSources.length).toBe(0)
@@ -194,7 +194,7 @@ for (const mode of syncModes) {
 
       await expect(dashboardPage.getIncomeSourceByName('Dashboard Income')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteSources = syncHelper.getMockRemoteData('income_sources')
         expect(remoteSources.length).toBe(1)

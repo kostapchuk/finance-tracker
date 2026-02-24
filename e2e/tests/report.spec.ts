@@ -1,7 +1,7 @@
 import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { testAccounts, testCategories, testIncomeSources } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] Reports Page`, () => {
@@ -21,7 +21,7 @@ for (const mode of syncModes) {
       await expect(reportPage.getNoExpenseDataMessage()).toBeVisible()
       await expect(reportPage.getNoTransactionDataMessage()).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -49,7 +49,7 @@ for (const mode of syncModes) {
 
       await expect(reportPage.getIncomeAmount()).toContainText('2,500')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -77,7 +77,7 @@ for (const mode of syncModes) {
 
       await expect(reportPage.getExpensesAmount()).toContainText('150')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -114,7 +114,7 @@ for (const mode of syncModes) {
 
       await expect(reportPage.getNetFlowAmount()).toContainText('2,200')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -155,7 +155,7 @@ for (const mode of syncModes) {
       await expect(foodLegend).toBeVisible()
       await expect(transportLegend).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -193,7 +193,7 @@ for (const mode of syncModes) {
 
       await expect(reportPage.getTrendLegend()).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -208,7 +208,7 @@ for (const mode of syncModes) {
       const newMonthText = await reportPage.getCurrentMonthText().textContent()
       expect(newMonthText).not.toBe(currentMonthText)
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -224,7 +224,7 @@ for (const mode of syncModes) {
       const newMonthText = await reportPage.getCurrentMonthText().textContent()
       expect(newMonthText).not.toBe(prevMonthText)
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -253,7 +253,7 @@ for (const mode of syncModes) {
       await reportPage.goToPreviousMonth()
       await expect(reportPage.getIncomeAmount()).toContainText('0')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -279,7 +279,7 @@ for (const mode of syncModes) {
 
       await expect(reportPage.getTotalBalanceAmount()).toContainText('3,500')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })

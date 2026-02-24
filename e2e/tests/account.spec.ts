@@ -2,7 +2,7 @@ import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { AccountForm } from '../page-objects/components/account-form'
 import { testAccounts } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] Account Management`, () => {
@@ -30,7 +30,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=My Cash Wallet')).toBeVisible()
       await expect(page.locator('text=/500.*\\$/i')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteAccounts = syncHelper.getMockRemoteData('accounts')
         expect(remoteAccounts.length).toBe(1)
@@ -57,7 +57,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Euro Bank')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteAccounts = syncHelper.getMockRemoteData('accounts')
         expect(remoteAccounts.length).toBe(1)
@@ -79,7 +79,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=BTC Holdings')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteAccounts = syncHelper.getMockRemoteData('accounts')
         expect(remoteAccounts.length).toBe(1)
@@ -105,7 +105,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Visa Card')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteAccounts = syncHelper.getMockRemoteData('accounts')
         expect(remoteAccounts.length).toBe(1)
@@ -138,7 +138,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Updated Cash')).toBeVisible()
       await expect(page.locator('text=USD Cash')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteAccounts = syncHelper.getMockRemoteData('accounts')
         expect(remoteAccounts.length).toBe(1)
@@ -171,7 +171,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator(`text=${accountData.name}`)).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteAccounts = syncHelper.getMockRemoteData('accounts')
         expect(remoteAccounts.length).toBe(0)
@@ -200,7 +200,7 @@ for (const mode of syncModes) {
 
       await expect(dashboardPage.getAccountByName('Dashboard Test')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteAccounts = syncHelper.getMockRemoteData('accounts')
         expect(remoteAccounts.length).toBe(1)

@@ -1,7 +1,12 @@
 import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { testAccounts, testCategories, testIncomeSources } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = [
+  'sync-disabled',
+  'sync-disabled-offline',
+  'sync-enabled-online',
+  'sync-enabled-offline',
+]
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] Transaction Edit/Delete`, () => {
@@ -12,12 +17,14 @@ for (const mode of syncModes) {
     test('should edit income transaction amount from history', async ({
       page,
       historyPage,
+      reportPage,
       dbHelper,
       syncHelper,
       seedAccount,
+      seedIncomeSource,
     }) => {
       const accountId = await seedAccount(testAccounts.usdCash())
-      const incomeId = await dbHelper.seedIncomeSource(testIncomeSources.salary())
+      const incomeId = await seedIncomeSource(testIncomeSources.salary())
 
       await dbHelper.seedTransaction({
         type: 'income',
@@ -31,6 +38,7 @@ for (const mode of syncModes) {
       await dbHelper.updateAccountBalance(accountId, 2000)
       await dbHelper.refreshStoreData()
 
+      // Navigate and edit
       await historyPage.navigateTo('history')
       await historyPage.filterByType('income')
       await historyPage.clickTransactionByComment('Initial salary')
@@ -46,10 +54,25 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
+      // 1. Verify account balance updated
       const finalBalance = await dbHelper.getAccountBalance(accountId)
       expect(finalBalance).toBe(2500)
 
-      if (mode !== 'sync-disabled') {
+      // 2. Verify transaction still visible in history with updated amount
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('income')
+      await expect(historyPage.getTransactionByTitle('Salary')).toBeVisible()
+
+      // 3. Verify history page summary reflects updated income
+      const inflowsText = await historyPage.getInflowsAmount().textContent()
+      expect(inflowsText).toContain('1,500')
+
+      // 4. Verify report page shows updated income
+      await reportPage.navigateTo('report')
+      const incomeAmount = await reportPage.getIncomeAmount().textContent()
+      expect(incomeAmount).toContain('1,500')
+
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteTransactions = syncHelper.getMockRemoteData('transactions')
         expect(remoteTransactions.length).toBe(1)
@@ -60,6 +83,7 @@ for (const mode of syncModes) {
     test('should edit expense transaction comment', async ({
       page,
       historyPage,
+      reportPage,
       dbHelper,
       syncHelper,
       seedAccount,
@@ -79,6 +103,7 @@ for (const mode of syncModes) {
       await dbHelper.updateAccountBalance(accountId, 950)
       await dbHelper.refreshStoreData()
 
+      // Navigate and edit
       await historyPage.navigateTo('history')
       await historyPage.filterByType('expense')
       await historyPage.clickTransactionByComment('Old comment')
@@ -94,10 +119,20 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
+      // 1. Verify updated comment visible in history
       await expect(page.locator('text=Updated grocery shopping')).toBeVisible()
       await expect(page.locator('text=Old comment')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      // 2. Verify history page summary still shows expense
+      const outflowsText = await historyPage.getOutflowsAmount().textContent()
+      expect(outflowsText).toContain('50')
+
+      // 3. Verify report page shows expense
+      await reportPage.navigateTo('report')
+      const expensesAmount = await reportPage.getExpensesAmount().textContent()
+      expect(expensesAmount).toContain('50')
+
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteTransactions = syncHelper.getMockRemoteData('transactions')
         expect(remoteTransactions[0].comment).toBe('Updated grocery shopping')
@@ -107,6 +142,7 @@ for (const mode of syncModes) {
     test('should edit transfer transaction amounts for multi-currency', async ({
       page,
       historyPage,
+      reportPage,
       dbHelper,
       syncHelper,
       seedAccount,
@@ -128,6 +164,7 @@ for (const mode of syncModes) {
       await dbHelper.updateAccountBalance(eurAccountId, 2090)
       await dbHelper.refreshStoreData()
 
+      // Navigate and edit
       await historyPage.navigateTo('history')
       await historyPage.filterByType('transfers')
       await historyPage.clickTransactionByComment('Initial transfer')
@@ -145,12 +182,18 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
+      // 1. Verify both account balances updated
       const usdBalance = await dbHelper.getAccountBalance(usdAccountId)
       const eurBalance = await dbHelper.getAccountBalance(eurAccountId)
       expect(usdBalance).toBe(850)
       expect(eurBalance).toBe(2135)
 
-      if (mode !== 'sync-disabled') {
+      // 2. Verify transfer still visible in history
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('transfers')
+      await expect(historyPage.getTransactionByTitle('Initial transfer')).toBeVisible()
+
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteTransactions = syncHelper.getMockRemoteData('transactions')
         expect(remoteTransactions[0].amount).toBe(150)
@@ -160,6 +203,7 @@ for (const mode of syncModes) {
     test('should delete income transaction and reverse balance', async ({
       page,
       historyPage,
+      reportPage,
       dbHelper,
       syncHelper,
       seedAccount,
@@ -186,6 +230,7 @@ for (const mode of syncModes) {
         await dialog.accept()
       })
 
+      // Navigate and delete
       await historyPage.navigateTo('history')
       await historyPage.filterByType('income')
       await historyPage.clickTransactionByComment('To be deleted')
@@ -197,13 +242,30 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
+      // 1. Verify account balance reversed
       const finalBalance = await dbHelper.getAccountBalance(accountId)
       expect(finalBalance).toBe(1000)
 
+      // 2. Verify transaction count is 0
       const txCount = await dbHelper.getTransactionCount()
       expect(txCount).toBe(0)
 
-      if (mode !== 'sync-disabled') {
+      // 3. Verify transaction no longer in history
+      await historyPage.navigateTo('history')
+      await expect(historyPage.getTransactionByTitle('To be deleted')).not.toBeVisible()
+
+      // 4. Verify history page summary shows no income
+      await historyPage.navigateTo('history')
+      // Check for empty state or zero inflows
+      const inflowsText = await historyPage.getInflowsAmount().textContent()
+      expect(inflowsText).toContain('0')
+
+      // 5. Verify report page shows no income
+      await reportPage.navigateTo('report')
+      const incomeAmount = await reportPage.getIncomeAmount().textContent()
+      expect(incomeAmount).toContain('0')
+
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteTransactions = syncHelper.getMockRemoteData('transactions')
         expect(remoteTransactions.length).toBe(0)
@@ -213,6 +275,7 @@ for (const mode of syncModes) {
     test('should delete expense transaction and reverse balance', async ({
       page,
       historyPage,
+      reportPage,
       dbHelper,
       syncHelper,
       seedAccount,
@@ -239,6 +302,7 @@ for (const mode of syncModes) {
         await dialog.accept()
       })
 
+      // Navigate and delete
       await historyPage.navigateTo('history')
       await historyPage.filterByType('expense')
       await historyPage.clickTransactionByComment('Expense to delete')
@@ -250,10 +314,24 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
+      // 1. Verify account balance reversed
       const finalBalance = await dbHelper.getAccountBalance(accountId)
       expect(finalBalance).toBe(1000)
 
-      if (mode !== 'sync-disabled') {
+      // 2. Verify transaction no longer in history
+      await historyPage.navigateTo('history')
+      await expect(historyPage.getTransactionByTitle('Expense to delete')).not.toBeVisible()
+
+      // 3. Verify history page summary shows no expenses
+      const outflowsText = await historyPage.getOutflowsAmount().textContent()
+      expect(outflowsText).toContain('0')
+
+      // 4. Verify report page shows no expenses
+      await reportPage.navigateTo('report')
+      const expensesAmount = await reportPage.getExpensesAmount().textContent()
+      expect(expensesAmount).toContain('0')
+
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteTransactions = syncHelper.getMockRemoteData('transactions')
         expect(remoteTransactions.length).toBe(0)
@@ -263,6 +341,7 @@ for (const mode of syncModes) {
     test('should delete transfer and reverse both account balances', async ({
       page,
       historyPage,
+      reportPage,
       dbHelper,
       syncHelper,
       seedAccount,
@@ -288,6 +367,7 @@ for (const mode of syncModes) {
         await dialog.accept()
       })
 
+      // Navigate and delete
       await historyPage.navigateTo('history')
       await historyPage.filterByType('transfers')
       await historyPage.clickTransactionByComment('Transfer to delete')
@@ -299,12 +379,22 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
+      // 1. Verify both account balances reversed
       const usdFinal = await dbHelper.getAccountBalance(usdAccountId)
       const eurFinal = await dbHelper.getAccountBalance(eurAccountId)
       expect(usdFinal).toBe(1000)
       expect(eurFinal).toBe(2000)
 
-      if (mode !== 'sync-disabled') {
+      // 2. Verify transfer no longer in history
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('transfers')
+      await expect(historyPage.getTransactionByTitle('Transfer to delete')).not.toBeVisible()
+
+      // 3. Verify transaction count is 0
+      const txCount = await dbHelper.getTransactionCount()
+      expect(txCount).toBe(0)
+
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteTransactions = syncHelper.getMockRemoteData('transactions')
         expect(remoteTransactions.length).toBe(0)
@@ -338,6 +428,7 @@ for (const mode of syncModes) {
       await dbHelper.updateAccountBalance(accountId, 1500)
       await dbHelper.refreshStoreData()
 
+      // Navigate and edit
       await historyPage.navigateTo('history')
       await historyPage.filterByType('income')
       await historyPage.clickTransactionByComment('Offline edit test')
@@ -353,17 +444,112 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
+      // 1. Capture state before going online
+      const balanceBeforeOnline = await dbHelper.getAccountBalance(accountId)
+      const txCountBeforeOnline = await dbHelper.getTransactionCount()
+
+      // 2. Verify sync queue has pending items
       const queueCount = await syncHelper.getSyncQueueCount()
       expect(queueCount).toBeGreaterThan(0)
 
+      // 3. Go online and verify sync completes
       await syncHelper.goOnline()
       await syncHelper.waitForSyncToComplete()
 
       const finalQueueCount = await syncHelper.getSyncQueueCount()
       expect(finalQueueCount).toBe(0)
 
+      // 4. Reload page and verify data persists
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+
+      // 5. Verify balance unchanged after reload
+      const balanceAfterReload = await dbHelper.getAccountBalance(accountId)
+      expect(balanceAfterReload).toBe(balanceBeforeOnline)
+
+      // 6. Verify transaction count unchanged
+      const txCountAfterReload = await dbHelper.getTransactionCount()
+      expect(txCountAfterReload).toBe(txCountBeforeOnline)
+
+      // 7. Verify transaction still in history with updated amount
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('income')
+      await expect(historyPage.getTransactionByTitle('Salary')).toBeVisible()
+
+      // 8. Verify remote data
       const remoteTransactions = syncHelper.getMockRemoteData('transactions')
       expect(remoteTransactions[0].amount).toBe(750)
+    })
+
+    test('should persist edited transaction in offline mode without sync', async ({
+      page,
+      historyPage,
+      dbHelper,
+      seedAccount,
+    }) => {
+      if (mode !== 'sync-disabled-offline') {
+        test.skip()
+        return
+      }
+
+      const accountId = await seedAccount(testAccounts.usdCash())
+      const incomeId = await dbHelper.seedIncomeSource(testIncomeSources.salary())
+
+      await dbHelper.seedTransaction({
+        type: 'income',
+        amount: 400,
+        currency: 'USD',
+        accountId,
+        incomeSourceId: incomeId,
+        date: new Date(),
+        comment: 'Offline no sync edit',
+      })
+      await dbHelper.updateAccountBalance(accountId, 1400)
+      await dbHelper.refreshStoreData()
+
+      // Navigate and edit
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('income')
+      await historyPage.clickTransactionByComment('Offline no sync edit')
+      await page.waitForTimeout(300)
+
+      const amountInput = page.locator('input[inputmode="decimal"]').first()
+      await amountInput.click()
+      await amountInput.fill('600')
+
+      await page
+        .locator('button')
+        .filter({ hasText: /update|обновить/i })
+        .click()
+      await page.waitForTimeout(500)
+
+      // 1. Capture state before reload
+      const balanceBeforeReload = await dbHelper.getAccountBalance(accountId)
+      const txCountBeforeReload = await dbHelper.getTransactionCount()
+
+      // 2. Verify transaction in history
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('income')
+      await expect(historyPage.getTransactionByTitle('Salary')).toBeVisible()
+
+      // 3. Reload page and verify data persists
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+
+      // 4. Verify balance unchanged after reload
+      const balanceAfterReload = await dbHelper.getAccountBalance(accountId)
+      expect(balanceAfterReload).toBe(balanceBeforeReload)
+
+      // 5. Verify transaction count unchanged
+      const txCountAfterReload = await dbHelper.getTransactionCount()
+      expect(txCountAfterReload).toBe(txCountBeforeReload)
+
+      // 6. Verify transaction still in history
+      await historyPage.navigateTo('history')
+      await historyPage.filterByType('income')
+      await expect(historyPage.getTransactionByTitle('Salary')).toBeVisible()
     })
 
     test('should delete transaction with temp ID (offline-created transaction)', async ({
@@ -377,7 +563,7 @@ for (const mode of syncModes) {
       // This test is specifically for the bug fix where temp ID transactions couldn't be deleted
       // We only test in sync-disabled mode to avoid interference from sync logic
       // The core fix is in the delete function which handles temp IDs regardless of sync state
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         test.skip()
         return
       }
@@ -459,13 +645,17 @@ for (const mode of syncModes) {
         .click()
       await page.waitForTimeout(500)
 
-      // Verify transaction was deleted locally
+      // 1. Verify transaction was deleted locally
       const txCountAfterDelete = await dbHelper.getTransactionCount()
       expect(txCountAfterDelete).toBe(0)
 
-      // Verify account balance was reversed
+      // 2. Verify account balance was reversed
       const finalBalance = await dbHelper.getAccountBalance(accountId)
       expect(finalBalance).toBe(1000)
+
+      // 3. Verify transaction no longer in history
+      await historyPage.navigateTo('history')
+      await expect(historyPage.getTransactionByTitle('Temp ID transaction')).not.toBeVisible()
     })
 
     test('should show newly created offline transaction in history', async ({
@@ -477,7 +667,7 @@ for (const mode of syncModes) {
       seedAccount,
       seedCategory,
     }) => {
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         test.skip()
         return
       }
@@ -553,7 +743,7 @@ for (const mode of syncModes) {
       seedAccount,
       seedCategory,
     }) => {
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         test.skip()
         return
       }
@@ -633,6 +823,7 @@ for (const mode of syncModes) {
 
     test('should sync temp ID transaction when coming online', async ({
       page,
+      historyPage,
       dbHelper,
       syncHelper,
       seedAccount,
@@ -657,11 +848,9 @@ for (const mode of syncModes) {
             request.onsuccess = () => resolve(request.result)
             request.onerror = () => reject(request.error)
           })
-          const now = new Date()
-
-          // Add transaction with temp ID
           const tx = db.transaction('transactions', 'readwrite')
           const store = tx.objectStore('transactions')
+          const now = new Date()
           await new Promise<void>((resolve, reject) => {
             const addRequest = store.add({
               id: tempId,
@@ -670,28 +859,6 @@ for (const mode of syncModes) {
               userId: 'test-user-id',
               createdAt: now,
               updatedAt: now,
-            })
-            addRequest.onsuccess = () => resolve()
-            addRequest.onerror = () => reject(addRequest.error)
-          })
-
-          // Add sync queue entry (this is what the repository does when offline)
-          const queueTx = db.transaction('syncQueue', 'readwrite')
-          const queueStore = queueTx.objectStore('syncQueue')
-          await new Promise<void>((resolve, reject) => {
-            const addRequest = queueStore.add({
-              operation: 'create',
-              entity: 'transactions',
-              recordId: tempId,
-              data: {
-                ...transactionData,
-                date: new Date().toISOString(),
-                userId: 'test-user-id',
-                createdAt: now.toISOString(),
-                updatedAt: now.toISOString(),
-              },
-              createdAt: now,
-              attempts: 0,
             })
             addRequest.onsuccess = () => {
               db.close()
@@ -706,42 +873,160 @@ for (const mode of syncModes) {
         {
           transactionData: {
             type: 'expense',
-            amount: 100,
+            amount: 80,
             currency: 'USD',
             accountId,
             categoryId: catId,
-            comment: 'Sync test',
+            comment: 'Sync temp ID test',
           },
           tempId,
         }
       )
 
-      await dbHelper.updateAccountBalance(accountId, 900)
+      // Update account balance
+      await dbHelper.updateAccountBalance(accountId, 920)
+      await dbHelper.refreshStoreData()
 
-      // Verify we have 1 transaction with temp ID
-      const countBeforeSync = await dbHelper.getTransactionCount()
-      expect(countBeforeSync).toBe(1)
+      // 1. Verify transaction was created
+      const txCountAfterCreate = await dbHelper.getTransactionCount()
+      expect(txCountAfterCreate).toBe(1)
 
-      // Verify sync queue has 1 item
-      const queueCountBeforeSync = await syncHelper.getSyncQueueCount()
-      expect(queueCountBeforeSync).toBe(1)
+      // 2. Navigate to history and verify it's visible
+      await historyPage.navigateTo('history')
+      await expect(page.locator('text=Sync temp ID test')).toBeVisible({ timeout: 5000 })
 
-      // Go online - this will sync the created transaction
+      // 3. Capture state before going online
+      const balanceBeforeOnline = await dbHelper.getAccountBalance(accountId)
+      const txCountBeforeOnline = await dbHelper.getTransactionCount()
+
+      // 4. Verify sync queue has pending items
+      const queueCount = await syncHelper.getSyncQueueCount()
+      expect(queueCount).toBeGreaterThan(0)
+
+      // 5. Go online and verify sync completes
       await syncHelper.goOnline()
-      await syncHelper.waitForSyncToComplete(10000)
+      await syncHelper.waitForSyncToComplete()
 
-      // Verify sync queue is empty
-      const queueCountAfterSync = await syncHelper.getSyncQueueCount()
-      expect(queueCountAfterSync).toBe(0)
+      const finalQueueCount = await syncHelper.getSyncQueueCount()
+      expect(finalQueueCount).toBe(0)
 
-      // Verify we still have exactly 1 transaction (not duplicated!)
-      const countAfterSync = await dbHelper.getTransactionCount()
-      expect(countAfterSync).toBe(1)
+      // 6. Reload page and verify data persists
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
 
-      // Verify remote has the transaction
+      // 7. Verify balance unchanged after reload
+      const balanceAfterReload = await dbHelper.getAccountBalance(accountId)
+      expect(balanceAfterReload).toBe(balanceBeforeOnline)
+
+      // 8. Verify transaction count unchanged
+      const txCountAfterReload = await dbHelper.getTransactionCount()
+      expect(txCountAfterReload).toBe(txCountBeforeOnline)
+
+      // 9. Verify transaction still in history
+      await historyPage.navigateTo('history')
+      await expect(page.locator('text=Sync temp ID test')).toBeVisible({ timeout: 5000 })
+
+      // 10. Verify remote data
       const remoteTransactions = syncHelper.getMockRemoteData('transactions')
       expect(remoteTransactions.length).toBe(1)
-      expect(remoteTransactions[0].comment).toBe('Sync test')
+      expect(remoteTransactions[0].amount).toBe(80)
+      expect(remoteTransactions[0].comment).toBe('Sync temp ID test')
+    })
+
+    test('should persist temp ID transaction in offline mode without sync', async ({
+      page,
+      historyPage,
+      dbHelper,
+      seedAccount,
+      seedCategory,
+    }) => {
+      if (mode !== 'sync-disabled-offline') {
+        test.skip()
+        return
+      }
+
+      const accountId = await seedAccount(testAccounts.usdCash())
+      const catId = await seedCategory(testCategories.food())
+      await dbHelper.refreshStoreData()
+
+      // Create a transaction with a temp ID (simulating offline creation)
+      const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+
+      await page.evaluate(
+        async ({ transactionData, tempId }) => {
+          const request = indexedDB.open('FinanceTrackerCache')
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result)
+            request.onerror = () => reject(request.error)
+          })
+          const tx = db.transaction('transactions', 'readwrite')
+          const store = tx.objectStore('transactions')
+          const now = new Date()
+          await new Promise<void>((resolve, reject) => {
+            const addRequest = store.add({
+              id: tempId,
+              ...transactionData,
+              date: new Date(),
+              userId: 'test-user-id',
+              createdAt: now,
+              updatedAt: now,
+            })
+            addRequest.onsuccess = () => {
+              db.close()
+              resolve()
+            }
+            addRequest.onerror = () => {
+              db.close()
+              reject(addRequest.error)
+            }
+          })
+        },
+        {
+          transactionData: {
+            type: 'expense',
+            amount: 65,
+            currency: 'USD',
+            accountId,
+            categoryId: catId,
+            comment: 'Offline no sync temp ID',
+          },
+          tempId,
+        }
+      )
+
+      // Update account balance
+      await dbHelper.updateAccountBalance(accountId, 935)
+      await dbHelper.refreshStoreData()
+
+      // 1. Verify transaction was created
+      const txCountAfterCreate = await dbHelper.getTransactionCount()
+      expect(txCountAfterCreate).toBe(1)
+
+      // 2. Navigate to history and verify it's visible
+      await historyPage.navigateTo('history')
+      await expect(page.locator('text=Offline no sync temp ID')).toBeVisible({ timeout: 5000 })
+
+      // 3. Capture state before reload
+      const balanceBeforeReload = await dbHelper.getAccountBalance(accountId)
+      const txCountBeforeReload = await dbHelper.getTransactionCount()
+
+      // 4. Reload page and verify data persists
+      await page.reload()
+      await page.waitForLoadState('networkidle')
+      await page.waitForSelector('nav', { state: 'visible', timeout: 10000 })
+
+      // 5. Verify balance unchanged after reload
+      const balanceAfterReload = await dbHelper.getAccountBalance(accountId)
+      expect(balanceAfterReload).toBe(balanceBeforeReload)
+
+      // 6. Verify transaction count unchanged
+      const txCountAfterReload = await dbHelper.getTransactionCount()
+      expect(txCountAfterReload).toBe(txCountBeforeReload)
+
+      // 7. Verify transaction still in history
+      await historyPage.navigateTo('history')
+      await expect(page.locator('text=Offline no sync temp ID')).toBeVisible({ timeout: 5000 })
     })
   })
 }

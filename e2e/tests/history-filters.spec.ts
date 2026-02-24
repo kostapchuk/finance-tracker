@@ -1,7 +1,7 @@
 import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { testAccounts, testCategories, testIncomeSources } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] History Page - Advanced Filters`, () => {
@@ -61,7 +61,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Cash purchase')).toBeVisible()
       await expect(page.locator('text=Card purchase')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -106,7 +106,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Groceries')).toBeVisible()
       await expect(page.locator('text=Bus ticket')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -145,7 +145,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Today expense')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -174,7 +174,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Monthly expense')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -217,7 +217,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Date range test')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -256,7 +256,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Coffee at Starbucks')).toBeVisible()
       await expect(page.locator('text=Uber to airport')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -306,7 +306,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=From savings')).toBeVisible()
       await expect(page.locator('text=From wallet')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -353,7 +353,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Food expense')).toBeVisible()
       await expect(page.locator('text=Salary income')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -397,7 +397,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Income transaction')).toBeVisible()
       await expect(page.locator('text=Expense transaction')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })

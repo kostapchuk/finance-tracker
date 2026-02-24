@@ -1,58 +1,58 @@
-import type { AccountType, CategoryType, LoanType, TransactionType } from '../../src/database/types';
+import type { AccountType, CategoryType, LoanType, TransactionType } from '../../src/database/types'
 
 export interface TestAccount {
-  name: string;
-  type: AccountType;
-  currency: string;
-  balance: number;
-  color: string;
-  icon: string;
-  sortOrder: number;
+  name: string
+  type: AccountType
+  currency: string
+  balance: number
+  color: string
+  icon: string
+  sortOrder: number
 }
 
 export interface TestCategory {
-  name: string;
-  color: string;
-  icon: string;
-  categoryType: CategoryType;
-  budget?: number;
-  budgetPeriod?: 'weekly' | 'monthly' | 'yearly';
-  sortOrder: number;
+  name: string
+  color: string
+  icon: string
+  categoryType: CategoryType
+  budget?: number
+  budgetPeriod?: 'weekly' | 'monthly' | 'yearly'
+  sortOrder: number
 }
 
 export interface TestIncomeSource {
-  name: string;
-  currency: string;
-  color: string;
-  icon: string;
-  sortOrder: number;
+  name: string
+  currency: string
+  color: string
+  icon: string
+  sortOrder: number
 }
 
 export interface TestLoan {
-  type: LoanType;
-  personName: string;
-  description: string;
-  amount: number;
-  currency: string;
-  paidAmount: number;
-  status: 'active' | 'partially_paid' | 'fully_paid';
-  accountId: number;
-  dueDate?: Date;
+  type: LoanType
+  personName: string
+  description: string
+  amount: number
+  currency: string
+  paidAmount: number
+  status: 'active' | 'partially_paid' | 'fully_paid'
+  accountId: string
+  dueDate?: Date
 }
 
 export interface TestTransaction {
-  type: TransactionType;
-  amount: number;
-  currency: string;
-  date?: Date;
-  comment?: string;
-  incomeSourceId?: number;
-  categoryId?: number;
-  accountId?: number;
-  toAccountId?: number;
-  toAmount?: number;
-  loanId?: number;
-  mainCurrencyAmount?: number;
+  type: TransactionType
+  amount: number
+  currency: string
+  date?: Date
+  comment?: string
+  incomeSourceId?: string
+  categoryId?: string
+  accountId?: string
+  toAccountId?: string
+  toAmount?: number
+  loanId?: string
+  mainCurrencyAmount?: number
 }
 
 export const testAccounts = {
@@ -92,7 +92,7 @@ export const testAccounts = {
     icon: 'credit-card',
     sortOrder: 3,
   }),
-};
+}
 
 export const testCategories = {
   food: (): TestCategory => ({
@@ -120,7 +120,7 @@ export const testCategories = {
     budgetPeriod: 'weekly',
     sortOrder: 2,
   }),
-};
+}
 
 export const testIncomeSources = {
   salary: (): TestIncomeSource => ({
@@ -137,10 +137,10 @@ export const testIncomeSources = {
     icon: 'laptop',
     sortOrder: 1,
   }),
-};
+}
 
 export const testLoans = {
-  givenToJohn: (accountId: number): TestLoan => ({
+  givenToJohn: (accountId: string): TestLoan => ({
     type: 'given',
     personName: 'John Doe',
     description: 'Borrowed for vacation',
@@ -150,7 +150,7 @@ export const testLoans = {
     status: 'active',
     accountId,
   }),
-  receivedFromJane: (accountId: number): TestLoan => ({
+  receivedFromJane: (accountId: string): TestLoan => ({
     type: 'received',
     personName: 'Jane Smith',
     description: 'Personal loan',
@@ -160,7 +160,7 @@ export const testLoans = {
     status: 'active',
     accountId,
   }),
-  eurLoan: (accountId: number): TestLoan => ({
+  eurLoan: (accountId: string): TestLoan => ({
     type: 'given',
     personName: 'Pierre',
     description: 'EUR loan from USD account',
@@ -170,4 +170,4 @@ export const testLoans = {
     status: 'active',
     accountId,
   }),
-};
+}

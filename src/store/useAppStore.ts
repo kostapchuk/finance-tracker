@@ -12,8 +12,6 @@ import { settingsRepo } from '@/database/repositories'
 import { syncService } from '@/database/syncService'
 import { isSupabaseConfigured } from '@/lib/supabase'
 
-let isInitializing = false
-
 interface MigrationState {
   showMigrationDialog: boolean
   isMigrating: boolean
@@ -26,6 +24,7 @@ interface AppState {
   mainCurrency: string
   blurFinancialFigures: boolean
   isLoading: boolean
+  isInitializing: boolean
   loadedEntities: Set<string>
   migration: MigrationState
   activeView: 'dashboard' | 'history' | 'loans' | 'report' | 'settings'
@@ -55,6 +54,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   mainCurrency: 'BYN',
   blurFinancialFigures: false,
   isLoading: true,
+  isInitializing: false,
   loadedEntities: new Set([
     'accounts',
     'incomeSources',
@@ -94,10 +94,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   loadAllData: async () => {
+    const { isInitializing } = get()
     if (isInitializing) return
-    isInitializing = true
-
-    set({ isLoading: true })
+    set({ isInitializing: true, isLoading: true })
 
     try {
       const settings = await settingsRepo.get()
@@ -123,6 +122,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         mainCurrency,
         blurFinancialFigures,
         isLoading: false,
+        isInitializing: false,
         onboardingStep: onboardingCompleted ? 0 : 0,
         migration: {
           showMigrationDialog: false,
@@ -134,9 +134,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       })
     } catch (error) {
       console.error('Failed to load data:', error)
-      set({ isLoading: false })
-    } finally {
-      isInitializing = false
+      set({ isLoading: false, isInitializing: false })
     }
   },
 

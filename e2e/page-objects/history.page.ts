@@ -6,6 +6,25 @@ export class HistoryPage extends BasePage {
     super(page)
   }
 
+  // Period Summary section
+  getNetAmount(): Locator {
+    return this.page.locator('.bg-secondary\\/50.rounded-2xl.text-center').locator('.font-bold')
+  }
+
+  getInflowsAmount(): Locator {
+    return this.page
+      .locator('.grid-cols-2 .bg-secondary\\/50.rounded-2xl')
+      .filter({ has: this.page.locator('.text-success') })
+      .locator('.font-bold')
+  }
+
+  getOutflowsAmount(): Locator {
+    return this.page
+      .locator('.grid-cols-2 .bg-secondary\\/50.rounded-2xl')
+      .filter({ has: this.page.locator('.text-destructive') })
+      .locator('.font-bold')
+  }
+
   getTransactions(): Locator {
     return this.page
       .locator('button.p-3.bg-secondary\\/50.rounded-xl, button[class*="rounded-xl"]')

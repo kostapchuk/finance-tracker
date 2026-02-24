@@ -1,7 +1,11 @@
 import type { Page, Route } from '@playwright/test'
 import { mockStorage } from '../mocks/mock-storage'
 
-export type SyncMode = 'sync-disabled' | 'sync-enabled-online' | 'sync-enabled-offline'
+export type SyncMode =
+  | 'sync-disabled'
+  | 'sync-disabled-offline'
+  | 'sync-enabled-online'
+  | 'sync-enabled-offline'
 
 interface SyncHelperOptions {
   page: Page
@@ -25,6 +29,18 @@ export class SyncHelper {
     this.dbHelper = options.dbHelper
   }
 
+  setMode(mode: SyncMode): void {
+    this.mode = mode
+  }
+
+  getMode(): SyncMode {
+    return this.mode
+  }
+
+  isOfflineMode(): boolean {
+    return this.isOffline
+  }
+
   async configureMode(mode: SyncMode): Promise<void> {
     this.mode = mode
 
@@ -32,14 +48,17 @@ export class SyncHelper {
     mockStorage.setUserId(userId)
     mockStorage.clearForUser()
 
-    if (mode === 'sync-disabled') {
+    // Handle sync-disabled modes (both online and offline)
+    if (mode === 'sync-disabled' || mode === 'sync-disabled-offline') {
       await this.page.evaluate(() => {
         localStorage.setItem('finance-tracker-cloud-unlocked', 'false')
         ;(
           globalThis as unknown as { __TEST_SUPABASE_CONFIGURED__?: boolean }
         ).__TEST_SUPABASE_CONFIGURED__ = false
       })
+      // Don't go offline here - seed functions will handle that
     } else {
+      // Handle sync-enabled modes
       await this.page.evaluate(() => {
         localStorage.setItem('finance-tracker-cloud-unlocked', 'true')
         ;(
@@ -51,6 +70,7 @@ export class SyncHelper {
         await this.setupRouteInterception()
         this.routesSetup = true
       }
+      // Don't go offline here - seed functions will handle that
     }
   }
 
@@ -226,9 +246,10 @@ export class SyncHelper {
     await route.fulfill({ status: success ? 200 : 404, body: success ? '{}' : 'Not found' })
   }
 
-  private extractIdFromPath(path: string): number | null {
-    const match = path.match(/id=eq\.(\d+)/)
-    return match ? parseInt(match[1], 10) : null
+  private extractIdFromPath(path: string): string | null {
+    // Handle both numeric IDs and UUID strings
+    const match = path.match(/id=eq\.([a-f0-9-]+)/i)
+    return match ? match[1] : null
   }
 
   async goOffline(): Promise<void> {
@@ -248,7 +269,11 @@ export class SyncHelper {
   }
 
   async waitForSyncToComplete(timeout = 5000): Promise<void> {
-    if (this.mode === 'sync-disabled') return
+    // Skip for sync-disabled modes (both online and offline)
+    if (this.mode === 'sync-disabled' || this.mode === 'sync-disabled-offline') return
+
+    // Skip if offline - sync can't complete without network
+    if (this.isOffline) return
 
     const startTime = Date.now()
     while (Date.now() - startTime < timeout) {
@@ -288,10 +313,6 @@ export class SyncHelper {
         request.onerror = () => reject(request.error)
       })
     })
-  }
-
-  getMode(): SyncMode {
-    return this.mode
   }
 
   getMockRemoteData(

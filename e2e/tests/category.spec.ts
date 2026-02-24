@@ -2,7 +2,7 @@ import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { CategoryForm } from '../page-objects/components/category-form'
 import { testCategories } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] Category Management`, () => {
@@ -22,7 +22,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Shopping')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories.length).toBe(1)
@@ -48,7 +48,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Transportation')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories.length).toBe(1)
@@ -75,7 +75,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Entertainment')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories[0].budgetPeriod).toBe('weekly')
@@ -100,7 +100,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Vacation')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories[0].budgetPeriod).toBe('yearly')
@@ -131,7 +131,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Food & Dining')).toBeVisible()
       await expect(page.locator('p.font-medium:text-is("Food")')).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories.length).toBe(1)
@@ -159,7 +159,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator(`text=${categoryData.name}`)).not.toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories.length).toBe(0)
@@ -185,7 +185,7 @@ for (const mode of syncModes) {
 
       await expect(dashboardPage.getCategoryByName('Test Category')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories.length).toBe(1)

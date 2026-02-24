@@ -11,6 +11,39 @@ export class LoanForm {
     return this.getDialog().isVisible()
   }
 
+  /**
+   * Wait for accounts to load in the form.
+   * The account dropdown should show an account name, not be empty.
+   */
+  async waitForAccountsToLoad(): Promise<void> {
+    // First wait for the dialog to be visible
+    await this.getDialog().waitFor({ state: 'visible', timeout: 5000 })
+
+    // Wait for the account select specifically (it's after the type select)
+    await this.page.waitForFunction(
+      () => {
+        // Find the account section by looking for label text
+        const dialog = document.querySelector('[role="dialog"]')
+        if (!dialog) return false
+
+        // Find all buttons with border class in the dialog
+        const buttons = dialog.querySelectorAll('button[class*="border"]')
+        // The account select should be the second or third button
+        // Check each button for account-like text
+        for (const button of buttons) {
+          const text = button.textContent || ''
+          // Account text should have currency in parentheses like "USD Cash (USD)"
+          if (text.includes('(') && text.includes(')') && text.length > 5) {
+            return true
+          }
+        }
+        return false
+      },
+      { timeout: 10000 }
+    )
+    await this.page.waitForTimeout(500)
+  }
+
   getTypeSelect(): Locator {
     return this.getDialog()
       .locator('div.space-y-2')
@@ -81,8 +114,10 @@ export class LoanForm {
     }
     await select.click()
     await this.page.waitForTimeout(200)
-    await this.page.locator('[role="option"]').first().waitFor({ state: 'visible', timeout: 3000 })
-    await this.page.locator('[role="option"]').filter({ hasText: accountName }).click()
+    // Wait for dropdown content to be visible with options
+    const dropdown = this.page.locator('.bg-popover:visible')
+    await dropdown.waitFor({ state: 'visible', timeout: 5000 })
+    await dropdown.locator('[role="option"]').filter({ hasText: accountName }).click()
     await this.page.waitForTimeout(200)
   }
 

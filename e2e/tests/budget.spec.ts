@@ -2,7 +2,7 @@ import { test, expect, type SyncMode } from '../fixtures/test-base'
 import { CategoryForm } from '../page-objects/components/category-form'
 import { testAccounts } from '../fixtures/test-data'
 
-const syncModes: SyncMode[] = ['sync-disabled', 'sync-enabled-online', 'sync-enabled-offline']
+const syncModes: SyncMode[] = ['sync-disabled', 'sync-disabled-offline', 'sync-enabled-online', 'sync-enabled-offline']
 
 for (const mode of syncModes) {
   test.describe(`[${mode}] Budget Tracking`, () => {
@@ -33,7 +33,7 @@ for (const mode of syncModes) {
       const budgetInput = page.locator('input[type="number"], input[inputmode="decimal"]').first()
       await expect(budgetInput).toHaveValue('500')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories[0].budget).toBe(500)
@@ -58,7 +58,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Coffee')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories[0].budgetPeriod).toBe('weekly')
@@ -83,7 +83,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Vacation')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories[0].budgetPeriod).toBe('yearly')
@@ -120,7 +120,7 @@ for (const mode of syncModes) {
       const budgetInput = page.locator('input[type="number"], input[inputmode="decimal"]').first()
       await expect(budgetInput).toHaveValue('350')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories[0].budget).toBe(350)
@@ -155,7 +155,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Dining Out')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories[0].budgetPeriod).toBe('weekly')
@@ -201,7 +201,7 @@ for (const mode of syncModes) {
       const categoryTile = dashboardPage.getCategoryByName('Shopping')
       await expect(categoryTile).toContainText('250')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -259,7 +259,7 @@ for (const mode of syncModes) {
       await expect(groceriesLegend).toContainText('300')
       await expect(transportLegend).toContainText('75')
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -276,7 +276,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Miscellaneous')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -309,7 +309,7 @@ for (const mode of syncModes) {
 
       await expect(page.locator('text=Subscriptions')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
       }
     })
@@ -346,7 +346,7 @@ for (const mode of syncModes) {
       await expect(page.locator('text=Groceries')).toBeVisible()
       await expect(page.locator('text=Insurance')).toBeVisible()
 
-      if (mode !== 'sync-disabled') {
+      if (mode.startsWith('sync-enabled')) {
         await syncHelper.waitForSyncToComplete()
         const remoteCategories = syncHelper.getMockRemoteData('categories')
         expect(remoteCategories.length).toBe(3)

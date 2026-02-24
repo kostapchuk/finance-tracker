@@ -16,6 +16,19 @@ import { queryClient } from '@/lib/queryClient'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
 
+// Helper function to update React Query cache immediately
+async function refreshLoansCache() {
+  queryClient.setQueryData(['loans'], await loanRepo.getAll())
+}
+
+async function refreshAccountsCache() {
+  queryClient.setQueryData(['accounts'], await accountRepo.getAll())
+}
+
+async function refreshTransactionsCache() {
+  queryClient.setQueryData(['transactions'], await transactionRepo.getAll())
+}
+
 export function LoansPage() {
   const { data: loans = [] } = useLoans()
   const { data: accounts = [] } = useAccounts()
@@ -168,8 +181,8 @@ export function LoansPage() {
         dueDate: data.dueDate,
       })
 
-      // Only refetch loans - accounts/transactions will refresh when user navigates
-      await queryClient.invalidateQueries({ queryKey: ['loans'] })
+      // Update React Query cache immediately (works offline)
+      await Promise.all([refreshLoansCache(), refreshAccountsCache(), refreshTransactionsCache()])
     } else {
       const newLoanId = await loanRepo.create({
         type: data.type,
@@ -202,8 +215,8 @@ export function LoansPage() {
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })
 
-      // Only refetch loans - accounts/transactions will refresh when user navigates to those pages
-      await queryClient.invalidateQueries({ queryKey: ['loans'] })
+      // Update React Query cache immediately (works offline)
+      await Promise.all([refreshLoansCache(), refreshAccountsCache(), refreshTransactionsCache()])
     }
   }
 
