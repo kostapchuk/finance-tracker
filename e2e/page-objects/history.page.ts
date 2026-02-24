@@ -120,6 +120,18 @@ export class HistoryPage extends BasePage {
     return (await amountEl.textContent()) ?? ''
   }
 
+  getTransactionAmountByTitle(title: string): Locator {
+    return this.getTransactionByTitle(title).locator('.font-mono.font-semibold').first()
+  }
+
+  getTransactionAccountByTitle(title: string): Locator {
+    return this.getTransactionByTitle(title).locator('.text-xs.text-muted-foreground').first()
+  }
+
+  getTransactionDetails(title: string): Locator {
+    return this.getTransactionByTitle(title).first()
+  }
+
   getDateGroups(): Locator {
     return this.page.locator('h3.text-sm.font-semibold.text-muted-foreground, h3.sticky')
   }

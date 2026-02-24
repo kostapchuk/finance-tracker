@@ -23,6 +23,18 @@ export class DashboardPage extends BasePage {
       .first()
   }
 
+  getIncomeSectionTotal(): Locator {
+    return this.getIncomeSection().locator('.font-semibold.text-foreground')
+  }
+
+  getIncomeSourceAmount(name: string): Locator {
+    const shortName = name.substring(0, 8)
+    return this.getIncomeSection()
+      .locator('button')
+      .filter({ hasText: new RegExp(shortName, 'i') })
+      .first()
+  }
+
   // Accounts section - dnd-kit doesn't render ids to DOM, use section-based locators
   getAccountsSection(): Locator {
     return this.page.locator('section').filter({ hasText: /^ACCOUNTS/i })
