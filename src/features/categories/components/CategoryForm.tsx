@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ColorPicker } from '@/components/ui/color-picker'
@@ -22,6 +22,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { categoryRepo } from '@/database/repositories'
 import type { Category } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
 
@@ -42,7 +43,7 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
   const [budgetPeriod, setBudgetPeriod] = useState<'monthly' | 'weekly' | 'yearly'>('monthly')
   const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
-  useEffect(() => {
+  useResetOnChange([category, open], () => {
     if (category) {
       setName(category.name)
       setColor(category.color)
@@ -56,7 +57,7 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
       setBudgetPeriod('monthly')
       setHiddenFromDashboard(false)
     }
-  }, [category, open])
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

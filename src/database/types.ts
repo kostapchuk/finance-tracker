@@ -1,12 +1,7 @@
 export type AccountType = 'cash' | 'bank' | 'crypto' | 'credit_card'
 
 export type TransactionType =
-  | 'income'
-  | 'expense'
-  | 'transfer'
-  | 'loan_given'
-  | 'loan_received'
-  | 'loan_payment'
+  'income' | 'expense' | 'transfer' | 'loan_given' | 'loan_received' | 'loan_payment'
 
 export type LoanType = 'given' | 'received'
 export type LoanStatus = 'active' | 'partially_paid' | 'fully_paid'
