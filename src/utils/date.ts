@@ -27,6 +27,17 @@ export function getStartOfMonth(date: Date = new Date()): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
 
+/**
+ * Steps `date` by `offset` months, anchored to the 1st.
+ *
+ * Using Date#setMonth directly overflows when the source day does not exist in
+ * the target month (e.g. Jul 31 minus one month becomes "Jun 31" -> Jul 1), so
+ * month navigation from a 31st could land back on the month it started from.
+ */
+export function addMonths(date: Date, offset: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + offset, 1)
+}
+
 export function getEndOfMonth(date: Date = new Date()): Date {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999)
 }

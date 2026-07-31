@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
+import { addMonths } from '@/utils/date'
 
 export function MonthSelector() {
   const selectedMonth = useAppStore((state) => state.selectedMonth)
@@ -9,15 +10,11 @@ export function MonthSelector() {
   const { language } = useLanguage()
 
   const goToPreviousMonth = () => {
-    const newDate = new Date(selectedMonth)
-    newDate.setMonth(newDate.getMonth() - 1)
-    setSelectedMonth(newDate)
+    setSelectedMonth(addMonths(selectedMonth, -1))
   }
 
   const goToNextMonth = () => {
-    const newDate = new Date(selectedMonth)
-    newDate.setMonth(newDate.getMonth() + 1)
-    setSelectedMonth(newDate)
+    setSelectedMonth(addMonths(selectedMonth, 1))
   }
 
   const formatMonth = (date: Date) => {

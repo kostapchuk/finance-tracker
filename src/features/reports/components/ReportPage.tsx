@@ -7,7 +7,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { formatCurrency, formatCurrencyWithSign, getAmountColorClass } from '@/utils/currency'
-import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
+import { getStartOfMonth, getEndOfMonth, addMonths } from '@/utils/date'
 
 export function ReportPage() {
   const accounts = useAppStore((state) => state.accounts)
@@ -96,8 +96,7 @@ export function ReportPage() {
 
     // Get last 6 months
     for (let i = 5; i >= 0; i--) {
-      const date = new Date(selectedMonth)
-      date.setMonth(date.getMonth() - i)
+      const date = addMonths(selectedMonth, -i)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
       months[monthKey] = { income: 0, expenses: 0 }
     }
