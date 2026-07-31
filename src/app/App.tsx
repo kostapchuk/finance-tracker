@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import { lazy, Suspense, useEffect } from 'react'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -100,6 +101,7 @@ export function App() {
       <AppShell>
         <MainContent />
       </AppShell>
+      <Analytics />
     </ServiceWorkerProvider>
   )
 }
