@@ -55,6 +55,10 @@ export function AccountCard({
         )}
         style={{ backgroundColor: color + '20' }}
         {...dragHandleProps}
+        // dnd-kit applies role="button" here, but the handle holds only an icon.
+        // Name it after the card so it is not an anonymous control. Must follow
+        // the spread so it is not overwritten by the drag attributes.
+        aria-label={dragHandleProps ? name : undefined}
       >
         <IconComponent className="h-6 w-6" style={{ color }} />
       </div>

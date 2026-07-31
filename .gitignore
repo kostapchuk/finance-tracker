@@ -28,6 +28,9 @@ dist-ssr
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Lighthouse CI
+/.lighthouseci/
 .vercel
 .env*.local
 coverage/
