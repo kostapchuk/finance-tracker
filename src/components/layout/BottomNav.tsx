@@ -37,7 +37,7 @@ export function BottomNav() {
               onClick={() => setActiveView(item.id)}
               className={cn(
                 'flex flex-col items-center justify-center flex-1 h-full gap-1 touch-target transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground active:text-foreground'
+                isActive ? 'text-primary-accent' : 'text-muted-foreground active:text-foreground'
               )}
               aria-label={t(item.labelKey)}
             >

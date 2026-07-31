@@ -25,6 +25,12 @@ input[type='number'] {
   --color-primary: hsl(221.2 83.2% 53.3%);
   --color-primary-foreground: hsl(210 40% 98%);
 
+  /* Primary is tuned for use as a *background* behind --color-primary-foreground.
+     As foreground text it only reaches 3.46:1 on --color-card, below the 4.5:1
+     WCAG AA minimum, so text-on-dark uses this lighter variant (4.87:1) instead.
+     Lightening --color-primary itself would break white-on-primary buttons. */
+  --color-primary-accent: hsl(217.2 91.2% 59.8%);
+
   --color-secondary: hsl(240 3.7% 15.9%);
   --color-secondary-foreground: hsl(0 0% 98%);
 
