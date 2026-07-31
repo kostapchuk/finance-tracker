@@ -61,5 +61,10 @@
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "brace-expansion@1": "^1.1.18",
+    "minimatch@5": "^10.2.6",
+    "minimatch@9": "^10.2.6"
   }
 }
