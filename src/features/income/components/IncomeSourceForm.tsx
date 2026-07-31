@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ColorPicker } from '@/components/ui/color-picker'
@@ -22,6 +22,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { incomeSourceRepo } from '@/database/repositories'
 import type { IncomeSource } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
 import { getAllCurrencies } from '@/utils/currency'
@@ -43,7 +44,7 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
   const [color, setColor] = useState(getRandomColor())
   const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
-  useEffect(() => {
+  useResetOnChange([source, open, mainCurrency], () => {
     if (source) {
       setName(source.name)
       setCurrency(source.currency || mainCurrency)
@@ -55,7 +56,7 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
       setColor(getRandomColor())
       setHiddenFromDashboard(false)
     }
-  }, [source, open, mainCurrency])
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
