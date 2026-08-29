@@ -210,7 +210,7 @@ export function Dashboard() {
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex flex-col min-h-full">
+      <div className="flex flex-col min-h-full select-none">
         <MonthSelector />
 
         <section className="px-1 py-1">
