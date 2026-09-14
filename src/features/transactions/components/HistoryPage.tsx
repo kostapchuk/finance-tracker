@@ -26,12 +26,13 @@ import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
 import type { Transaction, TransactionType, Loan } from '@/database/types'
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
+import { getMonthDateFilter } from '@/features/transactions/utils/monthDateFilter'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
-import { getStartOfMonth, getStartOfWeek, getEndOfMonth, formatDateForInput } from '@/utils/date'
+import { getStartOfMonth, getStartOfWeek } from '@/utils/date'
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 
 type DateFilterType =
@@ -59,25 +60,21 @@ type FilterAction =
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_SHOW_FILTERS'; payload: boolean }
   | { type: 'LOAD_MORE' }
-  | { type: 'APPLY_CATEGORY_NAV'; payload: number }
+  | { type: 'APPLY_CATEGORY_NAV'; payload: { categoryId: number; selectedMonth: Date } }
   | { type: 'APPLY_ACCOUNT_NAV'; payload: number }
 
 function getInitialFilterState(): FilterState {
   const selectedMonth = useAppStore.getState().selectedMonth
-  const now = new Date()
-  const isCurrentMonth =
-    selectedMonth.getMonth() === now.getMonth() && selectedMonth.getFullYear() === now.getFullYear()
+  const monthDateFilter = getMonthDateFilter(selectedMonth)
 
   return {
     typeFilter: 'all',
     categoryFilter: 'all',
     accountFilter: 'all',
-    dateFilter: isCurrentMonth ? 'month' : 'custom',
-    customDateFrom: isCurrentMonth ? '' : formatDateForInput(getStartOfMonth(selectedMonth)),
-    customDateTo: isCurrentMonth ? '' : formatDateForInput(getEndOfMonth(selectedMonth)),
+    ...monthDateFilter,
     searchQuery: '',
     displayCount: 50,
-    showFilters: !isCurrentMonth,
+    showFilters: monthDateFilter.dateFilter === 'custom',
   }
 }
 
@@ -104,9 +101,9 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
     case 'APPLY_CATEGORY_NAV':
       return {
         ...state,
-        categoryFilter: String(action.payload),
+        categoryFilter: String(action.payload.categoryId),
         typeFilter: 'expense',
-        dateFilter: 'month',
+        ...getMonthDateFilter(action.payload.selectedMonth),
         showFilters: true,
         displayCount: 50,
       }
@@ -163,7 +160,13 @@ export function HistoryPage() {
   useEffect(() => {
     if (historyCategoryFilter !== null && !navAppliedRef.current) {
       navAppliedRef.current = true
-      dispatch({ type: 'APPLY_CATEGORY_NAV', payload: historyCategoryFilter })
+      dispatch({
+        type: 'APPLY_CATEGORY_NAV',
+        payload: {
+          categoryId: historyCategoryFilter,
+          selectedMonth: useAppStore.getState().selectedMonth,
+        },
+      })
       useAppStore.setState({ historyCategoryFilter: null })
     }
   }, [historyCategoryFilter])
