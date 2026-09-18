@@ -54,9 +54,7 @@ type TransactionMode =
   | null
 
 type DraggedItem =
-  | { type: 'income'; source: IncomeSource }
-  | { type: 'account'; account: Account }
-  | null
+  { type: 'income'; source: IncomeSource } | { type: 'account'; account: Account } | null
 
 export function Dashboard() {
   const accounts = useAppStore((state) => state.accounts)

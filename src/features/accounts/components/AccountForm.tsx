@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { ColorPicker } from '@/components/ui/color-picker'
@@ -22,6 +22,7 @@ import { Toggle } from '@/components/ui/toggle'
 import { accountRepo } from '@/database/repositories'
 import type { Account, AccountType } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { getRandomColor } from '@/utils/colors'
 import { getAllCurrencies } from '@/utils/currency'
@@ -52,7 +53,7 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
   const [color, setColor] = useState(getRandomColor())
   const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
-  useEffect(() => {
+  useResetOnChange([account, open, mainCurrency], () => {
     if (account) {
       setName(account.name)
       setType(account.type)
@@ -68,7 +69,7 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
       setColor(getRandomColor())
       setHiddenFromDashboard(false)
     }
-  }, [account, open, mainCurrency])
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

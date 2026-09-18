@@ -35,14 +35,7 @@ import { getStartOfMonth, getStartOfWeek, getEndOfMonth, formatDateForInput } fr
 import { reverseTransactionBalance } from '@/utils/transactionBalance'
 
 type DateFilterType =
-  | 'all'
-  | 'today'
-  | 'week'
-  | 'month'
-  | 'last3months'
-  | 'last6months'
-  | 'year'
-  | 'custom'
+  'all' | 'today' | 'week' | 'month' | 'last3months' | 'last6months' | 'year' | 'custom'
 
 interface FilterState {
   typeFilter: 'all' | TransactionType | 'transfers' | 'loans'

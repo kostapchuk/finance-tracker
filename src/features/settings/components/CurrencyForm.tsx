@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { customCurrencyRepo } from '@/database/repositories'
 import type { CustomCurrency } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 
 interface CurrencyFormProps {
@@ -30,7 +31,7 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
 
-  useEffect(() => {
+  useResetOnChange([currency, open], () => {
     if (currency) {
       setCode(currency.code)
       setName(currency.name)
@@ -40,7 +41,7 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
       setName('')
       setSymbol('')
     }
-  }, [currency, open])
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

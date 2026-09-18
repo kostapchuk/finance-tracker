@@ -1,5 +1,5 @@
 import { Pause } from 'lucide-react'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 
 import type { ImportWizardStep, ParsedImportData, ImportResult } from '../types'
 import { parseBudgetOkCSV } from '../utils/csvParser'
@@ -15,6 +15,7 @@ import { ImportIncomeSourceMapping } from './ImportIncomeSourceMapping'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 
 interface BudgetOkImportWizardProps {
@@ -67,7 +68,7 @@ export function BudgetOkImportWizard({
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
 
   // Restore state when savedState changes (e.g., when resuming)
-  useEffect(() => {
+  useResetOnChange([open, savedState], () => {
     if (savedState && open) {
       setStep(savedState.step)
       setFile(savedState.file)
@@ -77,7 +78,7 @@ export function BudgetOkImportWizard({
       setCategoryMapping(savedState.categoryMapping)
       setIncomeSourceMapping(savedState.incomeSourceMapping)
     }
-  }, [open, savedState])
+  })
 
   // Save state to parent when it changes (for pause/resume)
   const saveCurrentState = useCallback(() => {

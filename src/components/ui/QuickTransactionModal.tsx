@@ -5,6 +5,7 @@ import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { transactionRepo, accountRepo } from '@/database/repositories'
 import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
@@ -192,7 +193,7 @@ export function QuickTransactionModal({
   }, [])
 
   // Pre-populate form when editing
-  useEffect(() => {
+  useResetOnChange([editTransaction], () => {
     if (editTransaction) {
       setAmount(editTransaction.amount.toString())
       setDate(new Date(editTransaction.date).toISOString().split('T')[0])
@@ -204,7 +205,7 @@ export function QuickTransactionModal({
         setTargetAmount(editTransaction.toAmount.toString())
       }
     }
-  }, [editTransaction])
+  })
 
   useEffect(() => {
     if (disableAutoFocus) return

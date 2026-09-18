@@ -1,5 +1,5 @@
 import { ArrowRight, Trash2 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,6 +22,7 @@ import {
 import { loanRepo, transactionRepo, accountRepo } from '@/database/repositories'
 import type { Loan, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
 import { deleteLoanWithTransactions } from '@/utils/transactionBalance'
@@ -63,7 +64,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     return v
   }
 
-  useEffect(() => {
+  useResetOnChange([open, editTransaction, loan], () => {
     if (open) {
       if (editTransaction) {
         setAmount(
@@ -81,13 +82,13 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
         setSelectedAccountId(loan?.accountId?.toString() || '')
       }
     }
-  }, [open, editTransaction, loan])
+  })
 
-  useEffect(() => {
+  useResetOnChange([selectedAccountId, selectedAccount, isMultiCurrency], () => {
     if (selectedAccount && !isMultiCurrency) {
       setAccountAmount('')
     }
-  }, [selectedAccountId, selectedAccount, isMultiCurrency])
+  })
 
   const getEffectiveRemaining = () => {
     if (!loan) return 0

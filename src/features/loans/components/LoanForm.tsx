@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { loanRepo } from '@/database/repositories'
 import type { Loan, LoanType } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { getAllCurrencies } from '@/utils/currency'
 import { formatDateForInput } from '@/utils/date'
@@ -63,7 +64,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   const selectedAccount = accountId ? accounts.find((a) => a.id === parseInt(accountId)) : null
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
 
-  useEffect(() => {
+  useResetOnChange([loan, open, mainCurrency, accounts], () => {
     if (loan) {
       setType(loan.type)
       setPersonName(loan.personName)
@@ -82,7 +83,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
       setDueDate('')
     }
     setAccountAmount('')
-  }, [loan, open, mainCurrency, accounts])
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
