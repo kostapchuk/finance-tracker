@@ -37,7 +37,7 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
             </p>
           </div>
           {!hasErrors ? (
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
           ) : (
             <AlertCircle className="h-5 w-5 text-destructive" />
           )}
@@ -49,19 +49,19 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
             icon={ArrowDown}
             label={t('income')}
             count={data.counts.income}
-            color="text-green-500"
+            color="text-success"
           />
           <StatCard
             icon={ArrowUp}
             label={t('expense')}
             count={data.counts.expense}
-            color="text-red-500"
+            color="text-destructive"
           />
           <StatCard
             icon={ArrowLeftRight}
             label={t('transfer')}
             count={data.counts.transfer}
-            color="text-blue-500"
+            color="text-primary"
           />
         </div>
 
@@ -123,10 +123,10 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
                   <span
                     className={
                       row.operationType === 'Income'
-                        ? 'text-green-500'
+                        ? 'text-success'
                         : row.operationType === 'Expense'
-                          ? 'text-red-500'
-                          : 'text-blue-500'
+                          ? 'text-destructive'
+                          : 'text-primary'
                     }
                   >
                     {row.operationType}

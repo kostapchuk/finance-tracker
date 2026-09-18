@@ -48,9 +48,9 @@ export function ImportAccountMapping({
         {/* Progress indicator */}
         <div className="flex items-center gap-2 p-3 bg-secondary/50 rounded-xl">
           {allMapped ? (
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
           ) : (
-            <AlertCircle className="h-5 w-5 text-amber-500" />
+            <AlertCircle className="h-5 w-5 text-warning" />
           )}
           <span className="text-sm">
             {mappedCount} / {uniqueAccounts.length} {t('importMapped')}
@@ -79,7 +79,7 @@ export function ImportAccountMapping({
                       ({sourceAccount.currency})
                     </span>
                     {isMapped ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <CheckCircle2 className="h-4 w-4 text-success" />
                     ) : (
                       <AlertCircle className="h-4 w-4 text-destructive" />
                     )}
