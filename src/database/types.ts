@@ -41,8 +41,6 @@ export interface Category {
   color: string
   icon?: string
   categoryType?: CategoryType // 'expense' (default) or 'loan'
-  budget?: number
-  budgetPeriod?: 'monthly' | 'weekly' | 'yearly'
   sortOrder?: number
   hiddenFromDashboard?: boolean
   createdAt: Date

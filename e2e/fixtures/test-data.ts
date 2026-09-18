@@ -15,8 +15,6 @@ export interface TestCategory {
   color: string;
   icon: string;
   categoryType: CategoryType;
-  budget?: number;
-  budgetPeriod?: 'weekly' | 'monthly' | 'yearly';
   sortOrder: number;
 }
 
@@ -107,8 +105,6 @@ export const testCategories = {
     color: '#06b6d4',
     icon: 'car',
     categoryType: 'expense',
-    budget: 500,
-    budgetPeriod: 'monthly',
     sortOrder: 1,
   }),
   entertainment: (): TestCategory => ({
@@ -116,8 +112,6 @@ export const testCategories = {
     color: '#8b5cf6',
     icon: 'gamepad-2',
     categoryType: 'expense',
-    budget: 200,
-    budgetPeriod: 'weekly',
     sortOrder: 2,
   }),
 };
