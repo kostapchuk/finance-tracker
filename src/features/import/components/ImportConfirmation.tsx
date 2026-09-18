@@ -37,7 +37,7 @@ export function ImportConfirmation({
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center space-y-4">
-            <CheckCircle2 className="h-20 w-20 mx-auto text-green-500" />
+            <CheckCircle2 className="h-20 w-20 mx-auto text-success" />
             <h2 className="text-xl font-semibold">{t('importSuccess')}</h2>
             <p className="text-muted-foreground">
               {t('importSuccessMessage').replace('{count}', String(importResult.importedCount))}
@@ -102,7 +102,7 @@ export function ImportConfirmation({
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg">{totalToImport}</span>
               {countsMatch ? (
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <CheckCircle2 className="h-5 w-5 text-success" />
               ) : (
                 <AlertCircle className="h-5 w-5 text-destructive" />
               )}
@@ -113,21 +113,21 @@ export function ImportConfirmation({
           <div className="border-t pt-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <ArrowDown className="h-4 w-4 text-green-500" />
+                <ArrowDown className="h-4 w-4 text-success" />
                 <span>{t('income')}</span>
               </div>
               <span>{data.counts.income}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <ArrowUp className="h-4 w-4 text-red-500" />
+                <ArrowUp className="h-4 w-4 text-destructive" />
                 <span>{t('expense')}</span>
               </div>
               <span>{data.counts.expense}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <ArrowLeftRight className="h-4 w-4 text-blue-500" />
+                <ArrowLeftRight className="h-4 w-4 text-primary" />
                 <span>{t('transfer')}</span>
               </div>
               <span>{data.counts.transfer}</span>
@@ -150,11 +150,11 @@ export function ImportConfirmation({
 
         {/* Confirmation note */}
         {countsMatch && (
-          <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+          <div className="p-4 bg-success/10 border border-success/30 rounded-xl">
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
               <div className="space-y-1">
-                <p className="font-medium text-green-600">{t('importReadyToImport')}</p>
+                <p className="font-medium text-success">{t('importReadyToImport')}</p>
                 <p className="text-sm text-muted-foreground">{t('importReadyToImportHint')}</p>
               </div>
             </div>

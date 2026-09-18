@@ -18,24 +18,6 @@ export class CategoryForm {
     await input.fill(name);
   }
 
-  async fillBudget(budget: string): Promise<void> {
-    const input = this.getDialog().locator('input[type="number"], input[inputmode="decimal"]').first();
-    await input.fill(budget);
-  }
-
-  async selectBudgetPeriod(period: 'weekly' | 'monthly' | 'yearly'): Promise<void> {
-    const periodLabels: Record<string, string> = {
-      weekly: 'Week|Недел',
-      monthly: 'Month|Месяц',
-      yearly: 'Year|Год',
-    };
-    // Custom Select trigger - the one with w-full class (not Cancel button)
-    const select = this.getDialog().locator('button.w-full.border');
-    await select.click();
-    // Custom Select items are divs with cursor-pointer class
-    await this.page.locator('.z-50 .cursor-pointer').filter({ hasText: new RegExp(periodLabels[period], 'i') }).click();
-  }
-
   // Save/Cancel
   getSaveButton(): Locator {
     return this.getDialog().locator('button').filter({ hasText: /save|create|update|add|сохранить|создать|обновить|добавить/i });

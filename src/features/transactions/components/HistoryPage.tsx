@@ -14,7 +14,7 @@ import { useState, useMemo, useEffect, useCallback, useRef, useReducer } from 'r
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { QuickTransactionModal, type TransactionMode } from '@/components/ui/QuickTransactionModal'
-import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/ui/date-input'
 import {
   Select,
   SelectContent,
@@ -585,7 +585,7 @@ export function HistoryPage() {
               <button
                 onClick={() => dispatch({ type: 'SET_SHOW_FILTERS', payload: !showFilters })}
                 className={cn(
-                  'p-2 rounded-full hover:bg-secondary touch-target',
+                  'inline-flex items-center justify-center p-2 rounded-full hover:bg-secondary touch-target',
                   showFilters && 'bg-primary/20'
                 )}
               >
@@ -593,7 +593,7 @@ export function HistoryPage() {
               </button>
               <button
                 onClick={() => setShowSearch(true)}
-                className="p-2 rounded-full hover:bg-secondary touch-target"
+                className="inline-flex items-center justify-center p-2 rounded-full hover:bg-secondary touch-target"
               >
                 <Search className="h-5 w-5" />
               </button>
@@ -724,26 +724,20 @@ export function HistoryPage() {
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">{t('from')}</label>
-                <Input
-                  type="date"
-                  lang={language}
+                <DateInput
                   value={customDateFrom}
-                  onChange={(e) =>
-                    dispatch({ type: 'SET_CUSTOM_DATE_FROM', payload: e.target.value })
-                  }
-                  className="h-9"
+                  onChange={(value) => dispatch({ type: 'SET_CUSTOM_DATE_FROM', payload: value })}
+                  language={language}
+                  placeholder={t('from')}
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">{t('to')}</label>
-                <Input
-                  type="date"
-                  lang={language}
+                <DateInput
                   value={customDateTo}
-                  onChange={(e) =>
-                    dispatch({ type: 'SET_CUSTOM_DATE_TO', payload: e.target.value })
-                  }
-                  className="h-9"
+                  onChange={(value) => dispatch({ type: 'SET_CUSTOM_DATE_TO', payload: value })}
+                  language={language}
+                  placeholder={t('to')}
                 />
               </div>
             </div>

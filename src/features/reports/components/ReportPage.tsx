@@ -317,11 +317,11 @@ export function ReportPage() {
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-0.5">
                     <div className="flex items-end gap-0.5 w-full h-[145px]">
                       <div
-                        className="flex-1 rounded-t bg-green-500 min-h-[2px]"
+                        className="flex-1 rounded-t bg-success min-h-[2px]"
                         style={{ height: `${(m.income / maxVal) * 100}%` }}
                       />
                       <div
-                        className="flex-1 rounded-t bg-red-500 min-h-[2px]"
+                        className="flex-1 rounded-t bg-destructive min-h-[2px]"
                         style={{ height: `${(m.expenses / maxVal) * 100}%` }}
                       />
                     </div>
@@ -332,11 +332,11 @@ export function ReportPage() {
             </div>
             <div className="flex items-center justify-center gap-4 mt-2">
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm bg-green-500" />
+                <div className="w-3 h-3 rounded-sm bg-success" />
                 <span className="text-xs text-muted-foreground">{t('income')}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm bg-red-500" />
+                <div className="w-3 h-3 rounded-sm bg-destructive" />
                 <span className="text-xs text-muted-foreground">{t('expenses')}</span>
               </div>
             </div>
