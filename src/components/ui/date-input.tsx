@@ -31,12 +31,27 @@ function formatDisplayValue(value: string, language: string): string {
  * Wraps a native `<input type="date">` with an app-controlled visible label.
  * iOS renders the native date input's displayed value and width using the
  * device locale, ignoring the `lang` attribute, which broke layout and
- * language consistency on iPhone. The native input stays as an invisible,
- * full-size overlay so tapping anywhere still opens the OS date picker.
+ * language consistency on iPhone. Browsers also only open the picker when
+ * clicking part of the native control (e.g. the calendar-icon area), so a
+ * click anywhere on the invisible full-size input explicitly opens the
+ * picker via `showPicker()` (falling back to `focus()` on older browsers).
  */
 export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
-  ({ value, onChange, language, placeholder, className }, ref) => {
+  ({ value, onChange, language, placeholder, className }, forwardedRef) => {
+    const innerRef = React.useRef<HTMLInputElement>(null)
     const displayValue = formatDisplayValue(value, language)
+
+    const openPicker = (input: HTMLInputElement) => {
+      if (typeof input.showPicker === 'function') {
+        try {
+          input.showPicker()
+          return
+        } catch {
+          // showPicker() can throw (e.g. missing user activation); fall back to focus().
+        }
+      }
+      input.focus()
+    }
 
     return (
       <div
@@ -45,17 +60,20 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
           className
         )}
       >
-        <span
-          className={cn('pointer-events-none truncate', !displayValue && 'text-muted-foreground')}
-        >
+        <span className={cn('truncate', !displayValue && 'text-muted-foreground')}>
           {displayValue || placeholder}
         </span>
         <input
-          ref={ref}
+          ref={(node) => {
+            innerRef.current = node
+            if (typeof forwardedRef === 'function') forwardedRef(node)
+            else if (forwardedRef) forwardedRef.current = node
+          }}
           type="date"
           lang={language}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onClick={(e) => openPicker(e.currentTarget)}
           aria-label={placeholder}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />

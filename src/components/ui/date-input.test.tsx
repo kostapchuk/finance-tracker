@@ -30,4 +30,28 @@ describe('DateInput', () => {
 
     expect(onChange).toHaveBeenCalledWith('2026-09-20')
   })
+
+  it('explicitly opens the native picker on click, instead of relying on the browser default hit area', () => {
+    const showPicker = vi.fn()
+    HTMLInputElement.prototype.showPicker = showPicker
+
+    render(<DateInput value="2026-09-18" onChange={vi.fn()} language="en" placeholder="From" />)
+
+    fireEvent.click(screen.getByLabelText('From'))
+
+    expect(showPicker).toHaveBeenCalledTimes(1)
+
+    Reflect.deleteProperty(HTMLInputElement.prototype, 'showPicker')
+  })
+
+  it('falls back to focusing the input when showPicker is unsupported', () => {
+    render(<DateInput value="2026-09-18" onChange={vi.fn()} language="en" placeholder="From" />)
+
+    const input = screen.getByLabelText('From')
+    const focusSpy = vi.spyOn(input, 'focus')
+
+    fireEvent.click(input)
+
+    expect(focusSpy).toHaveBeenCalledTimes(1)
+  })
 })
