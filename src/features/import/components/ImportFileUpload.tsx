@@ -90,7 +90,7 @@ export function ImportFileUpload({ onFileSelect, error, setError }: ImportFileUp
       )}
 
       {/* Comma warning */}
-      <div className="w-full max-w-sm p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-2 text-amber-700 dark:text-amber-400">
+      <div className="w-full max-w-sm p-3 bg-warning/10 border border-warning/30 rounded-xl flex items-start gap-2 text-warning">
         <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
         <span className="text-sm">{t('importCommaWarning')}</span>
       </div>

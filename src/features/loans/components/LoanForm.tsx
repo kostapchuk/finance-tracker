@@ -112,7 +112,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
       if (onSave) {
         await onSave(formData, !!loan?.id, loan?.id)
       } else {
-        // Fallback: save directly (for backward compatibility with LoanList)
+        // Fallback: save directly if no onSave handler is provided
         if (loan?.id) {
           await loanRepo.update(loan.id, {
             type: formData.type,

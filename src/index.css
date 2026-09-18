@@ -55,10 +55,6 @@ input[type='number'] {
   --color-warning: hsl(38 92% 50%);
   --color-warning-foreground: hsl(48 96% 89%);
 
-  /* Investment/savings (green - good expense) */
-  --color-investment: hsl(142.1 70.6% 45.3%);
-  --color-investment-foreground: hsl(144.9 80.4% 10%);
-
   /* Loan (orange - debt) */
   --color-loan: hsl(24.6 95% 53.1%);
   --color-loan-foreground: hsl(60 9.1% 97.8%);
