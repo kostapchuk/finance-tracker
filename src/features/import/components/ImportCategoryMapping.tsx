@@ -40,7 +40,7 @@ export function ImportCategoryMapping({
       <div className="flex flex-col h-full">
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center space-y-4">
-            <CheckCircle2 className="h-16 w-16 mx-auto text-green-500" />
+            <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
             <h2 className="text-lg font-semibold">{t('importNoCategoriesNeeded')}</h2>
             <p className="text-sm text-muted-foreground">{t('importNoExpenseTransactions')}</p>
           </div>
@@ -69,9 +69,9 @@ export function ImportCategoryMapping({
         {/* Progress indicator */}
         <div className="flex items-center gap-2 p-3 bg-secondary/50 rounded-xl">
           {allMapped ? (
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 text-success" />
           ) : (
-            <AlertCircle className="h-5 w-5 text-amber-500" />
+            <AlertCircle className="h-5 w-5 text-warning" />
           )}
           <span className="text-sm">
             {mappedCount} / {uniqueCategories.length} {t('importMapped')}
@@ -97,7 +97,7 @@ export function ImportCategoryMapping({
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{budgetOkName}</span>
                     {isMapped ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <CheckCircle2 className="h-4 w-4 text-success" />
                     ) : (
                       <AlertCircle className="h-4 w-4 text-destructive" />
                     )}
