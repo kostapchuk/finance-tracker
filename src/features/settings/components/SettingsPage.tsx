@@ -375,16 +375,6 @@ export function SettingsPage() {
                   id={category.id!}
                   color={category.color}
                   title={category.name}
-                  subtitle={
-                    category.budget ? (
-                      <>
-                        <span>{t('budget')}: </span>
-                        <BlurredAmount>
-                          {formatCurrency(category.budget, mainCurrency)}
-                        </BlurredAmount>
-                      </>
-                    ) : undefined
-                  }
                   onEdit={() => {
                     setEditingCategory(category)
                     setCategoryFormOpen(true)
