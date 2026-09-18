@@ -67,6 +67,7 @@ import {
 import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
+import { buildBackupData, parseBackupData } from '@/utils/backup'
 import { formatCurrency, getAllCurrencies } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
 
@@ -155,15 +156,14 @@ export function SettingsPage() {
   const handleExportJSON = async () => {
     setIsExporting(true)
     try {
-      const data = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
+      const data = buildBackupData({
         accounts,
         incomeSources,
         categories,
         transactions,
         loans,
-      }
+        customCurrencies,
+      })
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -190,73 +190,38 @@ export function SettingsPage() {
 
     try {
       const text = await file.text()
-      const data = JSON.parse(text)
-
-      if (!data.version || !data.accounts || !data.transactions) {
-        throw new Error('Invalid backup file format')
-      }
+      const data = parseBackupData(JSON.parse(text))
 
       await db.transaction(
         'rw',
-        [db.accounts, db.incomeSources, db.categories, db.transactions, db.loans],
+        [
+          db.accounts,
+          db.incomeSources,
+          db.categories,
+          db.transactions,
+          db.loans,
+          db.customCurrencies,
+        ],
         async () => {
           await db.accounts.clear()
           await db.incomeSources.clear()
           await db.categories.clear()
           await db.transactions.clear()
           await db.loans.clear()
+          await db.customCurrencies.clear()
 
-          if (data.accounts?.length) {
-            await db.accounts.bulkAdd(
-              data.accounts.map((a: Record<string, unknown>) => ({
-                ...a,
-                id: undefined,
-                createdAt: new Date(a.createdAt as string),
-                updatedAt: new Date(a.updatedAt as string),
-              }))
-            )
-          }
-          if (data.incomeSources?.length) {
-            await db.incomeSources.bulkAdd(
-              data.incomeSources.map((s: Record<string, unknown>) => ({
-                ...s,
-                id: undefined,
-                createdAt: new Date(s.createdAt as string),
-                updatedAt: new Date(s.updatedAt as string),
-              }))
-            )
-          }
-          if (data.categories?.length) {
-            await db.categories.bulkAdd(
-              data.categories.map((c: Record<string, unknown>) => ({
-                ...c,
-                id: undefined,
-                createdAt: new Date(c.createdAt as string),
-                updatedAt: new Date(c.updatedAt as string),
-              }))
-            )
-          }
-          if (data.transactions?.length) {
-            await db.transactions.bulkAdd(
-              data.transactions.map((t: Record<string, unknown>) => ({
-                ...t,
-                id: undefined,
-                date: new Date(t.date as string),
-                createdAt: new Date(t.createdAt as string),
-                updatedAt: new Date(t.updatedAt as string),
-              }))
-            )
-          }
-          if (data.loans?.length) {
-            await db.loans.bulkAdd(
-              data.loans.map((l: Record<string, unknown>) => ({
-                ...l,
-                id: undefined,
-                dueDate: l.dueDate ? new Date(l.dueDate as string) : undefined,
-                createdAt: new Date(l.createdAt as string),
-                updatedAt: new Date(l.updatedAt as string),
-              }))
-            )
+          // IDs from the backup are preserved (not regenerated) so that
+          // foreign keys like transaction.accountId / categoryId /
+          // incomeSourceId / loanId and loan.accountId keep pointing at the
+          // right records. Tables are cleared above, so reusing the
+          // original IDs is safe.
+          if (data.accounts.length > 0) await db.accounts.bulkAdd(data.accounts)
+          if (data.incomeSources.length > 0) await db.incomeSources.bulkAdd(data.incomeSources)
+          if (data.categories.length > 0) await db.categories.bulkAdd(data.categories)
+          if (data.transactions.length > 0) await db.transactions.bulkAdd(data.transactions)
+          if (data.loans.length > 0) await db.loans.bulkAdd(data.loans)
+          if (data.customCurrencies.length > 0) {
+            await db.customCurrencies.bulkAdd(data.customCurrencies)
           }
         }
       )
