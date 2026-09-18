@@ -46,6 +46,7 @@ interface AppState {
   // Navigation filters (set before navigating to a view)
   historyCategoryFilter: number | null
   historyAccountFilter: number | null
+  historyTransactionFilter: number | null
 
   // Onboarding state (0 = not active, 1-5 = steps)
   onboardingStep: number
@@ -54,6 +55,7 @@ interface AppState {
   setActiveView: (view: AppState['activeView']) => void
   navigateToHistoryWithCategory: (categoryId: number) => void
   navigateToHistoryWithAccount: (accountId: number) => void
+  navigateToHistoryWithTransaction: (transactionId: number) => void
   setSelectedMonth: (date: Date) => void
   setMainCurrency: (currency: string) => Promise<void>
   setBlurFinancialFigures: (blur: boolean) => Promise<void>
@@ -83,6 +85,7 @@ export const useAppStore = create<AppState>((set) => ({
   selectedMonth: new Date(),
   historyCategoryFilter: null,
   historyAccountFilter: null,
+  historyTransactionFilter: null,
   onboardingStep: 0,
 
   setActiveView: (view) => set({ activeView: view }),
@@ -90,6 +93,8 @@ export const useAppStore = create<AppState>((set) => ({
     set({ historyCategoryFilter: categoryId, activeView: 'history' }),
   navigateToHistoryWithAccount: (accountId) =>
     set({ historyAccountFilter: accountId, activeView: 'history' }),
+  navigateToHistoryWithTransaction: (transactionId) =>
+    set({ historyTransactionFilter: transactionId, activeView: 'history' }),
   setSelectedMonth: (date) => set({ selectedMonth: date }),
 
   setMainCurrency: async (currency: string) => {

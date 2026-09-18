@@ -133,6 +133,7 @@ export function HistoryPage() {
 
   const historyCategoryFilter = useAppStore((state) => state.historyCategoryFilter)
   const historyAccountFilter = useAppStore((state) => state.historyAccountFilter)
+  const historyTransactionFilter = useAppStore((state) => state.historyTransactionFilter)
 
   const [filterState, dispatch] = useReducer(filterReducer, null, getInitialFilterState)
   const {
@@ -154,6 +155,7 @@ export function HistoryPage() {
   const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment' | null>(null)
   const [editTransactionMode, setEditTransactionMode] = useState<TransactionMode | null>(null)
   const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
+  const [processedTransactionFilter, setProcessedTransactionFilter] = useState<number | null>(null)
 
   const navAppliedRef = useRef(false)
 
@@ -486,6 +488,27 @@ export function HistoryPage() {
     setEditTransactionMode(null)
     setEditingLoan(null)
   }
+
+  // Opening a transaction handed off via navigateToHistoryWithTransaction is a
+  // reaction to the store value changing, not an external-system sync, so it's
+  // applied directly during render (see https://react.dev/learn/you-might-not-need-an-effect)
+  // rather than from a useEffect.
+  if (
+    historyTransactionFilter !== null &&
+    historyTransactionFilter !== processedTransactionFilter
+  ) {
+    setProcessedTransactionFilter(historyTransactionFilter)
+    const transaction = transactions.find((tx) => tx.id === historyTransactionFilter)
+    if (transaction) {
+      handleEdit(transaction)
+    }
+  }
+
+  useEffect(() => {
+    if (historyTransactionFilter !== null) {
+      useAppStore.setState({ historyTransactionFilter: null })
+    }
+  }, [historyTransactionFilter])
 
   const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
     if (!isEdit || !loanId || !editingTransaction) return

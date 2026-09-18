@@ -66,6 +66,44 @@ export class LoansPage extends BasePage {
     return this.getCompletedSection().locator('.bg-secondary\\/30.rounded-xl');
   }
 
+  async clickCompletedLoan(personName: string): Promise<void> {
+    await this.getCompletedLoans().filter({ hasText: personName }).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  // Completed loan detail dialog
+  getLoanDetailDialog(): Locator {
+    return this.page.locator('.fixed .shadow-lg.rounded-lg');
+  }
+
+  getLoanDetailPayments(): Locator {
+    return this.getLoanDetailDialog().locator('.bg-secondary\\/50.rounded-xl');
+  }
+
+  async clickLoanDetailPayment(index = 0): Promise<void> {
+    await this.getLoanDetailPayments().nth(index).click();
+    await this.page.waitForTimeout(300);
+  }
+
+  // Infinite scroll (completed loans)
+  async scrollToBottom(): Promise<void> {
+    await this.page.evaluate(() => {
+      const scrollContainer = document.querySelector('.overflow-auto');
+      if (scrollContainer) {
+        scrollContainer.scrollTo(0, scrollContainer.scrollHeight);
+      }
+    });
+    await this.page.waitForTimeout(200);
+  }
+
+  async waitForMoreCompletedLoans(initialCount: number): Promise<void> {
+    await this.page.waitForFunction(
+      (count) => document.querySelectorAll('.bg-secondary\\/30.rounded-xl').length > count,
+      initialCount,
+      { timeout: 5000 }
+    );
+  }
+
   // Section toggles
   async toggleMoneyGivenSection(): Promise<void> {
     await this.getMoneyGivenSection().locator('button').first().click();

@@ -365,6 +365,9 @@ const lazyTranslations = {
     importResume: 'Resume Import',
     importPauseHint: 'You can pause to create missing items, then resume',
     showingAllTransactions: 'Showing all {count} transactions',
+    paymentHistory: 'Payment History',
+    showingAllCompletedLoans: 'Showing all {count} completed loans',
+    noCompletedLoansThisPeriod: 'No completed loans in this period',
   },
   ru: {
     goodExpenses: 'Хорошие расходы',
@@ -597,6 +600,9 @@ const lazyTranslations = {
     importResume: 'Продолжить импорт',
     importPauseHint: 'Вы можете приостановить, чтобы создать недостающие элементы',
     showingAllTransactions: 'Показаны все {count} транзакций',
+    paymentHistory: 'История платежей',
+    showingAllCompletedLoans: 'Показаны все {count} завершённых долгов',
+    noCompletedLoansThisPeriod: 'В этом периоде нет завершённых долгов',
   },
 } as const
 
