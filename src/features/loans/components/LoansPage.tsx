@@ -1,13 +1,9 @@
 import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, useMemo } from 'react'
 
-import { LoanForm } from './LoanForm'
-import type { LoanFormData } from './LoanForm'
-import { PaymentDialog } from './PaymentDialog'
-
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { QuickTransactionModal } from '@/components/ui/QuickTransactionModal'
 import { Button } from '@/components/ui/button'
-import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
@@ -17,16 +13,13 @@ export function LoansPage() {
   const loans = useAppStore((state) => state.loans)
   const accounts = useAppStore((state) => state.accounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
-  const refreshLoans = useAppStore((state) => state.refreshLoans)
-  const refreshAccounts = useAppStore((state) => state.refreshAccounts)
-  const refreshTransactions = useAppStore((state) => state.refreshTransactions)
   const { t } = useLanguage()
 
   const [loanFormOpen, setLoanFormOpen] = useState(false)
   const [givenExpanded, setGivenExpanded] = useState(true)
   const [receivedExpanded, setReceivedExpanded] = useState(true)
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null)
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
 
   // Split loans by type and status
   const { activeGiven, activeReceived, paidGiven, paidReceived } = useMemo(() => {
@@ -70,69 +63,13 @@ export function LoansPage() {
     return { givenByCurrency, receivedByCurrency }
   }, [activeGiven, activeReceived])
 
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
-    if (isEdit && loanId) {
-      // Edit: just update loan fields, no transaction/balance changes
-      await loanRepo.update(loanId, {
-        type: data.type,
-        personName: data.personName,
-        description: data.description,
-        amount: data.amount,
-        currency: data.currency,
-        accountId: data.accountId,
-        dueDate: data.dueDate,
-      })
-    } else {
-      // Create: save loan, create transaction, update account balance
-      const newLoanId = await loanRepo.create({
-        type: data.type,
-        personName: data.personName,
-        description: data.description,
-        amount: data.amount,
-        currency: data.currency,
-        paidAmount: 0,
-        status: 'active',
-        accountId: data.accountId,
-        dueDate: data.dueDate,
-      })
-
-      const account = accounts.find((a) => a.id === data.accountId)
-      // Amount to use for account balance update
-      const balanceAmount = data.accountAmount ?? data.amount
-
-      // loan_given: you give money out → balance decreases
-      // loan_received: you receive money → balance increases
-      const balanceChange = data.type === 'given' ? -balanceAmount : balanceAmount
-      await accountRepo.updateBalance(data.accountId, balanceChange)
-
-      // Create transaction record
-      const transactionType =
-        data.type === 'given' ? ('loan_given' as const) : ('loan_received' as const)
-      await transactionRepo.create({
-        type: transactionType,
-        amount: balanceAmount,
-        currency: account?.currency || data.currency,
-        date: new Date(),
-        loanId: newLoanId as number,
-        accountId: data.accountId,
-        mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
-        comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
-      })
-
-      await refreshAccounts()
-      await refreshTransactions()
-    }
-
-    await refreshLoans()
-  }
-
   const handleAddNew = () => {
     setLoanFormOpen(true)
   }
 
   const handleLoanClick = (loan: Loan) => {
     setSelectedLoan(loan)
-    setPaymentDialogOpen(true)
+    setPaymentModalOpen(true)
   }
 
   return (
@@ -290,22 +227,26 @@ export function LoansPage() {
       )}
 
       {/* Loan Form */}
-      <LoanForm
-        loan={null}
-        open={loanFormOpen}
-        onClose={() => setLoanFormOpen(false)}
-        onSave={handleSaveLoan}
-      />
+      {loanFormOpen && (
+        <QuickTransactionModal
+          mode={{ type: 'loan' }}
+          accounts={accounts}
+          onClose={() => setLoanFormOpen(false)}
+        />
+      )}
 
-      {/* Payment Dialog */}
-      <PaymentDialog
-        loan={selectedLoan}
-        open={paymentDialogOpen}
-        onClose={() => {
-          setPaymentDialogOpen(false)
-          setSelectedLoan(null)
-        }}
-      />
+      {/* Payment Modal */}
+      {paymentModalOpen && selectedLoan && (
+        <QuickTransactionModal
+          mode={{ type: 'loan_payment', loan: selectedLoan }}
+          accounts={accounts}
+          preselectedAccountId={selectedLoan.accountId}
+          onClose={() => {
+            setPaymentModalOpen(false)
+            setSelectedLoan(null)
+          }}
+        />
+      )}
     </div>
   )
 }
