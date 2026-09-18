@@ -34,11 +34,21 @@ export async function deleteLoanWithTransactions(loan: Loan): Promise<void> {
 }
 
 /**
+ * The subset of Transaction fields the balance functions below actually read.
+ * Using this (instead of the full Transaction) lets callers pass a transaction
+ * that hasn't been inserted yet, before it has an id/createdAt/updatedAt.
+ */
+export type TransactionBalanceFields = Pick<
+  Transaction,
+  'type' | 'accountId' | 'amount' | 'toAccountId' | 'toAmount' | 'loanId' | 'mainCurrencyAmount'
+>
+
+/**
  * Reverse a transaction's balance effects on accounts.
  * Call this before deleting a transaction or updating it (to undo the old effects).
  */
 export async function reverseTransactionBalance(
-  transaction: Transaction,
+  transaction: TransactionBalanceFields,
   loans: Loan[]
 ): Promise<void> {
   const { type, accountId, amount, toAccountId, toAmount, loanId, mainCurrencyAmount } = transaction
@@ -107,7 +117,7 @@ export async function reverseTransactionBalance(
  * Call this after creating or updating a transaction (to apply the new effects).
  */
 export async function applyTransactionBalance(
-  transaction: Transaction,
+  transaction: TransactionBalanceFields,
   loans: Loan[]
 ): Promise<void> {
   const { type, accountId, amount, toAccountId, toAmount, loanId, mainCurrencyAmount } = transaction

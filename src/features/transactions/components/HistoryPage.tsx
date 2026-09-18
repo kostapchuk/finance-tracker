@@ -22,10 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
-import type { Transaction, TransactionType, Loan } from '@/database/types'
-import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
-import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
+import { transactionRepo } from '@/database/repositories'
+import type { Transaction, TransactionType } from '@/database/types'
 import { getMonthDateFilter } from '@/features/transactions/utils/monthDateFilter'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -151,9 +149,7 @@ export function HistoryPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
-  const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment' | null>(null)
   const [editTransactionMode, setEditTransactionMode] = useState<TransactionMode | null>(null)
-  const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
 
   const navAppliedRef = useRef(false)
 
@@ -415,65 +411,35 @@ export function HistoryPage() {
   const handleEdit = (transaction: Transaction) => {
     setEditingTransaction(transaction)
 
-    // Determine the modal type based on transaction type
+    // Build the TransactionMode for QuickTransactionModal based on transaction type
     switch (transaction.type) {
-      case 'income':
-      case 'expense':
+      case 'income': {
+        const source = incomeSources.find((s) => s.id === transaction.incomeSourceId)
+        if (source) setEditTransactionMode({ type: 'income', source })
+        break
+      }
+      case 'expense': {
+        const category = categories.find((c) => c.id === transaction.categoryId)
+        if (category) setEditTransactionMode({ type: 'expense', category })
+        break
+      }
       case 'transfer': {
-        // Build the TransactionMode for QuickTransactionModal
-        switch (transaction.type) {
-          case 'income': {
-            const source = incomeSources.find((s) => s.id === transaction.incomeSourceId)
-            if (source) {
-              setEditTransactionMode({ type: 'income', source })
-              setEditModalType('quick')
-            }
-
-            break
-          }
-          case 'expense': {
-            const category = categories.find((c) => c.id === transaction.categoryId)
-            if (category) {
-              setEditTransactionMode({ type: 'expense', category })
-              setEditModalType('quick')
-            }
-
-            break
-          }
-          case 'transfer': {
-            const fromAccount = accounts.find((a) => a.id === transaction.accountId)
-            const toAccount = accounts.find((a) => a.id === transaction.toAccountId)
-            if (fromAccount && toAccount) {
-              setEditTransactionMode({ type: 'transfer', fromAccount, toAccount })
-              setEditModalType('quick')
-            }
-
-            break
-          }
-          // No default
+        const fromAccount = accounts.find((a) => a.id === transaction.accountId)
+        const toAccount = accounts.find((a) => a.id === transaction.toAccountId)
+        if (fromAccount && toAccount) {
+          setEditTransactionMode({ type: 'transfer', fromAccount, toAccount })
         }
-
         break
       }
       case 'loan_given':
       case 'loan_received': {
-        // Find the associated loan
         const loan = loans.find((l) => l.id === transaction.loanId)
-        if (loan) {
-          setEditingLoan(loan)
-          setEditModalType('loan')
-        }
-
+        if (loan) setEditTransactionMode({ type: 'loan', loan })
         break
       }
       case 'loan_payment': {
-        // Find the associated loan for payment editing
         const loan = loans.find((l) => l.id === transaction.loanId)
-        if (loan) {
-          setEditingLoan(loan)
-          setEditModalType('payment')
-        }
-
+        if (loan) setEditTransactionMode({ type: 'loan_payment', loan })
         break
       }
       // No default
@@ -482,53 +448,7 @@ export function HistoryPage() {
 
   const handleCloseEditModal = () => {
     setEditingTransaction(null)
-    setEditModalType(null)
     setEditTransactionMode(null)
-    setEditingLoan(null)
-  }
-
-  const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
-    if (!isEdit || !loanId || !editingTransaction) return
-
-    // Get the old transaction to reverse its effects
-    const oldTransaction = editingTransaction
-
-    // 1. Reverse old transaction's balance effect
-    await reverseTransactionBalance(oldTransaction, loans)
-
-    // 2. Update the loan record
-    await loanRepo.update(loanId, {
-      type: data.type,
-      personName: data.personName,
-      description: data.description,
-      amount: data.amount,
-      currency: data.currency,
-      accountId: data.accountId,
-      dueDate: data.dueDate,
-    })
-
-    // 3. Calculate new balance amount
-    const newBalanceAmount = data.accountAmount ?? data.amount
-    const account = accounts.find((a) => a.id === data.accountId)
-
-    // 4. Update the transaction record
-    await transactionRepo.update(oldTransaction.id!, {
-      amount: newBalanceAmount,
-      currency: account?.currency || data.currency,
-      accountId: data.accountId,
-      mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
-      comment: oldTransaction.comment,
-    })
-
-    // 5. Apply new balance effect
-    // loan_given: money goes out → balance decreases
-    // loan_received: money comes in → balance increases
-    const balanceChange = data.type === 'given' ? -newBalanceAmount : newBalanceAmount
-    await accountRepo.updateBalance(data.accountId, balanceChange)
-
-    // Refresh all data
-    await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])
-    handleCloseEditModal()
   }
 
   const getTransactionTitle = (t: Transaction): string => {
@@ -949,8 +869,8 @@ export function HistoryPage() {
         )}
       </div>
 
-      {/* Edit Modals */}
-      {editModalType === 'quick' && editTransactionMode && editingTransaction && (
+      {/* Edit Modal */}
+      {editTransactionMode && editingTransaction && (
         <QuickTransactionModal
           mode={editTransactionMode}
           accounts={accounts}
@@ -959,24 +879,6 @@ export function HistoryPage() {
           disableAutoFocus
           onDelete={handleDelete}
           onClose={handleCloseEditModal}
-        />
-      )}
-
-      {editModalType === 'loan' && editingLoan && (
-        <LoanForm
-          loan={editingLoan}
-          open={true}
-          onClose={handleCloseEditModal}
-          onSave={handleSaveLoan}
-        />
-      )}
-
-      {editModalType === 'payment' && editingLoan && editingTransaction && (
-        <PaymentDialog
-          loan={editingLoan}
-          open={true}
-          onClose={handleCloseEditModal}
-          editTransaction={editingTransaction}
         />
       )}
     </div>

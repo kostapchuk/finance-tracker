@@ -1,21 +1,27 @@
-import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
+import { X, Calendar, MessageSquare, ArrowRight, Trash2, User } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
-import { transactionRepo, accountRepo } from '@/database/repositories'
-import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
+import { transactionRepo, accountRepo, loanRepo } from '@/database/repositories'
+import type { Category, IncomeSource, Account, Transaction, Loan, LoanType } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
-import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
-import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
-import { reverseTransactionBalance } from '@/utils/transactionBalance'
+import { getCurrencySymbol, formatCurrency, getAllCurrencies } from '@/utils/currency'
+import { getStartOfMonth, getEndOfMonth, formatDateForInput } from '@/utils/date'
+import {
+  reverseTransactionBalance,
+  applyTransactionBalance,
+  deleteLoanWithTransactions,
+} from '@/utils/transactionBalance'
 
 export type TransactionMode =
   | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
   | { type: 'expense'; category: Category; preselectedAccountId?: number }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
+  | { type: 'loan'; loan?: Loan }
+  | { type: 'loan_payment'; loan: Loan }
 
 interface QuickTransactionModalProps {
   mode: TransactionMode
@@ -38,6 +44,7 @@ export function QuickTransactionModal({
 }: QuickTransactionModalProps) {
   const refreshTransactions = useAppStore((state) => state.refreshTransactions)
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
+  const refreshLoans = useAppStore((state) => state.refreshLoans)
   const loans = useAppStore((state) => state.loans)
   const incomeSources = useAppStore((state) => state.incomeSources)
   const categories = useAppStore((state) => state.categories)
@@ -48,7 +55,9 @@ export function QuickTransactionModal({
 
   const isEditMode = !!editTransaction
 
-  const [amount, setAmount] = useState('')
+  const [amount, setAmount] = useState(
+    mode.type === 'loan' && mode.loan ? mode.loan.amount.toString() : ''
+  )
   const [targetAmount, setTargetAmount] = useState('') // mainCurrency amount for totals
   const [accountAmount, setAccountAmount] = useState('') // account currency amount (for income when account != source)
   const [activeField, setActiveField] = useState<
@@ -63,11 +72,28 @@ export function QuickTransactionModal({
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
     mode.type === 'expense' ? mode.category.id : undefined
   )
+  const [loanType, setLoanType] = useState<LoanType>(
+    mode.type === 'loan' ? (mode.loan?.type ?? 'given') : 'given'
+  )
+  const [personName, setPersonName] = useState(
+    mode.type === 'loan' ? (mode.loan?.personName ?? '') : ''
+  )
+  const [loanCurrency, setLoanCurrency] = useState(
+    mode.type === 'loan' ? (mode.loan?.currency ?? mainCurrency) : mainCurrency
+  )
+  const [dueDate, setDueDate] = useState(
+    mode.type === 'loan' && mode.loan?.dueDate
+      ? formatDateForInput(new Date(mode.loan.dueDate))
+      : ''
+  )
   const [showAccountPicker, setShowAccountPicker] = useState(false)
   const [showSourcePicker, setShowSourcePicker] = useState(false)
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [comment, setComment] = useState('')
+  const [comment, setComment] = useState(
+    mode.type === 'loan' && mode.loan ? (mode.loan.description ?? '') : ''
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const [buttonCovered, setButtonCovered] = useState(false)
@@ -194,7 +220,13 @@ export function QuickTransactionModal({
 
   // Pre-populate form when editing
   useResetOnChange([editTransaction], () => {
-    if (editTransaction) {
+    if (!editTransaction) return
+
+    if (mode.type === 'loan_payment') {
+      setAmount(editTransaction.mainCurrencyAmount?.toString() || editTransaction.amount.toString())
+      setAccountAmount(editTransaction.amount.toString())
+      setComment(editTransaction.comment || '')
+    } else if (mode.type !== 'loan') {
       setAmount(editTransaction.amount.toString())
       setDate(new Date(editTransaction.date).toISOString().split('T')[0])
       setComment(editTransaction.comment || '')
@@ -283,6 +315,22 @@ export function QuickTransactionModal({
   const needsAccountConversion =
     mode.type === 'income' && selectedAccount?.currency !== sourceCurrency
 
+  // Detect multi-currency for loan creation/editing and loan payments
+  const currentLoanCurrency =
+    mode.type === 'loan' ? loanCurrency : mode.type === 'loan_payment' ? mode.loan.currency : ''
+  const isMultiCurrencyLoan =
+    (mode.type === 'loan' || mode.type === 'loan_payment') &&
+    !!selectedAccount &&
+    currentLoanCurrency !== selectedAccount.currency
+
+  // Remaining balance on the loan being paid (accounting for the payment being edited, if any)
+  const paymentRemaining =
+    mode.type === 'loan_payment' ? mode.loan.amount - mode.loan.paidAmount : 0
+  const effectivePaymentRemaining =
+    mode.type === 'loan_payment' && isEditMode && editTransaction
+      ? paymentRemaining + (editTransaction.mainCurrencyAmount ?? editTransaction.amount)
+      : paymentRemaining
+
   // Reset amounts when account or source changes
   const handleAccountChange = (newAccountId: number) => {
     const newAccount = accounts.find((a) => a.id === newAccountId)
@@ -326,10 +374,9 @@ export function QuickTransactionModal({
 
   // Get current currency symbol for display
   const getCurrentCurrency = () => {
-    if (mode.type === 'income')
+    if (mode.type === 'income' || mode.type === 'expense')
       return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
-    if (mode.type === 'expense')
-      return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
+    if (mode.type === 'loan' || mode.type === 'loan_payment') return currentLoanCurrency
     return activeField === 'source' ? mode.fromAccount.currency : mode.toAccount.currency
   }
 
@@ -375,7 +422,17 @@ export function QuickTransactionModal({
       if (isNaN(numAccountAmount) || numAccountAmount <= 0) return
     }
 
-    // For income/expense, we need a selected account
+    // For a loan/loan payment with different account currency, also need account amount
+    if (isMultiCurrencyLoan) {
+      const numAccountAmount = parseFloat(accountAmount)
+      if (isNaN(numAccountAmount) || numAccountAmount <= 0) return
+    }
+
+    // Loans need a person name; payments can't exceed what's left on the loan
+    if (mode.type === 'loan' && !personName.trim()) return
+    if (mode.type === 'loan_payment' && numAmount > effectivePaymentRemaining) return
+
+    // For income/expense/loan/payment, we need a selected account
     if (mode.type !== 'transfer' && !selectedAccountId) return
 
     setIsSubmitting(true)
@@ -386,72 +443,22 @@ export function QuickTransactionModal({
         await reverseTransactionBalance(editTransaction, loans)
       }
 
-      if (mode.type === 'transfer') {
-        // Handle transfer between accounts - single transaction record
-        const fromAccount = mode.fromAccount
-        const toAccount = mode.toAccount
-        const numTargetAmount = isMultiCurrencyTransfer ? parseFloat(targetAmount) : numAmount
-
-        const transactionData = {
-          type: 'transfer' as const,
-          amount: numAmount,
-          currency: fromAccount.currency,
-          accountId: fromAccount.id,
-          toAccountId: toAccount.id,
-          toAmount: isMultiCurrencyTransfer ? numTargetAmount : undefined,
-          date: new Date(date),
-          comment: comment || undefined,
-        }
-
-        if (isEditMode && editTransaction?.id) {
-          await transactionRepo.update(editTransaction.id, transactionData)
-        } else {
-          await transactionRepo.create(transactionData)
-        }
-
-        // Update balances
-        await accountRepo.updateBalance(fromAccount.id!, -numAmount)
-        await accountRepo.updateBalance(toAccount.id!, numTargetAmount)
-      } else {
-        // Handle income/expense
-        const account = accounts.find((a) => a.id === selectedAccountId)
-        if (!account) return
-
-        if (mode.type === 'income') {
-          // Income handling:
-          // - amount = source currency (what you earned, for tile display)
-          // - mainCurrencyAmount = main currency (for totals)
-          // - account balance = accountAmount if account != source, else use amount
-          const incomeSource = selectedSource || mode.source
-          const sourceAmount = numAmount // source currency
-          const balanceAmount = needsAccountConversion
-            ? parseFloat(accountAmount) // account currency if different from source
-            : numAmount // same as source if currencies match
-
-          // Determine mainCurrencyAmount:
-          // - If source == mainCurrency: no conversion needed (undefined)
-          // - If account == mainCurrency: balanceAmount IS the mainCurrency amount
-          // - Otherwise: use the separate targetAmount field
-          const sourceIsMain = incomeSource.currency === mainCurrency
-          const accountIsMain = account.currency === mainCurrency
-          let storedMainCurrencyAmount: number | undefined
-          if (sourceIsMain) {
-            storedMainCurrencyAmount = undefined // source is already main currency
-          } else if (accountIsMain) {
-            storedMainCurrencyAmount = balanceAmount // account amount = main currency amount
-          } else if (isMultiCurrencyIncome) {
-            storedMainCurrencyAmount = parseFloat(targetAmount) // separate field
-          }
+      switch (mode.type) {
+        case 'transfer': {
+          // Handle transfer between accounts - single transaction record
+          const fromAccount = mode.fromAccount
+          const toAccount = mode.toAccount
+          const numTargetAmount = isMultiCurrencyTransfer ? parseFloat(targetAmount) : numAmount
 
           const transactionData = {
-            type: 'income' as const,
-            amount: sourceAmount, // source currency amount for display
-            currency: incomeSource.currency, // income source currency
+            type: 'transfer' as const,
+            amount: numAmount,
+            currency: fromAccount.currency,
+            accountId: fromAccount.id,
+            toAccountId: toAccount.id,
+            toAmount: isMultiCurrencyTransfer ? numTargetAmount : undefined,
             date: new Date(date),
             comment: comment || undefined,
-            accountId: selectedAccountId,
-            incomeSourceId: incomeSource.id,
-            mainCurrencyAmount: storedMainCurrencyAmount,
           }
 
           if (isEditMode && editTransaction?.id) {
@@ -460,37 +467,194 @@ export function QuickTransactionModal({
             await transactionRepo.create(transactionData)
           }
 
-          // Update account balance
-          await accountRepo.updateBalance(selectedAccountId!, balanceAmount)
-        } else {
-          // Expense handling:
-          // - amount = account currency
-          // - mainCurrencyAmount = main currency (for budgets)
-          const expenseCategory = selectedCategory || mode.category
-          const transactionAmount = numAmount
-          const storedMainCurrencyAmount = isMultiCurrencyExpense
-            ? parseFloat(targetAmount)
-            : undefined
+          // Update balances
+          await accountRepo.updateBalance(fromAccount.id!, -numAmount)
+          await accountRepo.updateBalance(toAccount.id!, numTargetAmount)
+          break
+        }
 
-          const transactionData = {
-            type: 'expense' as const,
-            amount: transactionAmount,
-            currency: account.currency,
-            date: new Date(date),
-            comment: comment || undefined,
-            accountId: selectedAccountId,
-            categoryId: expenseCategory.id,
-            mainCurrencyAmount: storedMainCurrencyAmount,
+        case 'loan': {
+          // Handle loan creation/editing (loan_given / loan_received)
+          const account = accounts.find((a) => a.id === selectedAccountId)
+          if (!account) return
+
+          const accountCurrencyAmount = isMultiCurrencyLoan ? parseFloat(accountAmount) : numAmount
+          const transactionType =
+            loanType === 'given' ? ('loan_given' as const) : ('loan_received' as const)
+          const transactionMainCurrencyAmount =
+            loanCurrency === mainCurrency ? numAmount : undefined
+
+          const loanFields = {
+            type: loanType,
+            personName: personName.trim(),
+            description: comment.trim() || undefined,
+            amount: numAmount,
+            currency: loanCurrency,
+            accountId: selectedAccountId!,
+            dueDate: dueDate ? new Date(dueDate) : undefined,
           }
+
+          if (isEditMode && editTransaction?.id && mode.loan?.id) {
+            await loanRepo.update(mode.loan.id, loanFields)
+
+            const transactionUpdates = {
+              type: transactionType,
+              amount: accountCurrencyAmount,
+              currency: account.currency,
+              accountId: selectedAccountId!,
+              mainCurrencyAmount: transactionMainCurrencyAmount,
+            }
+            await transactionRepo.update(editTransaction.id, transactionUpdates)
+            await applyTransactionBalance({ ...editTransaction, ...transactionUpdates }, loans)
+          } else {
+            const newLoanId = await loanRepo.create({
+              ...loanFields,
+              paidAmount: 0,
+              status: 'active',
+            })
+
+            const newTransaction = {
+              type: transactionType,
+              amount: accountCurrencyAmount,
+              currency: account.currency,
+              date: new Date(),
+              loanId: newLoanId as number,
+              accountId: selectedAccountId!,
+              mainCurrencyAmount: transactionMainCurrencyAmount,
+              comment: `${loanType === 'given' ? t('loanTo') : t('loanFrom')} ${personName.trim()}`,
+            }
+            await transactionRepo.create(newTransaction)
+            await applyTransactionBalance(newTransaction, loans)
+          }
+
+          await refreshLoans()
+          break
+        }
+
+        case 'loan_payment': {
+          // Handle recording/editing a loan payment
+          const account = accounts.find((a) => a.id === selectedAccountId)
+          if (!account) return
+
+          const loan = mode.loan
+          const accountCurrencyAmount = isMultiCurrencyLoan ? parseFloat(accountAmount) : numAmount
+          const paymentComment =
+            comment.trim() ||
+            `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`
+          const transactionMainCurrencyAmount =
+            loan.currency === mainCurrency ? numAmount : undefined
 
           if (isEditMode && editTransaction?.id) {
-            await transactionRepo.update(editTransaction.id, transactionData)
+            const transactionUpdates = {
+              amount: accountCurrencyAmount,
+              currency: account.currency,
+              accountId: selectedAccountId!,
+              mainCurrencyAmount: transactionMainCurrencyAmount,
+              comment: paymentComment,
+            }
+            await transactionRepo.update(editTransaction.id, transactionUpdates)
+            await applyTransactionBalance({ ...editTransaction, ...transactionUpdates }, loans)
           } else {
-            await transactionRepo.create(transactionData)
+            const newTransaction = {
+              type: 'loan_payment' as const,
+              amount: accountCurrencyAmount,
+              currency: account.currency,
+              date: new Date(),
+              loanId: loan.id,
+              accountId: selectedAccountId!,
+              mainCurrencyAmount: transactionMainCurrencyAmount,
+              comment: paymentComment,
+            }
+            await transactionRepo.create(newTransaction)
+            await applyTransactionBalance(newTransaction, loans)
           }
 
-          // Update account balance
-          await accountRepo.updateBalance(selectedAccountId!, -transactionAmount)
+          await refreshLoans()
+          break
+        }
+
+        case 'income':
+        case 'expense': {
+          // Handle income/expense
+          const account = accounts.find((a) => a.id === selectedAccountId)
+          if (!account) return
+
+          if (mode.type === 'income') {
+            // Income handling:
+            // - amount = source currency (what you earned, for tile display)
+            // - mainCurrencyAmount = main currency (for totals)
+            // - account balance = accountAmount if account != source, else use amount
+            const incomeSource = selectedSource || mode.source
+            const sourceAmount = numAmount // source currency
+            const balanceAmount = needsAccountConversion
+              ? parseFloat(accountAmount) // account currency if different from source
+              : numAmount // same as source if currencies match
+
+            // Determine mainCurrencyAmount:
+            // - If source == mainCurrency: no conversion needed (undefined)
+            // - If account == mainCurrency: balanceAmount IS the mainCurrency amount
+            // - Otherwise: use the separate targetAmount field
+            const sourceIsMain = incomeSource.currency === mainCurrency
+            const accountIsMain = account.currency === mainCurrency
+            let storedMainCurrencyAmount: number | undefined
+            if (sourceIsMain) {
+              storedMainCurrencyAmount = undefined // source is already main currency
+            } else if (accountIsMain) {
+              storedMainCurrencyAmount = balanceAmount // account amount = main currency amount
+            } else if (isMultiCurrencyIncome) {
+              storedMainCurrencyAmount = parseFloat(targetAmount) // separate field
+            }
+
+            const transactionData = {
+              type: 'income' as const,
+              amount: sourceAmount, // source currency amount for display
+              currency: incomeSource.currency, // income source currency
+              date: new Date(date),
+              comment: comment || undefined,
+              accountId: selectedAccountId,
+              incomeSourceId: incomeSource.id,
+              mainCurrencyAmount: storedMainCurrencyAmount,
+            }
+
+            if (isEditMode && editTransaction?.id) {
+              await transactionRepo.update(editTransaction.id, transactionData)
+            } else {
+              await transactionRepo.create(transactionData)
+            }
+
+            // Update account balance
+            await accountRepo.updateBalance(selectedAccountId!, balanceAmount)
+          } else {
+            // Expense handling:
+            // - amount = account currency
+            // - mainCurrencyAmount = main currency (for budgets)
+            const expenseCategory = selectedCategory || mode.category
+            const transactionAmount = numAmount
+            const storedMainCurrencyAmount = isMultiCurrencyExpense
+              ? parseFloat(targetAmount)
+              : undefined
+
+            const transactionData = {
+              type: 'expense' as const,
+              amount: transactionAmount,
+              currency: account.currency,
+              date: new Date(date),
+              comment: comment || undefined,
+              accountId: selectedAccountId,
+              categoryId: expenseCategory.id,
+              mainCurrencyAmount: storedMainCurrencyAmount,
+            }
+
+            if (isEditMode && editTransaction?.id) {
+              await transactionRepo.update(editTransaction.id, transactionData)
+            } else {
+              await transactionRepo.create(transactionData)
+            }
+
+            // Update account balance
+            await accountRepo.updateBalance(selectedAccountId!, -transactionAmount)
+          }
+          break
         }
       }
 
@@ -504,6 +668,87 @@ export function QuickTransactionModal({
       setIsSubmitting(false)
     }
   }
+
+  // Deleting from a loan payment removes the whole loan and its transactions,
+  // matching the original PaymentDialog's behavior.
+  const handleDeleteLoan = async () => {
+    if (mode.type !== 'loan_payment') return
+    if (!mode.loan.id) return
+    if (!confirm(t('deleteLoan'))) return
+
+    setIsSubmitting(true)
+    try {
+      await deleteLoanWithTransactions(mode.loan)
+      await Promise.all([refreshLoans(), refreshTransactions(), refreshAccounts()])
+      onClose()
+    } catch (error) {
+      console.error('Failed to delete loan:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const submitDisabled =
+    !amount ||
+    isSubmitting ||
+    (isMultiCurrencyTransfer && !targetAmount) ||
+    (isMultiCurrencyIncomeExpense && !targetAmount) ||
+    (needsAccountConversion && !accountAmount) ||
+    (isMultiCurrencyLoan && !accountAmount) ||
+    (mode.type !== 'transfer' && !selectedAccountId) ||
+    (mode.type === 'loan' && !personName.trim()) ||
+    (mode.type === 'loan_payment' && parseFloat(amount || '0') > effectivePaymentRemaining)
+
+  // Loan mode reuses the same "two boxes + arrow" flow as income/expense:
+  // money moving out mirrors expense (account → person), money coming in mirrors income (person → account).
+  const loanPersonBox = (
+    <div className="flex items-center gap-2 p-1.5 -m-1.5 min-w-0 max-w-[45%]">
+      <div
+        className={cn(
+          'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+          loanType === 'given' ? 'bg-success/20' : 'bg-destructive/20'
+        )}
+      >
+        <User
+          className={cn('h-4 w-4', loanType === 'given' ? 'text-success' : 'text-destructive')}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <input
+          type="text"
+          value={personName}
+          onChange={(e) => setPersonName(e.target.value)}
+          onTouchStart={handleInputTouchStart}
+          placeholder={t('personName')}
+          className="font-semibold bg-transparent outline-none w-full truncate placeholder:text-muted-foreground placeholder:font-normal placeholder:text-sm"
+        />
+      </div>
+    </div>
+  )
+
+  const loanAccountBox = (
+    <button
+      type="button"
+      onClick={() => setShowAccountPicker(true)}
+      className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+    >
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+      >
+        <div
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
+        />
+      </div>
+      <div className="min-w-0 text-left">
+        <p className="font-semibold truncate">{selectedAccount?.name}</p>
+        <BlurredAmount className="text-sm text-muted-foreground truncate block">
+          {formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}
+        </BlurredAmount>
+      </div>
+    </button>
+  )
 
   return (
     <div
@@ -653,16 +898,115 @@ export function QuickTransactionModal({
                   </div>
                 </button>
               </div>
+            ) : mode.type === 'loan' ? (
+              // Loan: compact type toggle + person/account flow (mirrors expense when money
+              // goes out, income when money comes in)
+              <div className="flex-1 min-w-0 space-y-2.5">
+                <div className="inline-flex gap-0.5 p-0.5 rounded-full bg-secondary/50">
+                  <button
+                    type="button"
+                    onClick={() => setLoanType('given')}
+                    className={cn(
+                      'px-3 py-1 rounded-full text-xs font-medium transition-all',
+                      loanType === 'given'
+                        ? 'bg-success text-success-foreground'
+                        : 'text-muted-foreground'
+                    )}
+                  >
+                    {t('moneyILent')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoanType('received')}
+                    className={cn(
+                      'px-3 py-1 rounded-full text-xs font-medium transition-all',
+                      loanType === 'received'
+                        ? 'bg-destructive text-destructive-foreground'
+                        : 'text-muted-foreground'
+                    )}
+                  >
+                    {t('moneyIBorrowed')}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  {loanType === 'given' ? loanAccountBox : loanPersonBox}
+                  <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+                  {loanType === 'given' ? loanPersonBox : loanAccountBox}
+                </div>
+              </div>
+            ) : mode.type === 'loan_payment' ? (
+              // Loan payment: loan (person) → account
+              <div className="flex items-center justify-between flex-1 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 max-w-[45%]">
+                  <div
+                    className={cn(
+                      'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+                      mode.loan.type === 'given' ? 'bg-success/20' : 'bg-destructive/20'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'w-3 h-3 rounded-full',
+                        mode.loan.type === 'given' ? 'bg-success' : 'bg-destructive'
+                      )}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{mode.loan.personName}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {mode.loan.type === 'given' ? t('moneyGiven') : t('moneyReceived')}
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+                <button
+                  onClick={() => setShowAccountPicker(true)}
+                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
+                    />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <p className="font-semibold truncate">{selectedAccount?.name}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(
+                        selectedAccount?.balance || 0,
+                        selectedAccount?.currency || ''
+                      )}
+                    </BlurredAmount>
+                  </div>
+                </button>
+              </div>
             ) : null}
           </div>
-          {isEditMode && onDelete && editTransaction && (
+          {mode.type === 'loan_payment' ? (
             <button
-              onClick={() => onDelete(editTransaction)}
+              onClick={handleDeleteLoan}
+              disabled={isSubmitting}
               className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
               aria-label={t('delete')}
             >
               <Trash2 className="h-5 w-5 text-destructive" />
             </button>
+          ) : (
+            mode.type !== 'loan' &&
+            isEditMode &&
+            onDelete &&
+            editTransaction && (
+              <button
+                onClick={() => onDelete(editTransaction)}
+                className="p-2 rounded-full hover:bg-destructive/20 touch-target flex-shrink-0"
+                aria-label={t('delete')}
+              >
+                <Trash2 className="h-5 w-5 text-destructive" />
+              </button>
+            )
           )}
         </div>
 
@@ -726,20 +1070,35 @@ export function QuickTransactionModal({
               </div>
             </div>
           </div>
-        ) : (isMultiCurrencyIncomeExpense || needsAccountConversion) && selectedAccount ? (
-          // Multi-currency income/expense
+        ) : (isMultiCurrencyIncomeExpense || needsAccountConversion || isMultiCurrencyLoan) &&
+          selectedAccount ? (
+          // Multi-currency income/expense/loan
           <div className="p-4">
             <div className="flex items-center justify-center gap-2">
-              {/* Source Amount - for income: source currency, for expense: account currency */}
+              {/* Source Amount - for income: source currency, for expense: account currency, for loans: loan currency */}
               <div
                 className={cn(
                   'flex-1 p-3 rounded-xl transition-all',
                   activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
                 )}
               >
-                <p className="text-xs text-muted-foreground mb-1">
-                  {mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency}
-                </p>
+                {mode.type === 'loan' ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrencyPicker(true)}
+                    className="text-xs text-muted-foreground mb-1 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
+                  >
+                    {currentLoanCurrency}
+                  </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {mode.type === 'income'
+                      ? currentSourceCurrency
+                      : mode.type === 'loan_payment'
+                        ? currentLoanCurrency
+                        : selectedAccount.currency}
+                  </p>
+                )}
                 <div className="flex items-baseline gap-1">
                   <input
                     ref={amountInputRef}
@@ -755,7 +1114,11 @@ export function QuickTransactionModal({
                   />
                   <span className="text-xl font-bold tabular-nums text-muted-foreground">
                     {getCurrencySymbol(
-                      mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency
+                      mode.type === 'income'
+                        ? currentSourceCurrency
+                        : mode.type === 'loan' || mode.type === 'loan_payment'
+                          ? currentLoanCurrency
+                          : selectedAccount.currency
                     )}
                   </span>
                 </div>
@@ -794,8 +1157,8 @@ export function QuickTransactionModal({
                 </>
               )}
 
-              {/* Account Amount (for balance) - shown for income when account != source */}
-              {needsAccountConversion && (
+              {/* Account Amount (for balance) - shown for income when account != source, or loans/payments when account != loan currency */}
+              {(needsAccountConversion || isMultiCurrencyLoan) && (
                 <>
                   <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <div
@@ -850,11 +1213,60 @@ export function QuickTransactionModal({
                   placeholder="0"
                   className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
                 />
-                <span className="text-5xl font-bold tabular-nums text-muted-foreground">
-                  {getCurrencySymbol(getCurrentCurrency())}
-                </span>
+                {mode.type === 'loan' ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrencyPicker(true)}
+                    className="text-5xl font-bold tabular-nums text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {getCurrencySymbol(getCurrentCurrency())}
+                  </button>
+                ) : (
+                  <span className="text-5xl font-bold tabular-nums text-muted-foreground">
+                    {getCurrencySymbol(getCurrentCurrency())}
+                  </span>
+                )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Loan payment progress */}
+        {mode.type === 'loan_payment' && (
+          <div className="px-4 pb-3 space-y-3">
+            <div className="flex justify-between items-baseline">
+              <span className="text-lg font-bold">
+                {formatCurrency(paymentRemaining, mode.loan.currency)}
+              </span>
+              <span className="text-sm text-muted-foreground">{t('remaining')}</span>
+            </div>
+            <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  'h-full transition-all',
+                  mode.loan.type === 'given' ? 'bg-success' : 'bg-destructive'
+                )}
+                style={{ width: `${(mode.loan.paidAmount / mode.loan.amount) * 100}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>
+                {formatCurrency(mode.loan.paidAmount, mode.loan.currency)} {t('paid').toLowerCase()}
+              </span>
+              <span>
+                {formatCurrency(mode.loan.amount, mode.loan.currency)} {t('total').toLowerCase()}
+              </span>
+            </div>
+            {!isEditMode && paymentRemaining > 0 && (
+              <button
+                type="button"
+                onClick={() => setAmount(effectivePaymentRemaining.toString())}
+                className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
+              >
+                {t('payFullRemaining')} (
+                {formatCurrency(effectivePaymentRemaining, mode.loan.currency)})
+              </button>
+            )}
           </div>
         )}
 
@@ -869,7 +1281,7 @@ export function QuickTransactionModal({
             <MessageSquare className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
             <textarea
               ref={commentRef}
-              placeholder={t('addComment')}
+              placeholder={mode.type === 'loan' ? t('addNotesAboutLoan') : t('addComment')}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               onFocus={() => setActiveField('comment')}
@@ -880,45 +1292,59 @@ export function QuickTransactionModal({
         </div>
 
         {/* Date row */}
-        <div className="px-4 pb-4 flex justify-end">
-          <label
-            className={cn(
-              'inline-flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer relative transition-all',
-              activeField === 'date' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+        {mode.type !== 'loan_payment' && (
+          <div className="px-4 pb-4 flex justify-end items-center gap-2">
+            <label
+              className={cn(
+                'inline-flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer relative transition-all',
+                activeField === 'date' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+              )}
+            >
+              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm">
+                {mode.type === 'loan'
+                  ? dueDate
+                    ? new Date(dueDate + 'T00:00:00').toLocaleDateString(
+                        language === 'ru' ? 'ru-RU' : 'en-US',
+                        { day: 'numeric', month: 'short' }
+                      )
+                    : t('dueDate')
+                  : date === new Date().toISOString().split('T')[0]
+                    ? t('today')
+                    : new Date(date + 'T00:00:00').toLocaleDateString(
+                        language === 'ru' ? 'ru-RU' : 'en-US',
+                        { day: 'numeric', month: 'short' }
+                      )}
+              </span>
+              <input
+                type="date"
+                lang={language}
+                value={mode.type === 'loan' ? dueDate : date}
+                onChange={(e) =>
+                  mode.type === 'loan' ? setDueDate(e.target.value) : setDate(e.target.value)
+                }
+                onFocus={() => setActiveField('date')}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </label>
+            {mode.type === 'loan' && dueDate && (
+              <button
+                type="button"
+                onClick={() => setDueDate('')}
+                className="p-2 rounded-full hover:bg-secondary touch-target"
+                aria-label={t('clear')}
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
             )}
-          >
-            <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-sm">
-              {date === new Date().toISOString().split('T')[0]
-                ? t('today')
-                : new Date(date + 'T00:00:00').toLocaleDateString(
-                    language === 'ru' ? 'ru-RU' : 'en-US',
-                    { day: 'numeric', month: 'short' }
-                  )}
-            </span>
-            <input
-              type="date"
-              lang={language}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              onFocus={() => setActiveField('date')}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-          </label>
-        </div>
+          </div>
+        )}
 
         {/* Submit Button - inline after comment */}
         <div ref={buttonContainerRef} className={cn('px-4 pb-4', buttonCovered && 'invisible')}>
           <button
             onClick={handleSubmit}
-            disabled={
-              !amount ||
-              (isMultiCurrencyTransfer && !targetAmount) ||
-              (isMultiCurrencyIncomeExpense && !targetAmount) ||
-              (needsAccountConversion && !accountAmount) ||
-              (mode.type !== 'transfer' && !selectedAccountId) ||
-              isSubmitting
-            }
+            disabled={submitDisabled}
             className={cn(
               'w-full py-4 rounded-xl text-lg font-semibold transition-colors touch-target',
               'bg-primary text-primary-foreground',
@@ -937,14 +1363,7 @@ export function QuickTransactionModal({
           <div className="max-w-lg mx-auto">
             <button
               onClick={handleSubmit}
-              disabled={
-                !amount ||
-                (isMultiCurrencyTransfer && !targetAmount) ||
-                (isMultiCurrencyIncomeExpense && !targetAmount) ||
-                (needsAccountConversion && !accountAmount) ||
-                (mode.type !== 'transfer' && !selectedAccountId) ||
-                isSubmitting
-              }
+              disabled={submitDisabled}
               className={cn(
                 'w-full py-4 rounded-xl text-lg font-semibold transition-colors touch-target',
                 'bg-primary text-primary-foreground',
@@ -1083,6 +1502,49 @@ export function QuickTransactionModal({
                   <p className="font-medium truncate">{category.name}</p>
                 </div>
                 {category.id === selectedCategoryId && (
+                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Currency Picker Overlay */}
+      {showCurrencyPicker && mode.type === 'loan' && (
+        <div className="absolute inset-0 bg-background z-10 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h3 className="font-semibold">{t('selectCurrency')}</h3>
+            <button
+              onClick={() => setShowCurrencyPicker(false)}
+              className="p-2 rounded-full hover:bg-secondary touch-target"
+              aria-label={t('close')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {getAllCurrencies().map((c) => (
+              <button
+                key={c.code}
+                onClick={() => {
+                  setLoanCurrency(c.code)
+                  setAccountAmount('')
+                  setShowCurrencyPicker(false)
+                }}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
+                  c.code === loanCurrency ? 'bg-primary/20' : 'hover:bg-secondary/50'
+                )}
+              >
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-medium flex-shrink-0">
+                  {c.symbol}
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-medium truncate">{c.code}</p>
+                  <p className="text-sm text-muted-foreground truncate">{c.name}</p>
+                </div>
+                {c.code === loanCurrency && (
                   <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 )}
               </button>
