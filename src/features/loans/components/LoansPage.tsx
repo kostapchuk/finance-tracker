@@ -1,21 +1,30 @@
 import { Plus, ArrowUpRight, ArrowDownLeft, ChevronDown, ChevronUp } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
+import { LoanDetailDialog } from './LoanDetailDialog'
 import { LoanForm } from './LoanForm'
 import type { LoanFormData } from './LoanForm'
 import { PaymentDialog } from './PaymentDialog'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { MonthSelector } from '@/components/ui/MonthSelector'
 import { Button } from '@/components/ui/button'
 import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
+import { filterCompletedLoansByMonth } from '@/features/loans/utils/loanFilters'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
+import { getEndOfMonth, getStartOfMonth } from '@/utils/date'
+
+const COMPLETED_PAGE_SIZE = 50
 
 export function LoansPage() {
   const loans = useAppStore((state) => state.loans)
   const accounts = useAppStore((state) => state.accounts)
+  const transactions = useAppStore((state) => state.transactions)
+  const selectedMonth = useAppStore((state) => state.selectedMonth)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const refreshLoans = useAppStore((state) => state.refreshLoans)
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
@@ -27,6 +36,16 @@ export function LoansPage() {
   const [receivedExpanded, setReceivedExpanded] = useState(true)
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null)
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
+  const [selectedCompletedLoan, setSelectedCompletedLoan] = useState<Loan | null>(null)
+  const [completedDisplayCount, setCompletedDisplayCount] = useState(COMPLETED_PAGE_SIZE)
+  const [isLoadingMoreCompleted, setIsLoadingMoreCompleted] = useState(false)
+  const [prevSelectedMonth, setPrevSelectedMonth] = useState(selectedMonth)
+
+  // Reset completed-loans pagination when the shared month header navigates
+  if (selectedMonth !== prevSelectedMonth) {
+    setPrevSelectedMonth(selectedMonth)
+    setCompletedDisplayCount(COMPLETED_PAGE_SIZE)
+  }
 
   // Split loans by type and status
   const { activeGiven, activeReceived, paidGiven, paidReceived } = useMemo(() => {
@@ -69,6 +88,35 @@ export function LoansPage() {
 
     return { givenByCurrency, receivedByCurrency }
   }, [activeGiven, activeReceived])
+
+  // Completed loans for the selected month, most recently paid off first
+  const completedLoansInMonth = useMemo(() => {
+    const monthStart = getStartOfMonth(selectedMonth)
+    const monthEnd = getEndOfMonth(selectedMonth)
+    return filterCompletedLoansByMonth(
+      [...paidGiven, ...paidReceived],
+      transactions,
+      monthStart,
+      monthEnd
+    )
+  }, [paidGiven, paidReceived, transactions, selectedMonth])
+
+  const displayedCompletedLoans = completedLoansInMonth.slice(0, completedDisplayCount)
+  const hasMoreCompleted = completedDisplayCount < completedLoansInMonth.length
+
+  const loadMoreCompleted = useCallback(async () => {
+    if (isLoadingMoreCompleted || !hasMoreCompleted) return
+    setIsLoadingMoreCompleted(true)
+    await new Promise((r) => setTimeout(r, 50))
+    setCompletedDisplayCount((c) => c + COMPLETED_PAGE_SIZE)
+    setIsLoadingMoreCompleted(false)
+  }, [isLoadingMoreCompleted, hasMoreCompleted])
+
+  const { sentinelRef: completedSentinelRef } = useInfiniteScroll({
+    onLoadMore: loadMoreCompleted,
+    hasMore: hasMoreCompleted,
+    isLoading: isLoadingMoreCompleted,
+  })
 
   const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
     if (isEdit && loanId) {
@@ -135,6 +183,10 @@ export function LoansPage() {
     setPaymentDialogOpen(true)
   }
 
+  const handleCompletedLoanClick = (loan: Loan) => {
+    setSelectedCompletedLoan(loan)
+  }
+
   return (
     <div className="flex flex-col min-h-full pb-4">
       {/* Header */}
@@ -145,6 +197,9 @@ export function LoansPage() {
           {t('add')}
         </Button>
       </div>
+
+      {/* Month Selector */}
+      <MonthSelector />
 
       {/* Summary */}
       <div className="px-4 py-2 grid grid-cols-2 gap-3">
@@ -268,24 +323,50 @@ export function LoansPage() {
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
             {t('completed')}
           </h3>
-          <div className="space-y-2">
-            {[...paidGiven, ...paidReceived].map((loan) => (
-              <div
-                key={loan.id}
-                className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl opacity-60"
-              >
-                <div>
-                  <p className="font-medium">{loan.personName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {loan.type === 'given' ? t('repaid') : t('paidOff')}
-                  </p>
-                </div>
-                <BlurredAmount className="font-medium text-muted-foreground">
-                  {formatCurrency(loan.amount, loan.currency)}
-                </BlurredAmount>
-              </div>
-            ))}
-          </div>
+          {completedLoansInMonth.length === 0 ? (
+            <p className="text-center py-4 text-muted-foreground text-sm">
+              {t('noCompletedLoansThisPeriod')}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {displayedCompletedLoans.map((loan) => (
+                <button
+                  key={loan.id}
+                  type="button"
+                  onClick={() => handleCompletedLoanClick(loan)}
+                  className="flex items-center justify-between w-full p-3 bg-secondary/30 rounded-xl opacity-60 active:opacity-80 transition-opacity text-left"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{loan.personName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {loan.type === 'given' ? t('repaid') : t('paidOff')}
+                    </p>
+                  </div>
+                  <BlurredAmount className="font-medium text-muted-foreground flex-shrink-0 ml-3">
+                    {formatCurrency(loan.amount, loan.currency)}
+                  </BlurredAmount>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Sentinel for infinite scroll */}
+          <div ref={completedSentinelRef} className="h-1" />
+
+          {isLoadingMoreCompleted && (
+            <div className="flex justify-center py-4">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          )}
+
+          {!hasMoreCompleted && completedLoansInMonth.length > COMPLETED_PAGE_SIZE && (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              {t('showingAllCompletedLoans').replace(
+                '{count}',
+                String(completedLoansInMonth.length)
+              )}
+            </p>
+          )}
         </section>
       )}
 
@@ -295,6 +376,13 @@ export function LoansPage() {
         open={loanFormOpen}
         onClose={() => setLoanFormOpen(false)}
         onSave={handleSaveLoan}
+      />
+
+      {/* Completed Loan Detail */}
+      <LoanDetailDialog
+        loan={selectedCompletedLoan}
+        open={!!selectedCompletedLoan}
+        onClose={() => setSelectedCompletedLoan(null)}
       />
 
       {/* Payment Dialog */}
