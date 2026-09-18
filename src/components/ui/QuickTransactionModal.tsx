@@ -1,4 +1,4 @@
-import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
+import { X, Calendar, MessageSquare, ArrowRight, Trash2, User } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
@@ -699,6 +699,57 @@ export function QuickTransactionModal({
     (mode.type === 'loan' && !personName.trim()) ||
     (mode.type === 'loan_payment' && parseFloat(amount || '0') > effectivePaymentRemaining)
 
+  // Loan mode reuses the same "two boxes + arrow" flow as income/expense:
+  // money moving out mirrors expense (account → person), money coming in mirrors income (person → account).
+  const loanPersonBox = (
+    <div className="flex items-center gap-2 p-1.5 -m-1.5 min-w-0 max-w-[45%]">
+      <div
+        className={cn(
+          'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
+          loanType === 'given' ? 'bg-success/20' : 'bg-destructive/20'
+        )}
+      >
+        <User
+          className={cn('h-4 w-4', loanType === 'given' ? 'text-success' : 'text-destructive')}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <input
+          type="text"
+          value={personName}
+          onChange={(e) => setPersonName(e.target.value)}
+          onTouchStart={handleInputTouchStart}
+          placeholder={t('personName')}
+          className="font-semibold bg-transparent outline-none w-full truncate placeholder:text-muted-foreground placeholder:font-normal placeholder:text-sm"
+        />
+      </div>
+    </div>
+  )
+
+  const loanAccountBox = (
+    <button
+      type="button"
+      onClick={() => setShowAccountPicker(true)}
+      className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+    >
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+      >
+        <div
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
+        />
+      </div>
+      <div className="min-w-0 text-left">
+        <p className="font-semibold truncate">{selectedAccount?.name}</p>
+        <BlurredAmount className="text-sm text-muted-foreground truncate block">
+          {formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}
+        </BlurredAmount>
+      </div>
+    </button>
+  )
+
   return (
     <div
       ref={modalRef}
@@ -848,20 +899,18 @@ export function QuickTransactionModal({
                 </button>
               </div>
             ) : mode.type === 'loan' ? (
-              // Loan: given/received toggle + person name + account
-              <div className="flex-1 min-w-0 space-y-3">
-                <h2 className="text-base font-semibold">
-                  {mode.loan ? t('editLoan') : t('addLoan')}
-                </h2>
-                <div className="grid grid-cols-2 gap-2">
+              // Loan: compact type toggle + person/account flow (mirrors expense when money
+              // goes out, income when money comes in)
+              <div className="flex-1 min-w-0 space-y-2.5">
+                <div className="inline-flex gap-0.5 p-0.5 rounded-full bg-secondary/50">
                   <button
                     type="button"
                     onClick={() => setLoanType('given')}
                     className={cn(
-                      'py-2.5 rounded-xl text-sm font-medium transition-all',
+                      'px-3 py-1 rounded-full text-xs font-medium transition-all',
                       loanType === 'given'
-                        ? 'bg-success/20 ring-2 ring-success text-success'
-                        : 'bg-secondary/50 text-muted-foreground'
+                        ? 'bg-success text-success-foreground'
+                        : 'text-muted-foreground'
                     )}
                   >
                     {t('moneyILent')}
@@ -870,59 +919,20 @@ export function QuickTransactionModal({
                     type="button"
                     onClick={() => setLoanType('received')}
                     className={cn(
-                      'py-2.5 rounded-xl text-sm font-medium transition-all',
+                      'px-3 py-1 rounded-full text-xs font-medium transition-all',
                       loanType === 'received'
-                        ? 'bg-destructive/20 ring-2 ring-destructive text-destructive'
-                        : 'bg-secondary/50 text-muted-foreground'
+                        ? 'bg-destructive text-destructive-foreground'
+                        : 'text-muted-foreground'
                     )}
                   >
                     {t('moneyIBorrowed')}
                   </button>
                 </div>
-                <input
-                  type="text"
-                  value={personName}
-                  onChange={(e) => setPersonName(e.target.value)}
-                  onTouchStart={handleInputTouchStart}
-                  placeholder={
-                    loanType === 'given' ? t('whoDidYouLendTo') : t('whoDidYouBorrowFrom')
-                  }
-                  className="w-full bg-secondary/50 rounded-xl px-3 py-2.5 text-base outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrencyPicker(true)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors"
-                >
-                  <span className="text-sm text-muted-foreground">{t('currency')}</span>
-                  <span className="text-sm font-medium">
-                    {getAllCurrencies().find((c) => c.code === loanCurrency)?.symbol} {loanCurrency}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAccountPicker(true)}
-                  className="w-full flex items-center gap-2 p-2 -m-2 rounded-xl hover:bg-secondary/50 transition-colors"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
-                    />
-                  </div>
-                  <div className="min-w-0 text-left flex-1">
-                    <p className="font-semibold truncate">{selectedAccount?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(
-                        selectedAccount?.balance || 0,
-                        selectedAccount?.currency || ''
-                      )}
-                    </BlurredAmount>
-                  </div>
-                </button>
+                <div className="flex items-center justify-between">
+                  {loanType === 'given' ? loanAccountBox : loanPersonBox}
+                  <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+                  {loanType === 'given' ? loanPersonBox : loanAccountBox}
+                </div>
               </div>
             ) : mode.type === 'loan_payment' ? (
               // Loan payment: loan (person) → account
@@ -1072,13 +1082,23 @@ export function QuickTransactionModal({
                   activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
                 )}
               >
-                <p className="text-xs text-muted-foreground mb-1">
-                  {mode.type === 'income'
-                    ? currentSourceCurrency
-                    : mode.type === 'loan' || mode.type === 'loan_payment'
-                      ? currentLoanCurrency
-                      : selectedAccount.currency}
-                </p>
+                {mode.type === 'loan' ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrencyPicker(true)}
+                    className="text-xs text-muted-foreground mb-1 hover:text-foreground transition-colors underline decoration-dotted underline-offset-2"
+                  >
+                    {currentLoanCurrency}
+                  </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {mode.type === 'income'
+                      ? currentSourceCurrency
+                      : mode.type === 'loan_payment'
+                        ? currentLoanCurrency
+                        : selectedAccount.currency}
+                  </p>
+                )}
                 <div className="flex items-baseline gap-1">
                   <input
                     ref={amountInputRef}
@@ -1193,9 +1213,19 @@ export function QuickTransactionModal({
                   placeholder="0"
                   className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
                 />
-                <span className="text-5xl font-bold tabular-nums text-muted-foreground">
-                  {getCurrencySymbol(getCurrentCurrency())}
-                </span>
+                {mode.type === 'loan' ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrencyPicker(true)}
+                    className="text-5xl font-bold tabular-nums text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {getCurrencySymbol(getCurrentCurrency())}
+                  </button>
+                ) : (
+                  <span className="text-5xl font-bold tabular-nums text-muted-foreground">
+                    {getCurrencySymbol(getCurrentCurrency())}
+                  </span>
+                )}
               </div>
             </div>
           </div>
