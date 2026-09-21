@@ -380,4 +380,77 @@ test.describe('History Page - Advanced Filters', () => {
     await expect(page.locator('text=Income transaction')).toBeVisible();
     await expect(page.locator('text=Expense transaction')).toBeVisible();
   });
+
+  test('should show income and expense totals (including loans) in the day header', async ({
+    historyPage,
+    dbHelper,
+  }) => {
+    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    const catId = await dbHelper.seedCategory(testCategories.food());
+    const incomeId = await dbHelper.seedIncomeSource(testIncomeSources.salary());
+
+    // Inflows: 1000 income + 400 loan received = 1400
+    await dbHelper.seedTransaction({
+      type: 'income',
+      amount: 1000,
+      currency: 'USD',
+      accountId,
+      incomeSourceId: incomeId,
+      comment: 'Salary day',
+    });
+    await dbHelper.seedTransaction({
+      type: 'loan_received',
+      amount: 400,
+      currency: 'USD',
+      accountId,
+      comment: 'Borrowed money',
+    });
+    // Outflows: 50 expense + 200 loan given = 250
+    await dbHelper.seedTransaction({
+      type: 'expense',
+      amount: 50,
+      currency: 'USD',
+      accountId,
+      categoryId: catId,
+      comment: 'Lunch',
+    });
+    await dbHelper.seedTransaction({
+      type: 'loan_given',
+      amount: 200,
+      currency: 'USD',
+      accountId,
+      comment: 'Lent money',
+    });
+    await dbHelper.refreshStoreData();
+
+    await historyPage.navigateTo('history');
+
+    const dayHeader = historyPage.getDateGroups().first();
+    await expect(dayHeader).toContainText('+1,400.00');
+    await expect(dayHeader).toContainText('-250.00');
+  });
+
+  test('should hide the day income total when there is no income that day', async ({
+    historyPage,
+    dbHelper,
+  }) => {
+    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    const catId = await dbHelper.seedCategory(testCategories.food());
+
+    await dbHelper.seedTransaction({
+      type: 'expense',
+      amount: 75,
+      currency: 'USD',
+      accountId,
+      categoryId: catId,
+      comment: 'Only expense',
+    });
+    await dbHelper.refreshStoreData();
+
+    await historyPage.navigateTo('history');
+
+    const dayHeader = historyPage.getDateGroups().first();
+    await expect(dayHeader).toContainText('-75.00');
+    await expect(dayHeader).not.toContainText('+');
+  });
 });

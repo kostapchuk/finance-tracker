@@ -27,6 +27,7 @@ import type { Transaction, TransactionType, Loan } from '@/database/types'
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
 import { getMonthDateFilter } from '@/features/transactions/utils/monthDateFilter'
+import { calculateFlows } from '@/features/transactions/utils/transactionFlows'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
@@ -321,22 +322,7 @@ export function HistoryPage() {
   ])
 
   // Period summary for header
-  const periodSummary = useMemo(() => {
-    let inflows = 0
-    let outflows = 0
-
-    filteredTransactions.forEach((tx) => {
-      const amount = tx.mainCurrencyAmount ?? tx.amount
-
-      if (tx.type === 'income' || tx.type === 'loan_received') {
-        inflows += amount
-      } else if (tx.type === 'expense' || tx.type === 'loan_given') {
-        outflows += amount
-      }
-    })
-
-    return { inflows, outflows, net: inflows - outflows }
-  }, [filteredTransactions])
+  const periodSummary = useMemo(() => calculateFlows(filteredTransactions), [filteredTransactions])
 
   // Paginated transactions for display
   const displayedTransactions = useMemo(() => {
@@ -791,19 +777,24 @@ export function HistoryPage() {
           </div>
         ) : (
           Object.entries(groupedTransactions).map(([group, txs]) => {
-            const groupExpenseTotal = txs
-              .filter((tx) => tx.type === 'expense')
-              .reduce((sum, tx) => sum + (tx.mainCurrencyAmount ?? tx.amount), 0)
+            const { inflows: groupInflows, outflows: groupOutflows } = calculateFlows(txs)
 
             return (
               <div key={group} className="mb-6">
                 <h3 className="flex justify-between items-center text-sm font-semibold text-muted-foreground mb-2 sticky top-0 bg-background py-2">
                   <span>{group}</span>
-                  {groupExpenseTotal > 0 && (
-                    <BlurredAmount className="font-mono text-destructive">
-                      -{formatCurrency(groupExpenseTotal, mainCurrency)}
-                    </BlurredAmount>
-                  )}
+                  <span className="flex items-center gap-2 font-mono">
+                    {groupInflows > 0 && (
+                      <BlurredAmount className="text-success">
+                        +{formatCurrency(groupInflows, mainCurrency)}
+                      </BlurredAmount>
+                    )}
+                    {groupOutflows > 0 && (
+                      <BlurredAmount className="text-destructive">
+                        -{formatCurrency(groupOutflows, mainCurrency)}
+                      </BlurredAmount>
+                    )}
+                  </span>
                 </h3>
                 <div className="space-y-2">
                   {txs.map((transaction) => {
