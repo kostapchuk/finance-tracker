@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/test-base';
-import { testAccounts, testCategories, testIncomeSources } from '../fixtures/test-data';
+import { testAccounts, testCategories, testIncomeSources, testLoans } from '../fixtures/test-data';
 
 test.describe('History Page - Advanced Filters', () => {
   test.beforeEach(async ({ setupCleanState }) => {
@@ -428,6 +428,41 @@ test.describe('History Page - Advanced Filters', () => {
     const dayHeader = historyPage.getDateGroups().first();
     await expect(dayHeader).toContainText('+1,400.00');
     await expect(dayHeader).toContainText('-250.00');
+  });
+
+  test('should count loan repayments in the day header by loan type', async ({
+    historyPage,
+    dbHelper,
+  }) => {
+    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    const givenLoanId = await dbHelper.seedLoan(testLoans.givenToJohn(accountId));
+    const receivedLoanId = await dbHelper.seedLoan(testLoans.receivedFromJane(accountId));
+
+    // Repayment of a loan I gave: money comes back -> income
+    await dbHelper.seedTransaction({
+      type: 'loan_payment',
+      amount: 120,
+      currency: 'USD',
+      accountId,
+      loanId: givenLoanId,
+      comment: 'John repaid',
+    });
+    // Payment on a loan I received: money goes out -> expense
+    await dbHelper.seedTransaction({
+      type: 'loan_payment',
+      amount: 30,
+      currency: 'USD',
+      accountId,
+      loanId: receivedLoanId,
+      comment: 'Paid Jane',
+    });
+    await dbHelper.refreshStoreData();
+
+    await historyPage.navigateTo('history');
+
+    const dayHeader = historyPage.getDateGroups().first();
+    await expect(dayHeader).toContainText('+120.00');
+    await expect(dayHeader).toContainText('-30.00');
   });
 
   test('should hide the day income total when there is no income that day', async ({
