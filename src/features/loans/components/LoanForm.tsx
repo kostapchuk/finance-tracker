@@ -1,14 +1,10 @@
 import { ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { AccountSelect } from '@/components/ui/AccountSelect'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
+import { FormDialogFooter } from '@/components/ui/FormDialogFooter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -24,7 +20,6 @@ import type { Loan, LoanType } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
-import { getAllCurrencies } from '@/utils/currency'
 import { formatDateForInput } from '@/utils/date'
 
 export interface LoanFormData {
@@ -183,22 +178,13 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="account">{t('relatedAccount')}</Label>
-            <Select value={accountId} onValueChange={setAccountId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectAccount')}>
-                  {selectedAccount
-                    ? `${selectedAccount.name} (${selectedAccount.currency})`
-                    : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id!.toString()}>
-                    {a.name} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AccountSelect
+              id="account"
+              accounts={accounts}
+              value={accountId}
+              onValueChange={setAccountId}
+              placeholder={t('selectAccount')}
+            />
           </div>
 
           {/* Amount inputs — dual when multi-currency */}
@@ -251,20 +237,12 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">{t('currency')}</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('currency')}>
-                      {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getAllCurrencies().map((c) => (
-                      <SelectItem key={c.code} value={c.code}>
-                        {c.symbol} {c.code}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CurrencySelect
+                  id="currency"
+                  value={currency}
+                  onValueChange={setCurrency}
+                  placeholder={t('currency')}
+                />
               </div>
             </div>
           )}
@@ -273,20 +251,12 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
           {isMultiCurrency && (
             <div className="space-y-2">
               <Label htmlFor="currency">{t('currency')}</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('currency')}>
-                    {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {getAllCurrencies().map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      {c.symbol} {c.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CurrencySelect
+                id="currency"
+                value={currency}
+                onValueChange={setCurrency}
+                placeholder={t('currency')}
+              />
             </div>
           )}
 
@@ -312,14 +282,12 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit" disabled={isLoading || !accountId}>
-              {isLoading ? t('saving') : loan ? t('update') : t('create')}
-            </Button>
-          </DialogFooter>
+          <FormDialogFooter
+            isEditing={!!loan}
+            isLoading={isLoading}
+            onCancel={onClose}
+            submitDisabled={!accountId}
+          />
         </form>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,7 @@
 import { ArrowRight, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { AccountSelect } from '@/components/ui/AccountSelect'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -12,13 +13,6 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { transactionRepo } from '@/database/repositories'
 import type { Loan, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -304,22 +298,12 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
           <div className="space-y-2">
             <Label>{t('paymentAccount')}</Label>
-            <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectAccount')}>
-                  {selectedAccount
-                    ? `${selectedAccount.name} (${selectedAccount.currency})`
-                    : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id!.toString()}>
-                    {a.name} ({a.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AccountSelect
+              accounts={accounts}
+              value={selectedAccountId}
+              onValueChange={setSelectedAccountId}
+              placeholder={t('selectAccount')}
+            />
           </div>
 
           {!isEditMode && displayRemaining > 0 && (
