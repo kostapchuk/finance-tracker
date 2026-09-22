@@ -1,14 +1,9 @@
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { ColorPicker } from '@/components/ui/color-picker'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { ColorAndVisibilityFields } from '@/components/ui/ColorAndVisibilityFields'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
+import { FormDialogFooter } from '@/components/ui/FormDialogFooter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -18,14 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Toggle } from '@/components/ui/toggle'
 import { accountRepo } from '@/database/repositories'
 import type { Account, AccountType } from '@/database/types'
+import { useEntityFormFields } from '@/hooks/useEntityFormFields'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
-import { getRandomColor } from '@/utils/colors'
-import { getAllCurrencies } from '@/utils/currency'
 
 interface AccountFormProps {
   account?: Account | null
@@ -37,7 +30,6 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
 
   const accountTypes: { value: AccountType; label: string }[] = [
     { value: 'cash', label: t('cash') },
@@ -46,28 +38,31 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
     { value: 'credit_card', label: t('creditCard') },
   ]
 
-  const [name, setName] = useState('')
+  const {
+    name,
+    setName,
+    color,
+    setColor,
+    hiddenFromDashboard,
+    setHiddenFromDashboard,
+    isLoading,
+    setIsLoading,
+    resetFields,
+  } = useEntityFormFields()
   const [type, setType] = useState<AccountType>('bank')
   const [currency, setCurrency] = useState(mainCurrency)
   const [balance, setBalance] = useState('0')
-  const [color, setColor] = useState(getRandomColor())
-  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
   useResetOnChange([account, open, mainCurrency], () => {
+    resetFields(account)
     if (account) {
-      setName(account.name)
       setType(account.type)
       setCurrency(account.currency)
       setBalance(account.balance.toString())
-      setColor(account.color)
-      setHiddenFromDashboard(account.hiddenFromDashboard || false)
     } else {
-      setName('')
       setType('bank')
       setCurrency(mainCurrency)
       setBalance('0')
-      setColor(getRandomColor())
-      setHiddenFromDashboard(false)
     }
   })
 
@@ -143,20 +138,13 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="currency">{t('currency')}</Label>
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectCurrency')}>
-                  {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {getAllCurrencies().map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.symbol} {c.code} - {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CurrencySelect
+              id="currency"
+              value={currency}
+              onValueChange={setCurrency}
+              placeholder={t('selectCurrency')}
+              showName
+            />
           </div>
 
           <div className="space-y-2">
@@ -171,24 +159,14 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>{t('color')}</Label>
-            <ColorPicker value={color} onChange={setColor} />
-          </div>
+          <ColorAndVisibilityFields
+            color={color}
+            onColorChange={setColor}
+            hiddenFromDashboard={hiddenFromDashboard}
+            onHiddenFromDashboardChange={setHiddenFromDashboard}
+          />
 
-          <div className="flex items-center justify-between">
-            <Label>{t('hideFromDashboard')}</Label>
-            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : account ? t('update') : t('create')}
-            </Button>
-          </DialogFooter>
+          <FormDialogFooter isEditing={!!account} isLoading={isLoading} onCancel={onClose} />
         </form>
       </DialogContent>
     </Dialog>
