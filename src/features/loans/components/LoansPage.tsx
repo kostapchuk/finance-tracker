@@ -7,11 +7,12 @@ import { PaymentDialog } from './PaymentDialog'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { Button } from '@/components/ui/button'
-import { loanRepo, accountRepo, transactionRepo } from '@/database/repositories'
+import { loanRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getAmountColorClass } from '@/utils/currency'
+import { applyTransactionBalance } from '@/utils/transactionBalance'
 
 export function LoansPage() {
   const loans = useAppStore((state) => state.loans)
@@ -100,15 +101,10 @@ export function LoansPage() {
       // Amount to use for account balance update
       const balanceAmount = data.accountAmount ?? data.amount
 
-      // loan_given: you give money out → balance decreases
-      // loan_received: you receive money → balance increases
-      const balanceChange = data.type === 'given' ? -balanceAmount : balanceAmount
-      await accountRepo.updateBalance(data.accountId, balanceChange)
-
       // Create transaction record
       const transactionType =
         data.type === 'given' ? ('loan_given' as const) : ('loan_received' as const)
-      await transactionRepo.create({
+      const transactionId = (await transactionRepo.create({
         type: transactionType,
         amount: balanceAmount,
         currency: account?.currency || data.currency,
@@ -117,7 +113,15 @@ export function LoansPage() {
         accountId: data.accountId,
         mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
-      })
+      })) as number
+
+      // loan_given: you give money out → balance decreases
+      // loan_received: you receive money → balance increases
+      // (loans param is unused for these transaction types, only loan_payment needs it)
+      const savedTransaction = await transactionRepo.getById(transactionId)
+      if (savedTransaction) {
+        await applyTransactionBalance(savedTransaction, loans)
+      }
 
       await refreshAccounts()
       await refreshTransactions()
