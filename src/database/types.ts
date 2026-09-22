@@ -63,6 +63,9 @@ export interface Transaction {
 
   // For all types that involve accounts
   accountId?: number
+  // Amount actually applied to accountId's balance, when it differs from `amount`
+  // (e.g. multi-currency income where `amount` is in the income source's currency)
+  accountAmount?: number
 
   // For transfers
   toAccountId?: number

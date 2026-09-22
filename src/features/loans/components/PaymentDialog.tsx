@@ -19,13 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { loanRepo, transactionRepo, accountRepo } from '@/database/repositories'
+import { transactionRepo } from '@/database/repositories'
 import type { Loan, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
-import { deleteLoanWithTransactions } from '@/utils/transactionBalance'
+import {
+  applyTransactionBalance,
+  deleteLoanWithTransactions,
+  reverseTransactionBalance,
+} from '@/utils/transactionBalance'
 
 interface PaymentDialogProps {
   loan: Loan | null
@@ -117,24 +121,13 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
     setIsLoading(true)
     try {
+      let transactionId: number
+
       if (isEditMode && editTransaction?.id) {
-        const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
-        const oldAccountAmount = editTransaction.amount
-        const oldAccountId = editTransaction.accountId
+        await reverseTransactionBalance(editTransaction, [loan])
 
-        await loanRepo.reversePayment(loan.id, oldPaymentAmount)
-
-        if (oldAccountId) {
-          if (loan.type === 'given') {
-            await accountRepo.updateBalance(oldAccountId, -oldAccountAmount)
-          } else {
-            await accountRepo.updateBalance(oldAccountId, oldAccountAmount)
-          }
-        }
-
-        await loanRepo.recordPayment(loan.id, paymentAmount)
-
-        await transactionRepo.update(editTransaction.id, {
+        transactionId = editTransaction.id
+        await transactionRepo.update(transactionId, {
           amount: acctAmount,
           currency: selectedAccount?.currency || loan.currency,
           accountId: acctId,
@@ -143,16 +136,8 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             comment ||
             `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
         })
-
-        if (loan.type === 'given') {
-          await accountRepo.updateBalance(acctId, acctAmount)
-        } else {
-          await accountRepo.updateBalance(acctId, -acctAmount)
-        }
       } else {
-        await loanRepo.recordPayment(loan.id, paymentAmount)
-
-        await transactionRepo.create({
+        transactionId = (await transactionRepo.create({
           type: 'loan_payment',
           amount: acctAmount,
           currency: selectedAccount?.currency || loan.currency,
@@ -163,13 +148,12 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           comment:
             comment ||
             `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
-        })
+        })) as number
+      }
 
-        if (loan.type === 'given') {
-          await accountRepo.updateBalance(acctId, acctAmount)
-        } else {
-          await accountRepo.updateBalance(acctId, -acctAmount)
-        }
+      const savedTransaction = await transactionRepo.getById(transactionId)
+      if (savedTransaction) {
+        await applyTransactionBalance(savedTransaction, [loan])
       }
 
       await refreshLoans()

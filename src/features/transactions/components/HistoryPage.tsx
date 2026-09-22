@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { transactionRepo, loanRepo, accountRepo } from '@/database/repositories'
+import { transactionRepo, loanRepo } from '@/database/repositories'
 import type { Transaction, TransactionType, Loan } from '@/database/types'
 import { LoanForm, type LoanFormData } from '@/features/loans/components/LoanForm'
 import { PaymentDialog } from '@/features/loans/components/PaymentDialog'
@@ -34,7 +34,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
 import { getStartOfMonth, getStartOfWeek } from '@/utils/date'
-import { reverseTransactionBalance } from '@/utils/transactionBalance'
+import { applyTransactionBalance, reverseTransactionBalance } from '@/utils/transactionBalance'
 
 type DateFilterType =
   'all' | 'today' | 'week' | 'month' | 'last3months' | 'last6months' | 'year' | 'custom'
@@ -500,8 +500,9 @@ export function HistoryPage() {
     const newBalanceAmount = data.accountAmount ?? data.amount
     const account = accounts.find((a) => a.id === data.accountId)
 
-    // 4. Update the transaction record
+    // 4. Update the transaction record (type may have changed between given/received)
     await transactionRepo.update(oldTransaction.id!, {
+      type: data.type === 'given' ? 'loan_given' : 'loan_received',
       amount: newBalanceAmount,
       currency: account?.currency || data.currency,
       accountId: data.accountId,
@@ -510,10 +511,10 @@ export function HistoryPage() {
     })
 
     // 5. Apply new balance effect
-    // loan_given: money goes out → balance decreases
-    // loan_received: money comes in → balance increases
-    const balanceChange = data.type === 'given' ? -newBalanceAmount : newBalanceAmount
-    await accountRepo.updateBalance(data.accountId, balanceChange)
+    const savedTransaction = await transactionRepo.getById(oldTransaction.id!)
+    if (savedTransaction) {
+      await applyTransactionBalance(savedTransaction, loans)
+    }
 
     // Refresh all data
     await Promise.all([refreshTransactions(), refreshAccounts(), refreshLoans()])

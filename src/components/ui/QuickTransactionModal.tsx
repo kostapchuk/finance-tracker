@@ -2,7 +2,7 @@ import { X, Calendar, MessageSquare, ArrowRight, Trash2 } from 'lucide-react'
 import { useState, useRef, useEffect, useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
-import { transactionRepo, accountRepo } from '@/database/repositories'
+import { transactionRepo } from '@/database/repositories'
 import type { Category, IncomeSource, Account, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
@@ -10,7 +10,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
-import { reverseTransactionBalance } from '@/utils/transactionBalance'
+import { applyTransactionBalance, reverseTransactionBalance } from '@/utils/transactionBalance'
 
 export type TransactionMode =
   | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
@@ -403,15 +403,18 @@ export function QuickTransactionModal({
           comment: comment || undefined,
         }
 
+        let transactionId: number
         if (isEditMode && editTransaction?.id) {
           await transactionRepo.update(editTransaction.id, transactionData)
+          transactionId = editTransaction.id
         } else {
-          await transactionRepo.create(transactionData)
+          transactionId = (await transactionRepo.create(transactionData)) as number
         }
 
-        // Update balances
-        await accountRepo.updateBalance(fromAccount.id!, -numAmount)
-        await accountRepo.updateBalance(toAccount.id!, numTargetAmount)
+        const savedTransaction = await transactionRepo.getById(transactionId)
+        if (savedTransaction) {
+          await applyTransactionBalance(savedTransaction, loans)
+        }
       } else {
         // Handle income/expense
         const account = accounts.find((a) => a.id === selectedAccountId)
@@ -447,6 +450,7 @@ export function QuickTransactionModal({
             type: 'income' as const,
             amount: sourceAmount, // source currency amount for display
             currency: incomeSource.currency, // income source currency
+            accountAmount: needsAccountConversion ? balanceAmount : undefined,
             date: new Date(date),
             comment: comment || undefined,
             accountId: selectedAccountId,
@@ -454,14 +458,18 @@ export function QuickTransactionModal({
             mainCurrencyAmount: storedMainCurrencyAmount,
           }
 
+          let transactionId: number
           if (isEditMode && editTransaction?.id) {
             await transactionRepo.update(editTransaction.id, transactionData)
+            transactionId = editTransaction.id
           } else {
-            await transactionRepo.create(transactionData)
+            transactionId = (await transactionRepo.create(transactionData)) as number
           }
 
-          // Update account balance
-          await accountRepo.updateBalance(selectedAccountId!, balanceAmount)
+          const savedTransaction = await transactionRepo.getById(transactionId)
+          if (savedTransaction) {
+            await applyTransactionBalance(savedTransaction, loans)
+          }
         } else {
           // Expense handling:
           // - amount = account currency
@@ -483,14 +491,18 @@ export function QuickTransactionModal({
             mainCurrencyAmount: storedMainCurrencyAmount,
           }
 
+          let transactionId: number
           if (isEditMode && editTransaction?.id) {
             await transactionRepo.update(editTransaction.id, transactionData)
+            transactionId = editTransaction.id
           } else {
-            await transactionRepo.create(transactionData)
+            transactionId = (await transactionRepo.create(transactionData)) as number
           }
 
-          // Update account balance
-          await accountRepo.updateBalance(selectedAccountId!, -transactionAmount)
+          const savedTransaction = await transactionRepo.getById(transactionId)
+          if (savedTransaction) {
+            await applyTransactionBalance(savedTransaction, loans)
+          }
         }
       }
 
