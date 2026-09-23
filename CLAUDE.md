@@ -248,10 +248,12 @@ When loan/transaction currency differs from account currency:
 
 1. **Always add tests after bug/feature changes**: Add unit and e2e tests if applicable after every bug fix or feature implementation.
 2. **Never disable lint/format rules**: Never use `eslint-disable`, `@ts-ignore`, or similar to bypass eslint, formatter, type checker, or any other linter rules. Fix the underlying issue instead.
+3. **Run all CI checks locally before declaring a task done**: Before saying a task is complete, run the full set of checks listed in [Development Workflow](#development-workflow) locally (same as CI/CD) and make sure they all pass with no warnings or errors.
+4. **Update the base branch before creating a new branch**: Always `git fetch`/`git pull` the base branch (e.g. `main`) from the remote before branching off it, so new branches start from the latest remote state.
 
 ## Development Workflow
 
-**After every code change, run the same verification steps as CI/CD:**
+**Before declaring a task complete, run the same verification steps as CI/CD:**
 
 ```bash
 npm run lint              # ESLint check
