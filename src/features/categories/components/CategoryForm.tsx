@@ -1,23 +1,14 @@
-import { useState } from 'react'
-
-import { Button } from '@/components/ui/button'
-import { ColorPicker } from '@/components/ui/color-picker'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { ColorAndVisibilityFields } from '@/components/ui/ColorAndVisibilityFields'
+import { FormDialogFooter } from '@/components/ui/FormDialogFooter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Toggle } from '@/components/ui/toggle'
 import { categoryRepo } from '@/database/repositories'
 import type { Category } from '@/database/types'
+import { useEntityFormFields } from '@/hooks/useEntityFormFields'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
-import { getRandomColor } from '@/utils/colors'
 
 interface CategoryFormProps {
   category?: Category | null
@@ -28,23 +19,20 @@ interface CategoryFormProps {
 export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
   const refreshCategories = useAppStore((state) => state.refreshCategories)
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
 
-  const [name, setName] = useState('')
-  const [color, setColor] = useState(getRandomColor())
-  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
+  const {
+    name,
+    setName,
+    color,
+    setColor,
+    hiddenFromDashboard,
+    setHiddenFromDashboard,
+    isLoading,
+    setIsLoading,
+    resetFields,
+  } = useEntityFormFields()
 
-  useResetOnChange([category, open], () => {
-    if (category) {
-      setName(category.name)
-      setColor(category.color)
-      setHiddenFromDashboard(category.hiddenFromDashboard || false)
-    } else {
-      setName('')
-      setColor(getRandomColor())
-      setHiddenFromDashboard(false)
-    }
-  })
+  useResetOnChange([category, open], () => resetFields(category))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,24 +82,14 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>{t('color')}</Label>
-            <ColorPicker value={color} onChange={setColor} />
-          </div>
+          <ColorAndVisibilityFields
+            color={color}
+            onColorChange={setColor}
+            hiddenFromDashboard={hiddenFromDashboard}
+            onHiddenFromDashboardChange={setHiddenFromDashboard}
+          />
 
-          <div className="flex items-center justify-between">
-            <Label>{t('hideFromDashboard')}</Label>
-            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : category ? t('update') : t('create')}
-            </Button>
-          </DialogFooter>
+          <FormDialogFooter isEditing={!!category} isLoading={isLoading} onCancel={onClose} />
         </form>
       </DialogContent>
     </Dialog>

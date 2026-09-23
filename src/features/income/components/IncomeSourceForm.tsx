@@ -1,31 +1,17 @@
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import { ColorPicker } from '@/components/ui/color-picker'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { ColorAndVisibilityFields } from '@/components/ui/ColorAndVisibilityFields'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
+import { FormDialogFooter } from '@/components/ui/FormDialogFooter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Toggle } from '@/components/ui/toggle'
 import { incomeSourceRepo } from '@/database/repositories'
 import type { IncomeSource } from '@/database/types'
+import { useEntityFormFields } from '@/hooks/useEntityFormFields'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
-import { getRandomColor } from '@/utils/colors'
-import { getAllCurrencies } from '@/utils/currency'
 
 interface IncomeSourceFormProps {
   source?: IncomeSource | null
@@ -37,25 +23,23 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
   const refreshIncomeSources = useAppStore((state) => state.refreshIncomeSources)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t } = useLanguage()
-  const [isLoading, setIsLoading] = useState(false)
 
-  const [name, setName] = useState('')
+  const {
+    name,
+    setName,
+    color,
+    setColor,
+    hiddenFromDashboard,
+    setHiddenFromDashboard,
+    isLoading,
+    setIsLoading,
+    resetFields,
+  } = useEntityFormFields()
   const [currency, setCurrency] = useState(mainCurrency)
-  const [color, setColor] = useState(getRandomColor())
-  const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
 
   useResetOnChange([source, open, mainCurrency], () => {
-    if (source) {
-      setName(source.name)
-      setCurrency(source.currency || mainCurrency)
-      setColor(source.color)
-      setHiddenFromDashboard(source.hiddenFromDashboard || false)
-    } else {
-      setName('')
-      setCurrency(mainCurrency)
-      setColor(getRandomColor())
-      setHiddenFromDashboard(false)
-    }
+    resetFields(source)
+    setCurrency(source ? source.currency || mainCurrency : mainCurrency)
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,40 +92,23 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
 
           <div className="space-y-2">
             <Label htmlFor="currency">{t('currency')}</Label>
-            <Select value={currency} onValueChange={setCurrency}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('selectCurrency')}>
-                  {getAllCurrencies().find((c) => c.code === currency)?.symbol} {currency}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {getAllCurrencies().map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.symbol} {c.code} - {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CurrencySelect
+              id="currency"
+              value={currency}
+              onValueChange={setCurrency}
+              placeholder={t('selectCurrency')}
+              showName
+            />
           </div>
 
-          <div className="space-y-2">
-            <Label>{t('color')}</Label>
-            <ColorPicker value={color} onChange={setColor} />
-          </div>
+          <ColorAndVisibilityFields
+            color={color}
+            onColorChange={setColor}
+            hiddenFromDashboard={hiddenFromDashboard}
+            onHiddenFromDashboardChange={setHiddenFromDashboard}
+          />
 
-          <div className="flex items-center justify-between">
-            <Label>{t('hideFromDashboard')}</Label>
-            <Toggle checked={hiddenFromDashboard} onCheckedChange={setHiddenFromDashboard} />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : source ? t('update') : t('create')}
-            </Button>
-          </DialogFooter>
+          <FormDialogFooter isEditing={!!source} isLoading={isLoading} onCancel={onClose} />
         </form>
       </DialogContent>
     </Dialog>
