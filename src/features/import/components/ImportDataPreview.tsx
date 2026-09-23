@@ -67,9 +67,7 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
 
         {/* Unique items summary */}
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase">
-            {t('importUniqueItems')}
-          </h3>
+          <h3 className="text-section-label">{t('importUniqueItems')}</h3>
           <div className="space-y-1 text-sm">
             <p>
               <span className="text-muted-foreground">{t('accounts')}:</span>{' '}
@@ -114,9 +112,7 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
         {/* Sample data preview */}
         {!hasErrors && data.rows.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">
-              {t('importPreviewSample')}
-            </h3>
+            <h3 className="text-section-label">{t('importPreviewSample')}</h3>
             <div className="space-y-1 text-sm max-h-48 overflow-auto">
               {data.rows.slice(0, 5).map((row, i) => (
                 <div key={i} className="p-2 bg-secondary/30 rounded-lg font-mono text-xs">

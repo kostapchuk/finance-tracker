@@ -64,7 +64,7 @@ export function AccountCard({
       </div>
       <div className="text-center w-full min-w-0 overflow-hidden">
         <p className="text-sm text-muted-foreground truncate">{name}</p>
-        <BlurredAmount className="text-xs font-semibold text-foreground truncate block">
+        <BlurredAmount className="tabular-nums text-xs font-semibold text-foreground truncate block">
           {formatCurrency(balance, currency)}
         </BlurredAmount>
       </div>

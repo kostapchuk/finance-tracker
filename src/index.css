@@ -126,4 +126,23 @@ input[type='number'] {
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0);
   }
+
+  /* Typography scale - use these instead of ad-hoc text-xl/text-lg/font-* combos.
+     Pass these as plain className strings, not through cn()/twMerge: their
+     "text-" prefix makes twMerge mistake them for a text-color/font-size
+     utility and silently drop them when merged next to one (e.g. text-foreground). */
+
+  /* Screen-level <h1> title */
+  .text-page-title {
+    @apply text-xl font-bold;
+  }
+
+  /* Uppercase section label above a card/list group */
+  .text-section-label {
+    @apply text-sm font-semibold text-muted-foreground uppercase tracking-wide;
+  }
 }
+
+/* Money amounts: use Tailwind's built-in tabular-nums so digits don't shift
+   width as they change - it merges safely with cn()/twMerge, unlike a custom
+   "text-*" utility (see note above). */
