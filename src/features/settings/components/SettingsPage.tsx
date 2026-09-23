@@ -6,7 +6,13 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import type {
+  DragEndEvent,
+  DraggableAttributes,
+  DraggableSyntheticListeners,
+  SensorDescriptor,
+  SensorOptions,
+} from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -34,6 +40,7 @@ import { version } from '../../../../package.json'
 import { CurrencyForm } from './CurrencyForm'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
+import { CurrencySelect } from '@/components/ui/CurrencySelect'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -68,7 +75,7 @@ import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { buildBackupData, parseBackupData } from '@/utils/backup'
-import { formatCurrency, getAllCurrencies } from '@/utils/currency'
+import { formatCurrency } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
 
 type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | null
@@ -265,32 +272,16 @@ export function SettingsPage() {
     }
   }
 
-  const handleDeleteAccount = async (account: Account) => {
-    if (!account.id) return
-    if (!confirm(`Delete "${account.name}"?`)) return
-    await accountRepo.delete(account.id)
-    await refreshAccounts()
-  }
-
-  const handleDeleteCategory = async (category: Category) => {
-    if (!category.id) return
-    if (!confirm(`Delete "${category.name}"?`)) return
-    await categoryRepo.delete(category.id)
-    await refreshCategories()
-  }
-
-  const handleDeleteIncomeSource = async (source: IncomeSource) => {
-    if (!source.id) return
-    if (!confirm(`Delete "${source.name}"?`)) return
-    await incomeSourceRepo.delete(source.id)
-    await refreshIncomeSources()
-  }
-
-  const handleDeleteCurrency = async (currency: CustomCurrency) => {
-    if (!currency.id) return
-    if (!confirm(`Delete "${currency.name}" (${currency.code})?`)) return
-    await customCurrencyRepo.delete(currency.id)
-    await refreshCustomCurrencies()
+  const handleDeleteEntity = async (
+    label: string,
+    id: number | undefined,
+    deleteFn: (id: number) => Promise<unknown>,
+    refresh: () => Promise<void>
+  ) => {
+    if (!id) return
+    if (!confirm(t('deleteItemConfirm').replace('%s', label))) return
+    await deleteFn(id)
+    await refresh()
   }
 
   // Render management sections
@@ -305,40 +296,24 @@ export function SettingsPage() {
         }}
         backLabel={t('back')}
       >
-        <DndContext
+        <SortableManagementSection
+          items={accounts}
           sensors={reorderSensors}
-          collisionDetection={closestCenter}
           onDragEnd={(e) => handleReorder(e, accounts, accountRepo, refreshAccounts)}
-        >
-          <SortableContext
-            items={accounts.map((a) => a.id!)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-2">
-              {accounts.map((account) => (
-                <SortableManagementItem
-                  key={account.id}
-                  id={account.id!}
-                  color={account.color}
-                  title={account.name}
-                  subtitle={
-                    <BlurredAmount>
-                      {formatCurrency(account.balance, account.currency)}
-                    </BlurredAmount>
-                  }
-                  onEdit={() => {
-                    setEditingAccount(account)
-                    setAccountFormOpen(true)
-                  }}
-                  onDelete={() => handleDeleteAccount(account)}
-                />
-              ))}
-              {accounts.length === 0 && (
-                <p className="text-center py-8 text-muted-foreground">{t('noAccountsYet')}</p>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+          getColor={(account) => account.color}
+          getTitle={(account) => account.name}
+          getSubtitle={(account) => (
+            <BlurredAmount>{formatCurrency(account.balance, account.currency)}</BlurredAmount>
+          )}
+          onEdit={(account) => {
+            setEditingAccount(account)
+            setAccountFormOpen(true)
+          }}
+          onDelete={(account) =>
+            handleDeleteEntity(account.name, account.id, accountRepo.delete, refreshAccounts)
+          }
+          emptyMessage={t('noAccountsYet')}
+        />
         <AccountForm
           account={editingAccount}
           open={accountFormOpen}
@@ -359,35 +334,21 @@ export function SettingsPage() {
         }}
         backLabel={t('back')}
       >
-        <DndContext
+        <SortableManagementSection
+          items={categories}
           sensors={reorderSensors}
-          collisionDetection={closestCenter}
           onDragEnd={(e) => handleReorder(e, categories, categoryRepo, refreshCategories)}
-        >
-          <SortableContext
-            items={categories.map((c) => c.id!)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-2">
-              {categories.map((category) => (
-                <SortableManagementItem
-                  key={category.id}
-                  id={category.id!}
-                  color={category.color}
-                  title={category.name}
-                  onEdit={() => {
-                    setEditingCategory(category)
-                    setCategoryFormOpen(true)
-                  }}
-                  onDelete={() => handleDeleteCategory(category)}
-                />
-              ))}
-              {categories.length === 0 && (
-                <p className="text-center py-8 text-muted-foreground">{t('noExpenseCategories')}</p>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+          getColor={(category) => category.color}
+          getTitle={(category) => category.name}
+          onEdit={(category) => {
+            setEditingCategory(category)
+            setCategoryFormOpen(true)
+          }}
+          onDelete={(category) =>
+            handleDeleteEntity(category.name, category.id, categoryRepo.delete, refreshCategories)
+          }
+          emptyMessage={t('noExpenseCategories')}
+        />
         <CategoryForm
           category={editingCategory}
           open={categoryFormOpen}
@@ -408,35 +369,26 @@ export function SettingsPage() {
         }}
         backLabel={t('back')}
       >
-        <DndContext
+        <SortableManagementSection
+          items={incomeSources}
           sensors={reorderSensors}
-          collisionDetection={closestCenter}
           onDragEnd={(e) => handleReorder(e, incomeSources, incomeSourceRepo, refreshIncomeSources)}
-        >
-          <SortableContext
-            items={incomeSources.map((s) => s.id!)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-2">
-              {incomeSources.map((source) => (
-                <SortableManagementItem
-                  key={source.id}
-                  id={source.id!}
-                  color={source.color}
-                  title={source.name}
-                  onEdit={() => {
-                    setEditingIncome(source)
-                    setIncomeFormOpen(true)
-                  }}
-                  onDelete={() => handleDeleteIncomeSource(source)}
-                />
-              ))}
-              {incomeSources.length === 0 && (
-                <p className="text-center py-8 text-muted-foreground">{t('noIncomeSources')}</p>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+          getColor={(source) => source.color}
+          getTitle={(source) => source.name}
+          onEdit={(source) => {
+            setEditingIncome(source)
+            setIncomeFormOpen(true)
+          }}
+          onDelete={(source) =>
+            handleDeleteEntity(
+              source.name,
+              source.id,
+              incomeSourceRepo.delete,
+              refreshIncomeSources
+            )
+          }
+          emptyMessage={t('noIncomeSources')}
+        />
         <IncomeSourceForm
           source={editingIncome}
           open={incomeFormOpen}
@@ -468,7 +420,14 @@ export function SettingsPage() {
                 setEditingCurrency(currency)
                 setCurrencyFormOpen(true)
               }}
-              onDelete={() => handleDeleteCurrency(currency)}
+              onDelete={() =>
+                handleDeleteEntity(
+                  `${currency.name} (${currency.code})`,
+                  currency.id,
+                  customCurrencyRepo.delete,
+                  refreshCustomCurrencies
+                )
+              }
             />
           ))}
           {customCurrencies.length === 0 && (
@@ -565,20 +524,11 @@ export function SettingsPage() {
                 <p className="text-xs text-muted-foreground">{t('mainCurrencyDescription')}</p>
               </div>
             </div>
-            <Select value={mainCurrency} onValueChange={(v) => setMainCurrency(v)}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue>
-                  {getAllCurrencies().find((c) => c.code === mainCurrency)?.symbol} {mainCurrency}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {getAllCurrencies().map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.symbol} {c.code}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CurrencySelect
+              value={mainCurrency}
+              onValueChange={setMainCurrency}
+              triggerClassName="w-[100px]"
+            />
           </div>
           <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl">
             <div className="flex items-center gap-3">
@@ -794,45 +744,46 @@ function ManagementView({
   )
 }
 
-function SortableManagementItem({
-  id,
-  color,
-  title,
-  subtitle,
-  onEdit,
-  onDelete,
-}: {
-  id: number
+interface ManagementItemProps {
   color: string
   title: string
   subtitle?: React.ReactNode
   onEdit: () => void
   onDelete: () => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+  dragHandle?: {
+    attributes: DraggableAttributes
+    listeners: DraggableSyntheticListeners
   }
+  containerRef?: (node: HTMLElement | null) => void
+  containerStyle?: React.CSSProperties
+}
 
+function ManagementItem({
+  color,
+  title,
+  subtitle,
+  onEdit,
+  onDelete,
+  dragHandle,
+  containerRef,
+  containerStyle,
+}: ManagementItemProps) {
   return (
     <div
-      ref={setNodeRef}
-      style={style}
+      ref={containerRef}
+      style={containerStyle}
       className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl"
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="p-1 touch-none cursor-grab active:cursor-grabbing"
-        aria-label="Drag to reorder"
-      >
-        <GripVertical className="h-4 w-4 text-muted-foreground" />
-      </button>
+      {dragHandle && (
+        <button
+          {...dragHandle.attributes}
+          {...dragHandle.listeners}
+          className="p-1 touch-none cursor-grab active:cursor-grabbing"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      )}
       <div
         className="w-10 h-10 rounded-full flex-shrink-0"
         style={{ backgroundColor: color + '30' }}
@@ -868,52 +819,77 @@ function SortableManagementItem({
   )
 }
 
-function ManagementItem({
-  color,
-  title,
-  subtitle,
+function SortableManagementItem({
+  id,
+  ...itemProps
+}: { id: number } & Omit<ManagementItemProps, 'dragHandle' | 'containerRef' | 'containerStyle'>) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <ManagementItem
+      {...itemProps}
+      dragHandle={{ attributes, listeners }}
+      containerRef={setNodeRef}
+      containerStyle={style}
+    />
+  )
+}
+
+interface SortableManagementSectionProps<T extends { id?: number }> {
+  items: T[]
+  sensors: SensorDescriptor<SensorOptions>[]
+  onDragEnd: (event: DragEndEvent) => void
+  getColor: (item: T) => string
+  getTitle: (item: T) => string
+  getSubtitle?: (item: T) => React.ReactNode
+  onEdit: (item: T) => void
+  onDelete: (item: T) => void
+  emptyMessage: string
+}
+
+/**
+ * The DndContext/SortableContext/map/empty-state pattern shared by the
+ * accounts, categories, and income-sources management sections.
+ */
+function SortableManagementSection<T extends { id?: number }>({
+  items,
+  sensors,
+  onDragEnd,
+  getColor,
+  getTitle,
+  getSubtitle,
   onEdit,
   onDelete,
-}: {
-  color: string
-  title: string
-  subtitle?: string
-  onEdit: () => void
-  onDelete: () => void
-}) {
+  emptyMessage,
+}: SortableManagementSectionProps<T>) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-      <div
-        className="w-10 h-10 rounded-full flex-shrink-0"
-        style={{ backgroundColor: color + '30' }}
-      >
-        <div
-          className="w-full h-full rounded-full flex items-center justify-center"
-          style={{ backgroundColor: color + '40' }}
-        >
-          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <SortableContext items={items.map((item) => item.id!)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2">
+          {items.map((item) => (
+            <SortableManagementItem
+              key={item.id}
+              id={item.id!}
+              color={getColor(item)}
+              title={getTitle(item)}
+              subtitle={getSubtitle?.(item)}
+              onEdit={() => onEdit(item)}
+              onDelete={() => onDelete(item)}
+            />
+          ))}
+          {items.length === 0 && (
+            <p className="text-center py-8 text-muted-foreground">{emptyMessage}</p>
+          )}
         </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{title}</p>
-        {subtitle && <p className="text-sm text-muted-foreground truncate">{subtitle}</p>}
-      </div>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={onEdit}
-          className="p-2 rounded-full hover:bg-secondary touch-target"
-          aria-label="Edit"
-        >
-          <Pencil className="h-4 w-4 text-muted-foreground" />
-        </button>
-        <button
-          onClick={onDelete}
-          className="p-2 rounded-full hover:bg-destructive/20 touch-target"
-          aria-label="Delete"
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </button>
-      </div>
-    </div>
+      </SortableContext>
+    </DndContext>
   )
 }
