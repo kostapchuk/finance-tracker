@@ -64,6 +64,14 @@ db.version(3)
 
 export { db }
 
+/** Bulk-inserts records into a table, skipping the call when there's nothing to insert. */
+export async function restoreTable<T extends { id?: number }>(
+  table: EntityTable<T, 'id'>,
+  records: T[]
+): Promise<void> {
+  if (records.length > 0) await table.bulkAdd(records)
+}
+
 export type {
   Account,
   IncomeSource,
