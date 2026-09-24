@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
@@ -10,7 +10,6 @@ import { formatCurrency, formatCurrencyWithSign, getAmountColorClass } from '@/u
 import { getStartOfMonth, getEndOfMonth, addMonths } from '@/utils/date'
 
 export function ReportPage() {
-  const accounts = useAppStore((state) => state.accounts)
   const transactions = useAppStore((state) => state.transactions)
   const categories = useAppStore((state) => state.categories)
   const loans = useAppStore((state) => state.loans)
@@ -26,11 +25,6 @@ export function ReportPage() {
       (t) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    let totalBalance = 0
-    for (const a of accounts) {
-      if (a.currency === mainCurrency) totalBalance += a.balance
-    }
-
     // Exclude transfers (they don't have incomeSourceId/categoryId)
     const monthlyIncome = monthlyTransactions
       .filter((t) => t.type === 'income' && t.incomeSourceId)
@@ -42,8 +36,8 @@ export function ReportPage() {
 
     const netFlow = monthlyIncome - monthlyExpenses
 
-    return { totalBalance, monthlyIncome, monthlyExpenses, netFlow }
-  }, [accounts, transactions, selectedMonth, mainCurrency])
+    return { monthlyIncome, monthlyExpenses, netFlow }
+  }, [transactions, selectedMonth])
 
   // Calculate loan totals
   const loanStats = useMemo(() => {
@@ -133,26 +127,6 @@ export function ReportPage() {
 
       {/* Summary Cards */}
       <div className="px-4 py-4 space-y-3">
-        {/* Total Balance */}
-        <div className="p-4 bg-secondary/50 rounded-2xl">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-full bg-primary/20">
-              <Wallet className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{t('totalBalance')}</p>
-              <BlurredAmount
-                className={cn(
-                  'tabular-nums text-2xl font-bold block',
-                  getAmountColorClass(stats.totalBalance)
-                )}
-              >
-                {formatCurrency(stats.totalBalance, mainCurrency)}
-              </BlurredAmount>
-            </div>
-          </div>
-        </div>
-
         {/* Income vs Expenses */}
         <div className="grid grid-cols-2 gap-3">
           <div className="p-4 bg-secondary/50 rounded-2xl">
