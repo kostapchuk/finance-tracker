@@ -63,9 +63,17 @@ export function QuickTransactionModal({
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(
     mode.type === 'expense' ? mode.category.id : undefined
   )
+  const [selectedFromAccountId, setSelectedFromAccountId] = useState<number | undefined>(
+    mode.type === 'transfer' ? mode.fromAccount.id : undefined
+  )
+  const [selectedToAccountId, setSelectedToAccountId] = useState<number | undefined>(
+    mode.type === 'transfer' ? mode.toAccount.id : undefined
+  )
   const [showAccountPicker, setShowAccountPicker] = useState(false)
   const [showSourcePicker, setShowSourcePicker] = useState(false)
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
+  const [showFromAccountPicker, setShowFromAccountPicker] = useState(false)
+  const [showToAccountPicker, setShowToAccountPicker] = useState(false)
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -261,9 +269,21 @@ export function QuickTransactionModal({
       .reduce((sum, t) => sum + t.amount, 0)
   }, [mode.type, selectedSourceId, transactions, selectedMonth])
 
+  // Get the currently selected transfer accounts (may differ from mode's initial accounts)
+  const selectedFromAccount =
+    mode.type === 'transfer'
+      ? accounts.find((a) => a.id === selectedFromAccountId) || mode.fromAccount
+      : null
+  const selectedToAccount =
+    mode.type === 'transfer'
+      ? accounts.find((a) => a.id === selectedToAccountId) || mode.toAccount
+      : null
+
   // Detect multi-currency transfer
   const isMultiCurrencyTransfer =
-    mode.type === 'transfer' && mode.fromAccount.currency !== mode.toAccount.currency
+    mode.type === 'transfer' &&
+    (selectedFromAccount ?? mode.fromAccount).currency !==
+      (selectedToAccount ?? mode.toAccount).currency
 
   // Detect multi-currency for income/expense
   const selectedAccount = accounts.find((a) => a.id === selectedAccountId)
@@ -314,6 +334,29 @@ export function QuickTransactionModal({
     setShowCategoryPicker(false)
   }
 
+  const handleFromAccountChange = (newAccountId: number) => {
+    const newAccount = accounts.find((a) => a.id === newAccountId)
+    const oldAccount = selectedFromAccount
+    if (newAccount && oldAccount && newAccount.currency !== oldAccount.currency) {
+      // Currency changed, reset amounts
+      setAmount('')
+      setTargetAmount('')
+    }
+    setSelectedFromAccountId(newAccountId)
+    setShowFromAccountPicker(false)
+  }
+
+  const handleToAccountChange = (newAccountId: number) => {
+    const newAccount = accounts.find((a) => a.id === newAccountId)
+    const oldAccount = selectedToAccount
+    if (newAccount && oldAccount && newAccount.currency !== oldAccount.currency) {
+      // Currency changed, reset conversion amount
+      setTargetAmount('')
+    }
+    setSelectedToAccountId(newAccountId)
+    setShowToAccountPicker(false)
+  }
+
   // Determine color based on mode type
   const getColor = () => {
     if (mode.type === 'income') return selectedSource?.color || mode.source.color
@@ -330,7 +373,9 @@ export function QuickTransactionModal({
       return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
     if (mode.type === 'expense')
       return accounts.find((a) => a.id === selectedAccountId)?.currency || 'USD'
-    return activeField === 'source' ? mode.fromAccount.currency : mode.toAccount.currency
+    return activeField === 'source'
+      ? (selectedFromAccount ?? mode.fromAccount).currency
+      : (selectedToAccount ?? mode.toAccount).currency
   }
 
   const sanitizeAmount = (value: string) => {
@@ -378,6 +423,9 @@ export function QuickTransactionModal({
     // For income/expense, we need a selected account
     if (mode.type !== 'transfer' && !selectedAccountId) return
 
+    // For transfer, source and destination accounts must differ
+    if (mode.type === 'transfer' && selectedFromAccountId === selectedToAccountId) return
+
     setIsSubmitting(true)
 
     try {
@@ -388,8 +436,8 @@ export function QuickTransactionModal({
 
       if (mode.type === 'transfer') {
         // Handle transfer between accounts - single transaction record
-        const fromAccount = mode.fromAccount
-        const toAccount = mode.toAccount
+        const fromAccount = selectedFromAccount ?? mode.fromAccount
+        const toAccount = selectedToAccount ?? mode.toAccount
         const numTargetAmount = isMultiCurrencyTransfer ? parseFloat(targetAmount) : numAmount
 
         const transactionData = {
@@ -533,41 +581,68 @@ export function QuickTransactionModal({
             {mode.type === 'transfer' ? (
               // Transfer: fromAccount + balance → toAccount + balance
               <div className="flex items-center justify-between flex-1 min-w-0">
-                <div className="flex items-center gap-2 min-w-0 max-w-[45%]">
+                <button
+                  onClick={() => setShowFromAccountPicker(true)}
+                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+                >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: (mode.fromAccount.color || '#6366f1') + '20' }}
+                    style={{
+                      backgroundColor:
+                        ((selectedFromAccount ?? mode.fromAccount).color || '#6366f1') + '20',
+                    }}
                   >
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: mode.fromAccount.color || '#6366f1' }}
+                      style={{
+                        backgroundColor:
+                          (selectedFromAccount ?? mode.fromAccount).color || '#6366f1',
+                      }}
                     />
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{mode.fromAccount.name}</p>
+                  <div className="min-w-0 text-left">
+                    <p className="font-semibold truncate">
+                      {(selectedFromAccount ?? mode.fromAccount).name}
+                    </p>
                     <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(mode.fromAccount.balance, mode.fromAccount.currency)}
+                      {formatCurrency(
+                        (selectedFromAccount ?? mode.fromAccount).balance,
+                        (selectedFromAccount ?? mode.fromAccount).currency
+                      )}
                     </BlurredAmount>
                   </div>
-                </div>
+                </button>
                 <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
-                <div className="flex items-center gap-2 min-w-0 max-w-[45%]">
+                <button
+                  onClick={() => setShowToAccountPicker(true)}
+                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+                >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: (mode.toAccount.color || '#6366f1') + '20' }}
+                    style={{
+                      backgroundColor:
+                        ((selectedToAccount ?? mode.toAccount).color || '#6366f1') + '20',
+                    }}
                   >
                     <div
                       className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: mode.toAccount.color || '#6366f1' }}
+                      style={{
+                        backgroundColor: (selectedToAccount ?? mode.toAccount).color || '#6366f1',
+                      }}
                     />
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{mode.toAccount.name}</p>
+                  <div className="min-w-0 text-left">
+                    <p className="font-semibold truncate">
+                      {(selectedToAccount ?? mode.toAccount).name}
+                    </p>
                     <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(mode.toAccount.balance, mode.toAccount.currency)}
+                      {formatCurrency(
+                        (selectedToAccount ?? mode.toAccount).balance,
+                        (selectedToAccount ?? mode.toAccount).currency
+                      )}
                     </BlurredAmount>
                   </div>
-                </div>
+                </button>
               </div>
             ) : mode.type === 'income' ? (
               // Income: source → account
@@ -690,7 +765,9 @@ export function QuickTransactionModal({
                   activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
                 )}
               >
-                <p className="text-xs text-muted-foreground mb-1">{mode.fromAccount.currency}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {(selectedFromAccount ?? mode.fromAccount).currency}
+                </p>
                 <div className="flex items-baseline gap-1">
                   <input
                     ref={amountInputRef}
@@ -705,7 +782,7 @@ export function QuickTransactionModal({
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
                   <span className="text-2xl font-bold tabular-nums text-muted-foreground">
-                    {getCurrencySymbol(mode.fromAccount.currency)}
+                    {getCurrencySymbol((selectedFromAccount ?? mode.fromAccount).currency)}
                   </span>
                 </div>
               </div>
@@ -719,7 +796,9 @@ export function QuickTransactionModal({
                   activeField === 'target' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
                 )}
               >
-                <p className="text-xs text-muted-foreground mb-1">{mode.toAccount.currency}</p>
+                <p className="text-xs text-muted-foreground mb-1">
+                  {(selectedToAccount ?? mode.toAccount).currency}
+                </p>
                 <div className="flex items-baseline gap-1">
                   <input
                     type="text"
@@ -732,7 +811,7 @@ export function QuickTransactionModal({
                     className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
                   />
                   <span className="text-2xl font-bold tabular-nums text-muted-foreground">
-                    {getCurrencySymbol(mode.toAccount.currency)}
+                    {getCurrencySymbol((selectedToAccount ?? mode.toAccount).currency)}
                   </span>
                 </div>
               </div>
@@ -929,6 +1008,7 @@ export function QuickTransactionModal({
               (isMultiCurrencyIncomeExpense && !targetAmount) ||
               (needsAccountConversion && !accountAmount) ||
               (mode.type !== 'transfer' && !selectedAccountId) ||
+              (mode.type === 'transfer' && selectedFromAccountId === selectedToAccountId) ||
               isSubmitting
             }
             className={cn(
@@ -955,6 +1035,7 @@ export function QuickTransactionModal({
                 (isMultiCurrencyIncomeExpense && !targetAmount) ||
                 (needsAccountConversion && !accountAmount) ||
                 (mode.type !== 'transfer' && !selectedAccountId) ||
+                (mode.type === 'transfer' && selectedFromAccountId === selectedToAccountId) ||
                 isSubmitting
               }
               className={cn(
@@ -1099,6 +1180,104 @@ export function QuickTransactionModal({
                 )}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Transfer From-Account Picker Overlay */}
+      {showFromAccountPicker && mode.type === 'transfer' && (
+        <div className="absolute inset-0 bg-background z-10 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h3 className="font-semibold">{t('selectAccount')}</h3>
+            <button
+              onClick={() => setShowFromAccountPicker(false)}
+              className="p-2 rounded-full hover:bg-secondary touch-target"
+              aria-label={t('close')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {accounts
+              .filter((account) => account.id !== selectedToAccountId)
+              .map((account) => (
+                <button
+                  key={account.id}
+                  onClick={() => handleFromAccountChange(account.id!)}
+                  className={cn(
+                    'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
+                    account.id === selectedFromAccountId ? 'bg-primary/20' : 'hover:bg-secondary/50'
+                  )}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: account.color + '20' }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: account.color }}
+                    />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="font-medium truncate">{account.name}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(account.balance, account.currency)}
+                    </BlurredAmount>
+                  </div>
+                  {account.id === selectedFromAccountId && (
+                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Transfer To-Account Picker Overlay */}
+      {showToAccountPicker && mode.type === 'transfer' && (
+        <div className="absolute inset-0 bg-background z-10 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <h3 className="font-semibold">{t('selectAccount')}</h3>
+            <button
+              onClick={() => setShowToAccountPicker(false)}
+              className="p-2 rounded-full hover:bg-secondary touch-target"
+              aria-label={t('close')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {accounts
+              .filter((account) => account.id !== selectedFromAccountId)
+              .map((account) => (
+                <button
+                  key={account.id}
+                  onClick={() => handleToAccountChange(account.id!)}
+                  className={cn(
+                    'w-full flex items-center gap-3 p-3 rounded-xl transition-colors',
+                    account.id === selectedToAccountId ? 'bg-primary/20' : 'hover:bg-secondary/50'
+                  )}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: account.color + '20' }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: account.color }}
+                    />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="font-medium truncate">{account.name}</p>
+                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                      {formatCurrency(account.balance, account.currency)}
+                    </BlurredAmount>
+                  </div>
+                  {account.id === selectedToAccountId && (
+                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                  )}
+                </button>
+              ))}
           </div>
         </div>
       )}
