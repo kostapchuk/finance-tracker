@@ -131,7 +131,7 @@ export function ReportPage() {
     <div className="flex flex-col min-h-full pb-4">
       {/* Header */}
       <div className="px-4 py-3">
-        <h1 className="text-xl font-bold">{t('report')}</h1>
+        <h1 className="text-page-title">{t('report')}</h1>
       </div>
 
       {/* Month Selector */}
@@ -148,7 +148,10 @@ export function ReportPage() {
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">{t('totalBalance')}</p>
               <BlurredAmount
-                className={cn('text-2xl font-bold block', getAmountColorClass(stats.totalBalance))}
+                className={cn(
+                  'tabular-nums text-2xl font-bold block',
+                  getAmountColorClass(stats.totalBalance)
+                )}
               >
                 {formatCurrency(stats.totalBalance, mainCurrency)}
               </BlurredAmount>
@@ -164,7 +167,10 @@ export function ReportPage() {
               <span className="text-sm text-muted-foreground">{t('income')}</span>
             </div>
             <BlurredAmount
-              className={cn('text-xl font-bold block', getAmountColorClass(stats.monthlyIncome))}
+              className={cn(
+                'tabular-nums text-xl font-bold block',
+                getAmountColorClass(stats.monthlyIncome)
+              )}
             >
               {formatCurrencyWithSign(stats.monthlyIncome, mainCurrency)}
             </BlurredAmount>
@@ -178,7 +184,7 @@ export function ReportPage() {
             </div>
             <BlurredAmount
               className={cn(
-                'text-xl font-bold block',
+                'tabular-nums text-xl font-bold block',
                 stats.monthlyExpenses === 0 ? 'text-foreground' : 'text-destructive'
               )}
             >
@@ -193,7 +199,9 @@ export function ReportPage() {
         <div className="p-4 bg-secondary/50 rounded-2xl">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t('netFlow')}</span>
-            <BlurredAmount className={cn('text-xl font-bold', getAmountColorClass(stats.netFlow))}>
+            <BlurredAmount
+              className={cn('tabular-nums text-xl font-bold', getAmountColorClass(stats.netFlow))}
+            >
               {formatCurrencyWithSign(stats.netFlow, mainCurrency)}
             </BlurredAmount>
           </div>
@@ -203,9 +211,7 @@ export function ReportPage() {
       {/* Current Loans Status - separate from monthly data */}
       {(loanStats.givenTotal > 0 || loanStats.receivedTotal > 0) && (
         <div className="px-4 py-4">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-            {t('currentLoansStatus')}
-          </h3>
+          <h3 className="text-section-label mb-4">{t('currentLoansStatus')}</h3>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="p-4 bg-secondary/50 rounded-2xl">
@@ -217,7 +223,7 @@ export function ReportPage() {
                 </div>
                 <BlurredAmount
                   className={cn(
-                    'text-xl font-bold block',
+                    'tabular-nums text-xl font-bold block',
                     getAmountColorClass(loanStats.givenTotal)
                   )}
                 >
@@ -233,7 +239,7 @@ export function ReportPage() {
                 </div>
                 <BlurredAmount
                   className={cn(
-                    'text-xl font-bold block',
+                    'tabular-nums text-xl font-bold block',
                     loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'
                   )}
                 >
@@ -247,9 +253,7 @@ export function ReportPage() {
 
       {/* Spending by Category */}
       <div className="px-4 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-          {t('spendingByCategory')}
-        </h3>
+        <h3 className="text-section-label mb-4">{t('spendingByCategory')}</h3>
         {spendingByCategory.length === 0 ? (
           <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-secondary/30 rounded-2xl">
             {t('noExpenseDataThisMonth')}
@@ -286,7 +290,7 @@ export function ReportPage() {
                     />
                     <span className="text-sm">{category.name}</span>
                   </div>
-                  <BlurredAmount className="text-sm font-medium">
+                  <BlurredAmount className="tabular-nums text-sm font-medium">
                     {formatCurrency(category.value, mainCurrency)}
                   </BlurredAmount>
                 </div>
@@ -298,9 +302,7 @@ export function ReportPage() {
 
       {/* Income vs Expenses Trend */}
       <div className="px-4 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-          {t('sixMonthTrend')}
-        </h3>
+        <h3 className="text-section-label mb-4">{t('sixMonthTrend')}</h3>
         {monthlyTrend.every((m) => m.income === 0 && m.expenses === 0) ? (
           <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-secondary/30 rounded-2xl">
             {t('noTransactionDataYet')}

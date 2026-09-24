@@ -447,7 +447,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col min-h-full pb-4">
       <div className="px-4 py-3">
-        <h1 className="text-xl font-bold">{t('settings')}</h1>
+        <h1 className="text-page-title">{t('settings')}</h1>
       </div>
 
       {/* Update Card */}
@@ -468,9 +468,7 @@ export function SettingsPage() {
 
       {/* Management Sections */}
       <div className="px-4 py-2">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          {t('manage')}
-        </h3>
+        <h3 className="text-section-label mb-3">{t('manage')}</h3>
         <div className="space-y-2">
           <SettingsRow
             icon={DollarSign}
@@ -501,9 +499,7 @@ export function SettingsPage() {
 
       {/* Language & Currency Section */}
       <div className="px-4 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          {t('language')}
-        </h3>
+        <h3 className="text-section-label mb-3">{t('language')}</h3>
         <div className="space-y-2">
           <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl">
             <div className="flex items-center gap-3">
@@ -560,9 +556,7 @@ export function SettingsPage() {
 
       {/* Data Section */}
       <div className="px-4 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          {t('data')}
-        </h3>
+        <h3 className="text-section-label mb-3">{t('data')}</h3>
         <div className="space-y-2">
           <button
             onClick={() => setImportWizardOpen(true)}
@@ -736,7 +730,7 @@ function ManagementView({
         <button onClick={onBack} className="text-primary font-medium" aria-label="Back">
           {backLabel}
         </button>
-        <h1 className="text-lg font-bold">{title}</h1>
+        <h1 className="text-page-title">{title}</h1>
         <button
           onClick={onAdd}
           className="p-2 rounded-full bg-primary text-primary-foreground"

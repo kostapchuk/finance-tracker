@@ -224,9 +224,7 @@ export function Dashboard() {
                 }}
                 className="flex items-center gap-2 flex-1 text-left"
               >
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  {t('income')}
-                </h3>
+                <h3 className="text-section-label">{t('income')}</h3>
                 <BlurredAmount className="font-semibold text-foreground">
                   {formatCurrency(monthlyData.totalIncome, mainCurrency)}
                 </BlurredAmount>
@@ -276,9 +274,7 @@ export function Dashboard() {
           <div className="bg-secondary/50 rounded-xl p-2">
             <div className="flex items-center justify-between mb-1 px-1 touch-target">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  {t('accounts')}
-                </h3>
+                <h3 className="text-section-label">{t('accounts')}</h3>
                 {isDraggingIncome && (
                   <span className="text-xs text-primary">{t('dropIncomeHere')}</span>
                 )}
@@ -327,9 +323,7 @@ export function Dashboard() {
                 onClick={() => setExpensesExpanded(!expensesExpanded)}
                 className="flex items-center gap-2 flex-1 text-left"
               >
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  {t('expenses')}
-                </h3>
+                <h3 className="text-section-label">{t('expenses')}</h3>
                 <BlurredAmount className="font-semibold text-foreground">
                   {formatCurrency(monthlyData.totalExpenses, mainCurrency)}
                 </BlurredAmount>

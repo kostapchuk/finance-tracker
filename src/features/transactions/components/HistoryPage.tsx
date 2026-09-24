@@ -570,7 +570,7 @@ export function HistoryPage() {
           </div>
         ) : (
           <>
-            <h1 className="text-xl font-bold">{t('history')}</h1>
+            <h1 className="text-page-title">{t('history')}</h1>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => dispatch({ type: 'SET_SHOW_FILTERS', payload: !showFilters })}
@@ -743,7 +743,7 @@ export function HistoryPage() {
               <TrendingUp className="h-3.5 w-3.5 text-success" />
               <span className="text-xs text-muted-foreground">{t('inflows')}</span>
             </div>
-            <BlurredAmount className="text-base font-bold text-success block">
+            <BlurredAmount className="tabular-nums text-base font-bold text-success block">
               +{formatCurrency(periodSummary.inflows, mainCurrency)}
             </BlurredAmount>
           </div>
@@ -756,7 +756,7 @@ export function HistoryPage() {
               )}
               <span className="text-xs text-muted-foreground">{t('net')}</span>
             </div>
-            <BlurredAmount className="text-base font-bold text-foreground block">
+            <BlurredAmount className="tabular-nums text-base font-bold text-foreground block">
               {periodSummary.net >= 0 ? '+' : '-'}
               {formatCurrency(Math.abs(periodSummary.net), mainCurrency)}
             </BlurredAmount>
@@ -766,7 +766,7 @@ export function HistoryPage() {
               <TrendingDown className="h-3.5 w-3.5 text-destructive" />
               <span className="text-xs text-muted-foreground">{t('outflows')}</span>
             </div>
-            <BlurredAmount className="text-base font-bold text-destructive block">
+            <BlurredAmount className="tabular-nums text-base font-bold text-destructive block">
               -{formatCurrency(periodSummary.outflows, mainCurrency)}
             </BlurredAmount>
           </div>
@@ -789,12 +789,12 @@ export function HistoryPage() {
                   <span>{group}</span>
                   <span className="flex items-center gap-2 font-mono">
                     {groupInflows > 0 && (
-                      <BlurredAmount className="text-success">
+                      <BlurredAmount className="tabular-nums text-success">
                         +{formatCurrency(groupInflows, mainCurrency)}
                       </BlurredAmount>
                     )}
                     {groupOutflows > 0 && (
-                      <BlurredAmount className="text-destructive">
+                      <BlurredAmount className="tabular-nums text-destructive">
                         -{formatCurrency(groupOutflows, mainCurrency)}
                       </BlurredAmount>
                     )}
@@ -844,7 +844,7 @@ export function HistoryPage() {
                               // For same currency, show single amount
                               if (!isMultiCurrency) {
                                 return (
-                                  <BlurredAmount className="font-mono font-semibold text-foreground">
+                                  <BlurredAmount className="tabular-nums font-mono font-semibold text-foreground">
                                     {formatCurrency(fromAmount, fromCurrency)}
                                   </BlurredAmount>
                                 )
@@ -854,11 +854,11 @@ export function HistoryPage() {
                               if (toCurrency === mainCurrency) {
                                 return (
                                   <>
-                                    <BlurredAmount className="font-mono font-semibold text-foreground">
+                                    <BlurredAmount className="tabular-nums font-mono font-semibold text-foreground">
                                       {formatCurrency(toAmount!, toCurrency)}
                                     </BlurredAmount>
                                     <p className="text-xs text-muted-foreground">
-                                      <BlurredAmount>
+                                      <BlurredAmount className="tabular-nums">
                                         {formatCurrency(fromAmount, fromCurrency)}
                                       </BlurredAmount>
                                     </p>
@@ -869,11 +869,11 @@ export function HistoryPage() {
                               if (fromCurrency === mainCurrency) {
                                 return (
                                   <>
-                                    <BlurredAmount className="font-mono font-semibold text-foreground">
+                                    <BlurredAmount className="tabular-nums font-mono font-semibold text-foreground">
                                       {formatCurrency(fromAmount, fromCurrency)}
                                     </BlurredAmount>
                                     <p className="text-xs text-muted-foreground">
-                                      <BlurredAmount>
+                                      <BlurredAmount className="tabular-nums">
                                         {formatCurrency(toAmount!, toCurrency)}
                                       </BlurredAmount>
                                     </p>
@@ -884,11 +884,11 @@ export function HistoryPage() {
                               // Neither is main currency, show from as primary
                               return (
                                 <>
-                                  <BlurredAmount className="font-mono font-semibold text-foreground">
+                                  <BlurredAmount className="tabular-nums font-mono font-semibold text-foreground">
                                     {formatCurrency(fromAmount, fromCurrency)}
                                   </BlurredAmount>
                                   <p className="text-xs text-muted-foreground">
-                                    <BlurredAmount>
+                                    <BlurredAmount className="tabular-nums">
                                       {formatCurrency(toAmount!, toCurrency)}
                                     </BlurredAmount>
                                   </p>
@@ -900,7 +900,7 @@ export function HistoryPage() {
                             <>
                               <BlurredAmount
                                 className={cn(
-                                  'font-mono font-semibold',
+                                  'tabular-nums font-mono font-semibold',
                                   transaction.type === 'income' ? 'text-success' : 'text-foreground'
                                 )}
                               >
@@ -911,7 +911,7 @@ export function HistoryPage() {
                               {transaction.mainCurrencyAmount != null &&
                                 transaction.currency !== mainCurrency && (
                                   <p className="text-xs text-muted-foreground">
-                                    <BlurredAmount>
+                                    <BlurredAmount className="tabular-nums">
                                       {formatCurrency(transaction.amount, transaction.currency)}
                                     </BlurredAmount>
                                   </p>
