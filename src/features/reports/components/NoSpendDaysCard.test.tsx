@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { NoSpendDaysCard } from './NoSpendDaysCard'
@@ -31,14 +31,36 @@ function makeVisit(date: Date): AppVisit {
   return { id: nextId++, date: `${year}-${month}-${day}`, createdAt: date }
 }
 
+function getDayCell(container: HTMLElement, dayNumber: number): Element {
+  const cells = [...container.querySelectorAll('.aspect-square')]
+  const cell = cells.find((c) => c.textContent === String(dayNumber))
+  if (!cell) throw new Error(`Day cell ${dayNumber} not found`)
+  return cell
+}
+
 describe('NoSpendDaysCard', () => {
-  it('shows the no-spend day count for the selected month', () => {
+  it('colors a visited day with no expense green', () => {
     const today = new Date(2026, 2, 31)
-    // A visit every day establishes evidence for the whole month.
+    const appVisits = Array.from({ length: 31 }, (_, i) => makeVisit(new Date(2026, 2, i + 1)))
+
+    const { container } = render(
+      <NoSpendDaysCard
+        transactions={[]}
+        appVisits={appVisits}
+        selectedMonth={new Date(2026, 2, 15)}
+        today={today}
+      />
+    )
+
+    expect(getDayCell(container, 10).className).toContain('bg-success')
+  })
+
+  it('colors a day with a real expense red', () => {
+    const today = new Date(2026, 2, 31)
     const appVisits = Array.from({ length: 31 }, (_, i) => makeVisit(new Date(2026, 2, i + 1)))
     const transactions = [makeTransaction({ date: new Date(2026, 2, 5) })]
 
-    render(
+    const { container } = render(
       <NoSpendDaysCard
         transactions={transactions}
         appVisits={appVisits}
@@ -47,14 +69,13 @@ describe('NoSpendDaysCard', () => {
       />
     )
 
-    // Full March has 31 days, only Mar 5 is a real-expense day -> 30 no-spend days.
-    expect(screen.getByText('30 noSpendDaysInMonth')).toBeInTheDocument()
+    expect(getDayCell(container, 5).className).toContain('bg-destructive')
   })
 
-  it('does not credit a day as no-spend when there is no visit or transaction evidence for it', () => {
+  it('colors a day gray when there is no visit or transaction evidence for it', () => {
     const today = new Date(2026, 2, 31)
 
-    render(
+    const { container } = render(
       <NoSpendDaysCard
         transactions={[]}
         appVisits={[]}
@@ -63,43 +84,24 @@ describe('NoSpendDaysCard', () => {
       />
     )
 
-    // No visits and no transactions anywhere -> nothing can be credited as no-spend.
-    expect(screen.getByText('0 noSpendDaysInMonth')).toBeInTheDocument()
+    const cell = getDayCell(container, 10)
+    expect(cell.className).toContain('bg-secondary/30')
+    expect(cell.className).not.toContain('bg-success')
+    expect(cell.className).not.toContain('bg-destructive')
   })
 
-  it('shows the no-data hint when a day has no visit or transaction evidence', () => {
-    const today = new Date(2026, 2, 20)
-    const appVisits = [makeVisit(new Date(2026, 2, 10)), makeVisit(today)]
+  it('colors a future day gray, the same as a no-data day', () => {
+    const today = new Date(2026, 2, 10)
 
-    render(
+    const { container } = render(
       <NoSpendDaysCard
         transactions={[]}
-        appVisits={appVisits}
+        appVisits={[]}
         selectedMonth={new Date(2026, 2, 15)}
         today={today}
       />
     )
 
-    expect(screen.getByText('noDataDaysHint')).toBeInTheDocument()
-  })
-
-  it('does not show the no-data hint when every evaluated day has evidence', () => {
-    const today = new Date(2026, 2, 3)
-    const appVisits = [
-      makeVisit(new Date(2026, 2, 1)),
-      makeVisit(new Date(2026, 2, 2)),
-      makeVisit(today),
-    ]
-
-    render(
-      <NoSpendDaysCard
-        transactions={[]}
-        appVisits={appVisits}
-        selectedMonth={new Date(2026, 2, 15)}
-        today={today}
-      />
-    )
-
-    expect(screen.queryByText('noDataDaysHint')).not.toBeInTheDocument()
+    expect(getDayCell(container, 20).className).toContain('bg-secondary/30')
   })
 })

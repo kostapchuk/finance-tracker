@@ -268,22 +268,17 @@ test.describe('Reports Page', () => {
     await expect(reportPage.getTotalBalanceAmount()).toContainText('3,500');
   });
 
-  test('shows a no-spend count of 1 right after setup, since only today has been visited', async ({
+  test('colors today green right after setup, since only today has been visited', async ({
     reportPage,
   }) => {
     // setupCleanState leaves exactly one recorded visit (today, via the app's own
-    // startup flow) and no transactions - every earlier day in the month has no
-    // evidence at all, so only today counts as no-spend.
+    // startup flow) and no transactions.
     await reportPage.navigateTo('report');
 
-    await expect(reportPage.getNoSpendDaysCard()).toBeVisible();
-    await expect(reportPage.getNoSpendDaysCountText()).toHaveText(/^1\s/);
+    await expect(reportPage.getTodayCell()).toHaveClass(/bg-success/);
   });
 
-  test('excludes today from the no-spend count once it has a real expense', async ({
-    reportPage,
-    dbHelper,
-  }) => {
+  test('colors today red once it has a real expense', async ({ reportPage, dbHelper }) => {
     const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
     const catId = await dbHelper.seedCategory(testCategories.food());
 
@@ -300,10 +295,13 @@ test.describe('Reports Page', () => {
 
     await reportPage.navigateTo('report');
 
-    await expect(reportPage.getNoSpendDaysCountText()).toHaveText(/^0\s/);
+    await expect(reportPage.getTodayCell()).toHaveClass(/bg-destructive/);
   });
 
-  test('does not count loan transactions as spending', async ({ reportPage, dbHelper }) => {
+  test('does not color today red for loan transactions, only real expenses', async ({
+    reportPage,
+    dbHelper,
+  }) => {
     const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
 
     // A loan given today must not count as a "spend" day.
@@ -319,23 +317,25 @@ test.describe('Reports Page', () => {
 
     await reportPage.navigateTo('report');
 
-    // No real expense today -> today still counts as no-spend.
-    await expect(reportPage.getNoSpendDaysCountText()).toHaveText(/^1\s/);
+    await expect(reportPage.getTodayCell()).toHaveClass(/bg-success/);
   });
 
-  test('marks a day as "no data" (not no-spend) when the app was not opened that day', async ({
+  test('colors a day gray (not green) when the app was not opened that day', async ({
     reportPage,
     dbHelper,
   }) => {
-    // A visit 3 days ago starts tracking, but yesterday and 2 days ago have
-    // neither a visit nor a transaction - a real gap the app can't vouch for.
+    // A visit 3 days ago starts tracking, but 2 days ago has neither a visit
+    // nor a transaction - a real gap the app can't vouch for.
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
     await dbHelper.seedAppVisit(threeDaysAgo);
     // refreshStoreData reloads the page, which records today's own visit automatically.
     await dbHelper.refreshStoreData();
 
     await reportPage.navigateTo('report');
 
-    await expect(reportPage.getNoDataDaysHint()).toBeVisible();
+    const gapCell = reportPage.getDayCell(twoDaysAgo.getDate());
+    await expect(gapCell).toHaveClass(/bg-secondary\/30/);
+    await expect(gapCell).not.toHaveClass(/bg-success/);
   });
 });

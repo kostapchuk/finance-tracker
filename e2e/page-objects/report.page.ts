@@ -118,16 +118,18 @@ export class ReportPage extends BasePage {
     return this.page.locator('text=/no.*transaction.*data|нет.*данных.*транзакц/i');
   }
 
-  // No-Spend Days section
-  getNoSpendDaysCard(): Locator {
-    return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /no-spend|бесплатн/i });
+  // No-Spend Days calendar (identified structurally - it has no text of its own)
+  getNoSpendDaysGrid(): Locator {
+    return this.page.locator('.grid-cols-7').filter({ has: this.page.locator('.aspect-square') });
   }
 
-  getNoSpendDaysCountText(): Locator {
-    return this.getNoSpendDaysCard().locator('p.text-sm.text-muted-foreground');
+  getTodayCell(): Locator {
+    return this.getNoSpendDaysGrid().locator('.ring-2');
   }
 
-  getNoDataDaysHint(): Locator {
-    return this.page.locator('text=/wasn.?t opened|не открывалось/i');
+  getDayCell(dayNumber: number): Locator {
+    return this.getNoSpendDaysGrid()
+      .locator('.aspect-square')
+      .filter({ hasText: new RegExp(`^${dayNumber}$`) });
   }
 }

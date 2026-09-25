@@ -21,9 +21,8 @@ function DayGridCell({ day, isToday }: { day: DayCell; isToday: boolean }) {
         'aspect-square rounded-md flex items-center justify-center text-[11px] font-medium tabular-nums',
         day.status === 'no-spend' && 'bg-success/15 text-success',
         day.status === 'spend' && 'bg-destructive/15 text-destructive',
-        day.status === 'no-data' &&
-          'bg-secondary/50 text-muted-foreground/60 border border-dashed border-muted-foreground/30',
-        day.status === 'future' && 'bg-secondary/30 text-muted-foreground/40',
+        (day.status === 'no-data' || day.status === 'future') &&
+          'bg-secondary/30 text-muted-foreground/40',
         isToday && 'ring-2 ring-primary'
       )}
     >
@@ -38,18 +37,13 @@ export function NoSpendDaysCard({
   selectedMonth,
   today: todayProp,
 }: NoSpendDaysCardProps) {
-  const { t, language } = useLanguage()
+  const { language } = useLanguage()
 
   const today = useMemo(() => todayProp ?? new Date(), [todayProp])
 
   const monthStats = useMemo(
     () => computeMonthNoSpendStats(transactions, appVisits, selectedMonth, today),
     [transactions, appVisits, selectedMonth, today]
-  )
-
-  const hasNoDataDays = useMemo(
-    () => monthStats.days.some((d) => d.status === 'no-data'),
-    [monthStats.days]
   )
 
   const weekdayLabels = useMemo(() => {
@@ -68,11 +62,6 @@ export function NoSpendDaysCard({
 
   return (
     <div className="p-4 bg-secondary/50 rounded-2xl">
-      <h3 className="text-section-label mb-1">{t('noSpendDaysTitle')}</h3>
-      <p className="text-sm text-muted-foreground mb-3">
-        {monthStats.noSpendCount} {t('noSpendDaysInMonth')}
-      </p>
-
       <div className="grid grid-cols-7 gap-1 mb-1">
         {weekdayLabels.map((label) => (
           <div
@@ -95,8 +84,6 @@ export function NoSpendDaysCard({
           />
         ))}
       </div>
-
-      {hasNoDataDays && <p className="text-xs text-muted-foreground mt-2">{t('noDataDaysHint')}</p>}
     </div>
   )
 }
