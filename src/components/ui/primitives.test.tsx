@@ -32,6 +32,12 @@ describe('Button', () => {
     fireEvent.click(button)
     expect(onClick).toHaveBeenCalled()
   })
+
+  it('falls back to the default variant and size', () => {
+    render(<Button>Save</Button>)
+
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveClass('bg-primary', 'h-11', 'px-4')
+  })
 })
 
 describe('Input, Label and Textarea', () => {

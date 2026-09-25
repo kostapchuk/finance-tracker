@@ -35,3 +35,6 @@ dist-ssr
 .env*.local
 coverage/
 /reports/
+
+# CLI telemetry id written to the working directory
+telemetry-id

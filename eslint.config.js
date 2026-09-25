@@ -50,7 +50,7 @@ export default defineConfig([
         'warn',
         {
           allowConstantExport: true,
-          allowExportNames: ['useServiceWorker', 'buttonVariants', 'badgeVariants'],
+          allowExportNames: ['useServiceWorker'],
         },
       ],
     },

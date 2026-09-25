@@ -28,11 +28,7 @@ function manualChunks(id: string): string | undefined {
     if (id.includes('zustand')) {
       return 'vendor-state'
     }
-    if (
-      id.includes('clsx') ||
-      id.includes('tailwind-merge') ||
-      id.includes('class-variance-authority')
-    ) {
+    if (id.includes('clsx') || id.includes('tailwind-merge')) {
       return 'vendor-utils'
     }
   }
