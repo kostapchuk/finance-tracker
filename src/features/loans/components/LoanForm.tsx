@@ -30,6 +30,9 @@ export interface LoanFormData {
   currency: string
   accountId: number
   accountAmount?: number // set when account currency ≠ loan currency
+  // Set when neither the loan currency nor the account currency is the main
+  // currency, so there's no other way to derive the main-currency equivalent
+  mainCurrencyAmount?: number
   dueDate?: Date
 }
 
@@ -54,12 +57,18 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   const [currency, setCurrency] = useState(mainCurrency)
   const [accountId, setAccountId] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
+  const [mainCurrencyAmount, setMainCurrencyAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
 
   const selectedAccount = accountId
     ? accounts.find((a) => a.id === Number.parseInt(accountId))
     : undefined
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
+  // Neither the loan currency nor the account currency is the main currency,
+  // so there's no way to derive the main-currency equivalent automatically.
+  const loanIsMain = currency === mainCurrency
+  const accountIsMain = selectedAccount?.currency === mainCurrency
+  const needsMainCurrencyAmount = !!selectedAccount && !loanIsMain && !accountIsMain
 
   useResetOnChange([loan, open, mainCurrency, accounts], () => {
     if (loan) {
@@ -80,18 +89,28 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
       setDueDate('')
     }
     setAccountAmount('')
+    setMainCurrencyAmount('')
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!personName.trim() || !amount || !accountId) return
     if (isMultiCurrency && !accountAmount) return
+    if (needsMainCurrencyAmount && !mainCurrencyAmount) return
 
     const parsedAmount = Number.parseFloat(amount)
     const parsedAccountAmount = isMultiCurrency ? Number.parseFloat(accountAmount) : undefined
+    const parsedMainCurrencyAmount = needsMainCurrencyAmount
+      ? Number.parseFloat(mainCurrencyAmount)
+      : undefined
 
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0) return
     if (isMultiCurrency && (Number.isNaN(parsedAccountAmount!) || parsedAccountAmount! <= 0)) return
+    if (
+      needsMainCurrencyAmount &&
+      (Number.isNaN(parsedMainCurrencyAmount!) || parsedMainCurrencyAmount! <= 0)
+    )
+      return
 
     setIsLoading(true)
     try {
@@ -103,6 +122,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
         currency,
         accountId: Number.parseInt(accountId),
         accountAmount: parsedAccountAmount,
+        mainCurrencyAmount: parsedMainCurrencyAmount,
         dueDate: dueDate ? new Date(dueDate) : undefined,
       }
 
@@ -260,6 +280,23 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             </div>
           )}
 
+          {needsMainCurrencyAmount && (
+            <div className="space-y-2">
+              <Label htmlFor="mainCurrencyAmount">
+                {mainCurrency} ({t('amountInMainCurrency')})
+              </Label>
+              <Input
+                id="mainCurrencyAmount"
+                type="number"
+                step="0.01"
+                value={mainCurrencyAmount}
+                onChange={(e) => setMainCurrencyAmount(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="dueDate">{t('dueDate')}</Label>
             <Input
@@ -286,7 +323,11 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             isEditing={!!loan}
             isLoading={isLoading}
             onCancel={onClose}
-            submitDisabled={!accountId}
+            submitDisabled={
+              !accountId ||
+              (isMultiCurrency && !accountAmount) ||
+              (needsMainCurrencyAmount && !mainCurrencyAmount)
+            }
           />
         </form>
       </DialogContent>

@@ -18,7 +18,7 @@ import type { Loan, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
-import { formatCurrency, getCurrencySymbol } from '@/utils/currency'
+import { formatCurrency, getCurrencySymbol, resolveMainCurrencyAmount } from '@/utils/currency'
 import {
   applyTransactionBalance,
   deleteLoanWithTransactions,
@@ -54,6 +54,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
   const refreshAccounts = useAppStore((state) => state.refreshAccounts)
   const [amount, setAmount] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
+  const [mainCurrencyAmount, setMainCurrencyAmount] = useState('')
   const [comment, setComment] = useState('')
   const [selectedAccountId, setSelectedAccountId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
@@ -63,14 +64,18 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     ? accounts.find((a) => a.id === Number.parseInt(selectedAccountId))
     : undefined
   const isMultiCurrency = loan && selectedAccount && loan.currency !== selectedAccount.currency
+  // Neither the loan nor the payment account is in the main currency, so neither
+  // amount field can serve as the main-currency total — need a manual conversion.
+  const loanIsMain = loan?.currency === mainCurrency
+  const accountIsMain = selectedAccount?.currency === mainCurrency
+  const needsMainCurrencyAmount = !!loan && !!selectedAccount && !loanIsMain && !accountIsMain
 
   useResetOnChange([open, editTransaction, loan], () => {
     if (open) {
       if (editTransaction) {
-        setAmount(
-          editTransaction.mainCurrencyAmount?.toString() || editTransaction.amount.toString()
-        )
+        setAmount((editTransaction.loanCurrencyAmount ?? editTransaction.amount).toString())
         setAccountAmount(editTransaction.amount.toString())
+        setMainCurrencyAmount(editTransaction.mainCurrencyAmount?.toString() || '')
         setComment(editTransaction.comment || '')
         setSelectedAccountId(
           editTransaction.accountId?.toString() || loan?.accountId?.toString() || ''
@@ -78,6 +83,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
       } else {
         setAmount('')
         setAccountAmount('')
+        setMainCurrencyAmount('')
         setComment('')
         setSelectedAccountId(loan?.accountId?.toString() || '')
       }
@@ -90,11 +96,17 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     }
   })
 
+  useResetOnChange([needsMainCurrencyAmount], () => {
+    if (!needsMainCurrencyAmount) {
+      setMainCurrencyAmount('')
+    }
+  })
+
   const getEffectiveRemaining = () => {
     if (!loan) return 0
     const baseRemaining = loan.amount - loan.paidAmount
     if (isEditMode && editTransaction) {
-      const oldPaymentAmount = editTransaction.mainCurrencyAmount ?? editTransaction.amount
+      const oldPaymentAmount = editTransaction.loanCurrencyAmount ?? editTransaction.amount
       return baseRemaining + oldPaymentAmount
     }
     return baseRemaining
@@ -114,6 +126,24 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     const acctAmount = isMultiCurrency ? Number.parseFloat(accountAmount) : paymentAmount
     if (isMultiCurrency && (Number.isNaN(acctAmount) || acctAmount <= 0)) return
 
+    if (needsMainCurrencyAmount && !mainCurrencyAmount) return
+    const parsedMainCurrencyAmount = needsMainCurrencyAmount
+      ? Number.parseFloat(mainCurrencyAmount)
+      : undefined
+    if (
+      needsMainCurrencyAmount &&
+      (Number.isNaN(parsedMainCurrencyAmount!) || parsedMainCurrencyAmount! <= 0)
+    )
+      return
+
+    const storedMainCurrencyAmount = resolveMainCurrencyAmount({
+      entryCurrency: loan.currency,
+      accountCurrency: selectedAccount?.currency,
+      mainCurrency,
+      entryAmount: paymentAmount,
+      manualAmount: parsedMainCurrencyAmount,
+    })
+
     const acctId = Number.parseInt(selectedAccountId)
 
     setIsLoading(true)
@@ -128,7 +158,8 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           amount: acctAmount,
           currency: selectedAccount?.currency || loan.currency,
           accountId: acctId,
-          mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
+          loanCurrencyAmount: paymentAmount,
+          mainCurrencyAmount: storedMainCurrencyAmount,
           comment:
             comment ||
             `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
@@ -141,7 +172,8 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
           date: new Date(),
           loanId: loan.id,
           accountId: acctId,
-          mainCurrencyAmount: loan.currency === mainCurrency ? paymentAmount : undefined,
+          loanCurrencyAmount: paymentAmount,
+          mainCurrencyAmount: storedMainCurrencyAmount,
           comment:
             comment ||
             `${loan.type === 'given' ? t('paymentReceivedFrom') : t('paymentMadeTo')} ${loan.personName}`,
@@ -167,6 +199,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
   const handleClose = () => {
     setAmount('')
     setAccountAmount('')
+    setMainCurrencyAmount('')
     setComment('')
     setSelectedAccountId('')
     onClose()
@@ -303,6 +336,28 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </div>
           )}
 
+          {needsMainCurrencyAmount && (
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">
+                {mainCurrency} ({t('amountInMainCurrency')})
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {getCurrencySymbol(mainCurrency)}
+                </span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={mainCurrencyAmount}
+                  onChange={(e) => setMainCurrencyAmount(sanitizeAmount(e.target.value))}
+                  className="pl-8 text-lg"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>{t('paymentAccount')}</Label>
             <AccountSelect
@@ -352,6 +407,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
                 !amount ||
                 !selectedAccountId ||
                 (!!isMultiCurrency && !accountAmount) ||
+                (needsMainCurrencyAmount && !mainCurrencyAmount) ||
                 Number.parseFloat(amount) > effectiveRemaining
               }
               className="flex-1 sm:flex-none"

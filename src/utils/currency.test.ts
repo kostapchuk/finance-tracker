@@ -9,6 +9,7 @@ import {
   setCustomCurrencies,
   getAllCurrencies,
   COMMON_CURRENCIES,
+  resolveMainCurrencyAmount,
 } from './currency'
 
 describe('currency utilities', () => {
@@ -142,6 +143,74 @@ describe('currency utilities', () => {
 
     it('returns only common currencies when no custom set', () => {
       expect(getAllCurrencies()).toEqual(expect.arrayContaining(COMMON_CURRENCIES))
+    })
+  })
+
+  describe('resolveMainCurrencyAmount', () => {
+    it('returns undefined when the account is already in the main currency', () => {
+      // e.g. a USD loan paid from a RUB (main) account — `amount` applied to
+      // the account balance is already the main-currency value.
+      expect(
+        resolveMainCurrencyAmount({
+          entryCurrency: 'USD',
+          accountCurrency: 'RUB',
+          mainCurrency: 'RUB',
+          entryAmount: 100,
+          manualAmount: undefined,
+        })
+      ).toBeUndefined()
+    })
+
+    it('returns the entry amount when the entry currency is the main currency', () => {
+      // e.g. a RUB loan paid from a EUR account — the payment amount entered
+      // in the loan's own currency already is the main-currency value.
+      expect(
+        resolveMainCurrencyAmount({
+          entryCurrency: 'RUB',
+          accountCurrency: 'EUR',
+          mainCurrency: 'RUB',
+          entryAmount: 150,
+          manualAmount: undefined,
+        })
+      ).toBe(150)
+    })
+
+    it('prefers the account-is-main branch when both entry and account are main currency', () => {
+      expect(
+        resolveMainCurrencyAmount({
+          entryCurrency: 'RUB',
+          accountCurrency: 'RUB',
+          mainCurrency: 'RUB',
+          entryAmount: 150,
+          manualAmount: undefined,
+        })
+      ).toBeUndefined()
+    })
+
+    it('falls back to the manual conversion when neither entry nor account is the main currency', () => {
+      // e.g. a USD loan paid from a EUR account while the main currency is RUB —
+      // neither raw amount is in RUB, so a manually entered value is required.
+      expect(
+        resolveMainCurrencyAmount({
+          entryCurrency: 'USD',
+          accountCurrency: 'EUR',
+          mainCurrency: 'RUB',
+          entryAmount: 100,
+          manualAmount: 9200,
+        })
+      ).toBe(9200)
+    })
+
+    it('falls back to the (undefined) manual conversion when the account currency is unknown', () => {
+      expect(
+        resolveMainCurrencyAmount({
+          entryCurrency: 'USD',
+          accountCurrency: undefined,
+          mainCurrency: 'RUB',
+          entryAmount: 100,
+          manualAmount: undefined,
+        })
+      ).toBeUndefined()
     })
   })
 })

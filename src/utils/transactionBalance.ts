@@ -35,7 +35,7 @@ export async function reverseTransactionBalance(
     toAccountId,
     toAmount,
     loanId,
-    mainCurrencyAmount,
+    loanCurrencyAmount,
   } = transaction
   // Amount actually applied to accountId's balance when the transaction was created
   const appliedAmount = accountAmount ?? amount
@@ -85,7 +85,7 @@ export async function reverseTransactionBalance(
 
     case 'loan_payment': {
       if (loanId) {
-        const paymentAmount = mainCurrencyAmount ?? amount
+        const paymentAmount = loanCurrencyAmount ?? amount
         await loanRepo.reversePayment(loanId, paymentAmount)
 
         // Reverse account balance change
@@ -121,7 +121,7 @@ export async function applyTransactionBalance(
     toAccountId,
     toAmount,
     loanId,
-    mainCurrencyAmount,
+    loanCurrencyAmount,
   } = transaction
   // Amount to apply to accountId's balance, in the account's own currency.
   // Falls back to `amount` when the transaction currency already matches the account.
@@ -171,7 +171,7 @@ export async function applyTransactionBalance(
 
     case 'loan_payment': {
       if (loanId) {
-        const paymentAmount = mainCurrencyAmount ?? amount
+        const paymentAmount = loanCurrencyAmount ?? amount
         await loanRepo.recordPayment(loanId, paymentAmount)
 
         // Update account balance
