@@ -69,6 +69,23 @@ export class ReportPage extends BasePage {
     return this.getTrendSection().locator('.flex.items-center.justify-center.gap-4');
   }
 
+  // Loan activity section (only visible if there is loan activity this month)
+  getLoanActivitySection(): Locator {
+    return this.page.locator('h3').filter({ hasText: /loan.*activity|активность.*долг/i }).locator('..');
+  }
+
+  getGivenThisMonthAmount(): Locator {
+    return this.getLoanActivitySection().locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /given|дано.*в.*долг/i }).locator('.text-xl.font-bold');
+  }
+
+  getReturnedThisMonthAmount(): Locator {
+    return this.getLoanActivitySection().locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /returned|возвращено/i }).locator('.text-xl.font-bold');
+  }
+
+  getLoanActivityRemainingAmount(): Locator {
+    return this.getLoanActivitySection().locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /remaining|осталось/i }).locator('.text-xl.font-bold');
+  }
+
   // Loan status section (only visible if loans exist)
   getLoanStatusSection(): Locator {
     return this.page.locator('h3').filter({ hasText: /loan.*status|статус.*долг/i }).locator('..');

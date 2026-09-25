@@ -58,6 +58,30 @@ export function ReportPage() {
     return { givenTotal, receivedTotal, netLoan }
   }, [loans])
 
+  // Money given out as loans and repayments received back, for the selected month
+  const monthlyLoanStats = useMemo(() => {
+    const startOfMonth = getStartOfMonth(selectedMonth)
+    const endOfMonth = getEndOfMonth(selectedMonth)
+
+    const monthlyTransactions = transactions.filter(
+      (t) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
+    )
+
+    const givenThisMonth = monthlyTransactions
+      .filter((t) => t.type === 'loan_given')
+      .reduce((sum, t) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
+
+    const returnedThisMonth = monthlyTransactions
+      .filter((t) => {
+        if (t.type !== 'loan_payment' || !t.loanId) return false
+        const loan = loans.find((l) => l.id === t.loanId)
+        return loan?.type === 'given'
+      })
+      .reduce((sum, t) => sum + (t.mainCurrencyAmount ?? t.amount), 0)
+
+    return { givenThisMonth, returnedThisMonth }
+  }, [transactions, loans, selectedMonth])
+
   const spendingByCategory = useMemo(() => {
     const startOfMonth = getStartOfMonth(selectedMonth)
     const endOfMonth = getEndOfMonth(selectedMonth)
@@ -201,6 +225,48 @@ export function ReportPage() {
           </div>
         </div>
       </div>
+
+      {/* Loan Activity - scoped to the selected month via the MonthSelector above */}
+      {(monthlyLoanStats.givenThisMonth > 0 || monthlyLoanStats.returnedThisMonth > 0) && (
+        <div className="px-4 py-4">
+          <h3 className="text-section-label mb-4">{t('loanActivity')}</h3>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 bg-secondary/50 rounded-2xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowUpRight className="h-4 w-4 text-success" />
+                  <span className="text-sm text-muted-foreground">{t('given')}</span>
+                </div>
+                <BlurredAmount className="tabular-nums text-xl font-bold block">
+                  {formatCurrency(monthlyLoanStats.givenThisMonth, mainCurrency)}
+                </BlurredAmount>
+              </div>
+              <div className="p-4 bg-secondary/50 rounded-2xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowDownLeft className="h-4 w-4 text-success" />
+                  <span className="text-sm text-muted-foreground">{t('returned')}</span>
+                </div>
+                <BlurredAmount className="tabular-nums text-xl font-bold block">
+                  {formatCurrency(monthlyLoanStats.returnedThisMonth, mainCurrency)}
+                </BlurredAmount>
+              </div>
+            </div>
+            <div className="p-4 bg-secondary/50 rounded-2xl">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('remaining')}</span>
+                <BlurredAmount
+                  className={cn(
+                    'tabular-nums text-xl font-bold',
+                    getAmountColorClass(loanStats.givenTotal)
+                  )}
+                >
+                  {formatCurrency(loanStats.givenTotal, mainCurrency)}
+                </BlurredAmount>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Current Loans Status - separate from monthly data */}
       {(loanStats.givenTotal > 0 || loanStats.receivedTotal > 0) && (
