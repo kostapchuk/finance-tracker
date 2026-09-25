@@ -34,4 +34,4 @@ dist-ssr
 .vercel
 .env*.local
 coverage/
-reports/
+/reports/
