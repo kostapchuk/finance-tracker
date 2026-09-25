@@ -7,8 +7,16 @@ import {
   type Loan,
   type AppSettings,
   type CustomCurrency,
+  type AppVisit,
 } from './db'
 import type { LoanStatus } from './types'
+
+function toLocalDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 // Account Repository
 export const accountRepo = {
@@ -305,5 +313,20 @@ export const customCurrencyRepo = {
 
   async delete(id: number) {
     return db.customCurrencies.delete(id)
+  },
+}
+
+// App Visit Repository - tracks which calendar days the app was opened on
+export const appVisitRepo = {
+  async getAll() {
+    return db.appVisits.toArray()
+  },
+
+  /** Records today as visited, once per day (no-op if already recorded). */
+  async recordToday(): Promise<void> {
+    const date = toLocalDateKey(new Date())
+    const existing = await db.appVisits.where('date').equals(date).first()
+    if (existing) return
+    await db.appVisits.add({ date, createdAt: new Date() } satisfies Omit<AppVisit, 'id'>)
   },
 }

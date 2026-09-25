@@ -56,7 +56,11 @@ export default defineConfig([
     },
   },
   {
-    files: ['**/components/ui/alert.tsx', '**/components/ui/card.tsx', '**/components/ui/dialog.tsx'],
+    files: [
+      '**/components/ui/alert.tsx',
+      '**/components/ui/card.tsx',
+      '**/components/ui/dialog.tsx',
+    ],
     rules: {
       'jsx-a11y/heading-has-content': 'off',
     },
@@ -77,6 +81,14 @@ export default defineConfig([
     // Dexie's `.stores()` schema migrations require the literal `null` (not
     // `undefined`) to mark a table for deletion between versions.
     files: ['**/database/db.ts'],
+    rules: {
+      'unicorn/no-null': 'off',
+    },
+  },
+  {
+    // The `Storage` web API (implemented here for tests) requires returning
+    // the literal `null`, not `undefined`, from `getItem`/`key`.
+    files: ['**/test/setup.ts'],
     rules: {
       'unicorn/no-null': 'off',
     },

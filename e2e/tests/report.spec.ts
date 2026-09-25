@@ -267,4 +267,75 @@ test.describe('Reports Page', () => {
     // Total balance should be $3500 ($1000 + $2500)
     await expect(reportPage.getTotalBalanceAmount()).toContainText('3,500');
   });
+
+  test('colors today green right after setup, since only today has been visited', async ({
+    reportPage,
+  }) => {
+    // setupCleanState leaves exactly one recorded visit (today, via the app's own
+    // startup flow) and no transactions.
+    await reportPage.navigateTo('report');
+
+    await expect(reportPage.getTodayCell()).toHaveClass(/bg-success/);
+  });
+
+  test('colors today red once it has a real expense', async ({ reportPage, dbHelper }) => {
+    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    const catId = await dbHelper.seedCategory(testCategories.food());
+
+    await dbHelper.seedTransaction({
+      type: 'expense',
+      amount: 42,
+      currency: 'USD',
+      accountId,
+      categoryId: catId,
+      date: new Date(),
+      comment: 'Lunch',
+    });
+    await dbHelper.refreshStoreData();
+
+    await reportPage.navigateTo('report');
+
+    await expect(reportPage.getTodayCell()).toHaveClass(/bg-destructive/);
+  });
+
+  test('does not color today red for loan transactions, only real expenses', async ({
+    reportPage,
+    dbHelper,
+  }) => {
+    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
+
+    // A loan given today must not count as a "spend" day.
+    await dbHelper.seedTransaction({
+      type: 'loan_given',
+      amount: 500,
+      currency: 'USD',
+      accountId,
+      date: new Date(),
+      comment: 'Lent to a friend',
+    });
+    await dbHelper.refreshStoreData();
+
+    await reportPage.navigateTo('report');
+
+    await expect(reportPage.getTodayCell()).toHaveClass(/bg-success/);
+  });
+
+  test('colors a day gray (not green) when the app was not opened that day', async ({
+    reportPage,
+    dbHelper,
+  }) => {
+    // A visit 3 days ago starts tracking, but 2 days ago has neither a visit
+    // nor a transaction - a real gap the app can't vouch for.
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await dbHelper.seedAppVisit(threeDaysAgo);
+    // refreshStoreData reloads the page, which records today's own visit automatically.
+    await dbHelper.refreshStoreData();
+
+    await reportPage.navigateTo('report');
+
+    const gapCell = reportPage.getDayCell(twoDaysAgo.getDate());
+    await expect(gapCell).toHaveClass(/bg-secondary\/30/);
+    await expect(gapCell).not.toHaveClass(/bg-success/);
+  });
 });

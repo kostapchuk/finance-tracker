@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { db } from './db'
 import {
   accountRepo,
+  appVisitRepo,
   categoryRepo,
   customCurrencyRepo,
   incomeSourceRepo,
@@ -239,5 +240,33 @@ describe('customCurrencyRepo', () => {
 
     await customCurrencyRepo.delete(usdt)
     await expect(customCurrencyRepo.getAll()).resolves.toHaveLength(1)
+  })
+})
+
+describe('appVisitRepo', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 2, 15, 10, 30))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('records today once, however many times it is called', async () => {
+    await appVisitRepo.recordToday()
+    await appVisitRepo.recordToday()
+
+    const visits = await appVisitRepo.getAll()
+    expect(visits.map((v) => v.date)).toEqual(['2026-03-15'])
+  })
+
+  it('records a new visit on a new day', async () => {
+    await appVisitRepo.recordToday()
+    vi.setSystemTime(new Date(2026, 2, 16, 9))
+    await appVisitRepo.recordToday()
+
+    const visits = await appVisitRepo.getAll()
+    expect(visits.map((v) => v.date)).toEqual(['2026-03-15', '2026-03-16'])
   })
 })

@@ -5,6 +5,7 @@ import { useAppStore } from './useAppStore'
 import { db } from '@/database/db'
 import {
   accountRepo,
+  appVisitRepo,
   categoryRepo,
   customCurrencyRepo,
   incomeSourceRepo,
@@ -200,5 +201,23 @@ describe('refresh actions', () => {
     ] as const) {
       expect(state[key], key).toHaveLength(1)
     }
+  })
+})
+
+describe('app visits', () => {
+  it('records today while loading data', async () => {
+    localStorage.setItem(ONBOARDING_KEY, 'true')
+
+    await useAppStore.getState().loadAllData()
+
+    expect(useAppStore.getState().appVisits).toHaveLength(1)
+  })
+
+  it('reloads visits from the database', async () => {
+    await appVisitRepo.recordToday()
+
+    await useAppStore.getState().refreshAppVisits()
+
+    expect(useAppStore.getState().appVisits).toHaveLength(1)
   })
 })
