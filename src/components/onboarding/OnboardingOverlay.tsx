@@ -12,7 +12,7 @@ export function OnboardingOverlay() {
   const setActiveView = useAppStore((state) => state.setActiveView)
   const { t } = useLanguage()
 
-  if (onboardingStep === 0) return null
+  if (onboardingStep === 0) return
 
   // Step 1: Welcome
   if (onboardingStep === 1) {
@@ -177,7 +177,13 @@ export function OnboardingOverlay() {
     )
   }
 
-  return null
+  return
+}
+
+function stepDotColor(step: number, currentStep: number) {
+  if (step === currentStep) return 'bg-primary'
+  if (step < currentStep) return 'bg-primary/50'
+  return 'bg-white/30'
 }
 
 function StepIndicator({
@@ -199,11 +205,7 @@ function StepIndicator({
             key={i}
             className={cn(
               'w-2 h-2 rounded-full transition-colors',
-              i + 1 === currentStep
-                ? 'bg-primary'
-                : i + 1 < currentStep
-                  ? 'bg-primary/50'
-                  : 'bg-white/30'
+              stepDotColor(i + 1, currentStep)
             )}
           />
         ))}

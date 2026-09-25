@@ -15,7 +15,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 interface ImportConfirmationProps {
   data: ParsedImportData
   isImporting: boolean
-  importResult: ImportResult | null
+  importResult: ImportResult | undefined
   onImport: () => void
   onBack: () => void
   onClose: () => void

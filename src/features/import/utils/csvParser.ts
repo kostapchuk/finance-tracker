@@ -70,14 +70,16 @@ export function parseBudgetOkCSV(csvContent: string): ParsedImportData {
     addAccountCurrency(row.account, row.currency)
 
     switch (row.operationType) {
-      case 'Income':
+      case 'Income': {
         incomeCount++
         uniqueIncomeSources.add(row.category)
         break
-      case 'Expense':
+      }
+      case 'Expense': {
         expenseCount++
         uniqueCategories.add(row.category)
         break
+      }
       case 'transfer': {
         transferCount++
         uniqueTransferDestinations.add(row.category) // Category is destination account for transfers
@@ -103,15 +105,15 @@ export function parseBudgetOkCSV(csvContent: string): ParsedImportData {
       }
       return { name, currency: mostCommonCurrency }
     })
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .toSorted((a, b) => a.name.localeCompare(b.name))
 
   return {
     rows,
     errors,
     uniqueAccounts,
-    uniqueCategories: [...uniqueCategories].sort(),
-    uniqueIncomeSources: [...uniqueIncomeSources].sort(),
-    uniqueTransferDestinations: [...uniqueTransferDestinations].sort(),
+    uniqueCategories: [...uniqueCategories].toSorted(),
+    uniqueIncomeSources: [...uniqueIncomeSources].toSorted(),
+    uniqueTransferDestinations: [...uniqueTransferDestinations].toSorted(),
     counts: {
       income: incomeCount,
       expense: expenseCount,
@@ -173,7 +175,7 @@ function parseCSVLines(content: string): string[] {
  * - End: comment, currency_dop, amount_dop, currency, amount (5 fields from end)
  * - Middle: everything else is category (may contain commas)
  */
-function parseCSVLine(line: string, lineNumber: number): BudgetOkRow | null {
+function parseCSVLine(line: string, lineNumber: number): BudgetOkRow {
   const fields = parseCSVFields(line)
 
   if (fields.length < 9) {
@@ -215,12 +217,12 @@ function parseCSVLine(line: string, lineNumber: number): BudgetOkRow | null {
 
   // Parse amount
   const amount = parseAmount(amountRaw)
-  if (amount === null || amount < 0) {
+  if (amount === undefined || amount < 0) {
     throw new Error(`Invalid amount: "${amountRaw}"`)
   }
 
   // Parse optional secondary amount
-  const amountDop = amountDopRaw ? parseAmount(amountDopRaw) : null
+  const amountDop = amountDopRaw ? parseAmount(amountDopRaw) : undefined
 
   return {
     operationType,
@@ -230,7 +232,7 @@ function parseCSVLine(line: string, lineNumber: number): BudgetOkRow | null {
     amount,
     currency,
     amountDop,
-    currencyDop: currencyDop || null,
+    currencyDop: currencyDop || undefined,
     comment: comment || '',
     lineNumber,
   }
@@ -271,34 +273,34 @@ function parseCSVFields(line: string): string[] {
 /**
  * Parse operation type string to typed value
  */
-function parseOperationType(value: string): BudgetOkOperationType | null {
+function parseOperationType(value: string): BudgetOkOperationType | undefined {
   const normalized = value.toLowerCase().trim()
 
   if (normalized === 'income') return 'Income'
   if (normalized === 'expense') return 'Expense'
   if (normalized === 'transfer') return 'transfer'
 
-  return null
+  return
 }
 
 /**
  * Parse date in YYYYMMDD format
  */
-function parseDate(value: string): Date | null {
+function parseDate(value: string): Date | undefined {
   const trimmed = value.trim()
-  if (trimmed.length !== 8) return null
+  if (trimmed.length !== 8) return
 
-  const year = parseInt(trimmed.slice(0, 4), 10)
-  const month = parseInt(trimmed.slice(4, 6), 10) - 1 // 0-indexed
-  const day = parseInt(trimmed.slice(6, 8), 10)
+  const year = Number.parseInt(trimmed.slice(0, 4), 10)
+  const month = Number.parseInt(trimmed.slice(4, 6), 10) - 1 // 0-indexed
+  const day = Number.parseInt(trimmed.slice(6, 8), 10)
 
-  if (isNaN(year) || isNaN(month) || isNaN(day)) return null
-  if (month < 0 || month > 11 || day < 1 || day > 31) return null
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) return
+  if (month < 0 || month > 11 || day < 1 || day > 31) return
 
   const date = new Date(year, month, day, 12, 0, 0) // Noon to avoid timezone issues
 
   // Validate the date is real (e.g., Feb 30 would roll over)
-  if (date.getMonth() !== month || date.getDate() !== day) return null
+  if (date.getMonth() !== month || date.getDate() !== day) return
 
   return date
 }
@@ -306,13 +308,13 @@ function parseDate(value: string): Date | null {
 /**
  * Parse amount string to number
  */
-function parseAmount(value: string): number | null {
-  if (!value || value.trim() === '') return null
+function parseAmount(value: string): number | undefined {
+  if (!value || value.trim() === '') return
 
   const cleaned = value.trim().replace(',', '.')
-  const amount = parseFloat(cleaned)
+  const amount = Number.parseFloat(cleaned)
 
-  if (isNaN(amount)) return null
+  if (Number.isNaN(amount)) return
 
   return amount
 }
@@ -320,7 +322,7 @@ function parseAmount(value: string): number | null {
 /**
  * Validate that a file is a valid CSV and within size limits
  */
-export function validateImportFile(file: File): string | null {
+export function validateImportFile(file: File): string | undefined {
   const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 
   if (file.size > MAX_SIZE) {
@@ -331,5 +333,5 @@ export function validateImportFile(file: File): string | null {
     return 'File must be a CSV file'
   }
 
-  return null
+  return
 }

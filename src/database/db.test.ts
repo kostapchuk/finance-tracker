@@ -5,7 +5,7 @@ import { restoreTable } from './db'
 
 describe('restoreTable', () => {
   it('bulk-adds records when there are any', async () => {
-    const bulkAdd = vi.fn().mockResolvedValue(undefined)
+    const bulkAdd = vi.fn().mockImplementation(() => Promise.resolve())
     const table = { bulkAdd } as unknown as EntityTable<{ id: number }, 'id'>
 
     const records = [{ id: 1 }, { id: 2 }]
@@ -16,7 +16,7 @@ describe('restoreTable', () => {
   })
 
   it('skips the bulkAdd call when there is nothing to insert', async () => {
-    const bulkAdd = vi.fn().mockResolvedValue(undefined)
+    const bulkAdd = vi.fn().mockImplementation(() => Promise.resolve())
     const table = { bulkAdd } as unknown as EntityTable<{ id: number }, 'id'>
 
     await restoreTable(table, [])

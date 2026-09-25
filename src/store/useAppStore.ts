@@ -44,8 +44,8 @@ interface AppState {
   selectedMonth: Date
 
   // Navigation filters (set before navigating to a view)
-  historyCategoryFilter: number | null
-  historyAccountFilter: number | null
+  historyCategoryFilter: number | undefined
+  historyAccountFilter: number | undefined
 
   // Onboarding state (0 = not active, 1-5 = steps)
   onboardingStep: number
@@ -81,8 +81,8 @@ export const useAppStore = create<AppState>((set) => ({
   isLoading: true,
   activeView: 'dashboard',
   selectedMonth: new Date(),
-  historyCategoryFilter: null,
-  historyAccountFilter: null,
+  historyCategoryFilter: undefined,
+  historyAccountFilter: undefined,
   onboardingStep: 0,
 
   setActiveView: (view) => set({ activeView: view }),

@@ -27,26 +27,23 @@ function usePrefetchOnIdle() {
     if ('requestIdleCallback' in globalThis) {
       const idleCallbackId = requestIdleCallback(
         () => {
-          const views = ['history', 'loans', 'report', 'settings']
-          views.forEach((view, index) => {
+          const importers = {
+            history: () => import('@/features/transactions/components/HistoryPage'),
+            loans: () => import('@/features/loans/components/LoansPage'),
+            report: () => import('@/features/reports/components/ReportPage'),
+            settings: () => import('@/features/settings/components/SettingsPage'),
+          } as const
+          for (const [index, view] of Object.keys(importers).entries()) {
             setTimeout(() => {
-              const importer =
-                view === 'history'
-                  ? () => import('@/features/transactions/components/HistoryPage')
-                  : view === 'loans'
-                    ? () => import('@/features/loans/components/LoansPage')
-                    : view === 'report'
-                      ? () => import('@/features/reports/components/ReportPage')
-                      : () => import('@/features/settings/components/SettingsPage')
-              importer()
+              importers[view as keyof typeof importers]()
             }, index * 200)
-          })
+          }
         },
         { timeout: 3000 }
       )
       return () => cancelIdleCallback(idleCallbackId)
     }
-    return undefined
+    return
   }, [])
 }
 
@@ -54,42 +51,48 @@ function MainContent() {
   const activeView = useAppStore((state) => state.activeView)
 
   switch (activeView) {
-    case 'dashboard':
+    case 'dashboard': {
       return (
         <Suspense fallback={<LoadingSkeleton />}>
           <Dashboard />
         </Suspense>
       )
-    case 'history':
+    }
+    case 'history': {
       return (
         <Suspense fallback={<LoadingSkeleton />}>
           <HistoryPage />
         </Suspense>
       )
-    case 'loans':
+    }
+    case 'loans': {
       return (
         <Suspense fallback={<LoadingSkeleton />}>
           <LoansPage />
         </Suspense>
       )
-    case 'report':
+    }
+    case 'report': {
       return (
         <Suspense fallback={<LoadingSkeleton />}>
           <ReportPage />
         </Suspense>
       )
-    case 'settings':
+    }
+    case 'settings': {
       return (
         <Suspense fallback={<LoadingSkeleton />}>
           <SettingsPage />
         </Suspense>
       )
-    default:
+    }
+    default: {
       return (
         <Suspense fallback={<LoadingSkeleton />}>
           <Dashboard />
         </Suspense>
       )
+    }
   }
 }
 

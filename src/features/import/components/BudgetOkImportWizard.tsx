@@ -23,15 +23,15 @@ interface BudgetOkImportWizardProps {
   onClose: () => void
   onPause: () => void
   // Persisted state from parent
-  savedState: SavedImportState | null
-  onStateChange: (state: SavedImportState | null) => void
+  savedState: SavedImportState | undefined
+  onStateChange: (state?: SavedImportState) => void
 }
 
 export interface SavedImportState {
   step: ImportWizardStep
-  file: File | null
+  file: File | undefined
   fileName: string
-  parsedData: ParsedImportData | null
+  parsedData: ParsedImportData | undefined
   accountMapping: Map<string, number>
   categoryMapping: Map<string, number>
   incomeSourceMapping: Map<string, number>
@@ -49,12 +49,10 @@ export function BudgetOkImportWizard({
 
   // Wizard state - initialize from saved state if available
   const [step, setStep] = useState<ImportWizardStep>(savedState?.step ?? 1)
-  const [file, setFile] = useState<File | null>(savedState?.file ?? null)
+  const [file, setFile] = useState<File | undefined>(savedState?.file)
   const [fileName, setFileName] = useState<string>(savedState?.fileName ?? '')
-  const [fileError, setFileError] = useState<string | null>(null)
-  const [parsedData, setParsedData] = useState<ParsedImportData | null>(
-    savedState?.parsedData ?? null
-  )
+  const [fileError, setFileError] = useState<string>()
+  const [parsedData, setParsedData] = useState<ParsedImportData | undefined>(savedState?.parsedData)
   const [accountMapping, setAccountMapping] = useState<Map<string, number>>(
     savedState?.accountMapping ?? new Map()
   )
@@ -65,7 +63,7 @@ export function BudgetOkImportWizard({
     savedState?.incomeSourceMapping ?? new Map()
   )
   const [isImporting, setIsImporting] = useState(false)
-  const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [importResult, setImportResult] = useState<ImportResult>()
 
   // Restore state when savedState changes (e.g., when resuming)
   useResetOnChange([open, savedState], () => {
@@ -113,16 +111,16 @@ export function BudgetOkImportWizard({
   // Reset state completely when finishing or canceling
   const handleClose = useCallback(() => {
     setStep(1)
-    setFile(null)
+    setFile(undefined)
     setFileName('')
-    setFileError(null)
-    setParsedData(null)
+    setFileError(undefined)
+    setParsedData(undefined)
     setAccountMapping(new Map())
     setCategoryMapping(new Map())
     setIncomeSourceMapping(new Map())
     setIsImporting(false)
-    setImportResult(null)
-    onStateChange(null) // Clear saved state
+    setImportResult(undefined)
+    onStateChange() // Clear saved state
     onClose()
   }, [onClose, onStateChange])
 
@@ -131,7 +129,7 @@ export function BudgetOkImportWizard({
     async (selectedFile: File) => {
       setFile(selectedFile)
       setFileName(selectedFile.name)
-      setFileError(null)
+      setFileError(undefined)
 
       try {
         const content = await selectedFile.text()
@@ -184,10 +182,10 @@ export function BudgetOkImportWizard({
 
   // Account mapping change
   const handleAccountMappingChange = useCallback(
-    (budgetOkName: string, accountId: number | null) => {
+    (budgetOkName: string, accountId: number | undefined) => {
       setAccountMapping((prev) => {
         const next = new Map(prev)
-        if (accountId === null) {
+        if (accountId === undefined) {
           next.delete(budgetOkName)
         } else {
           next.set(budgetOkName, accountId)
@@ -200,10 +198,10 @@ export function BudgetOkImportWizard({
 
   // Category mapping change
   const handleCategoryMappingChange = useCallback(
-    (budgetOkName: string, categoryId: number | null) => {
+    (budgetOkName: string, categoryId: number | undefined) => {
       setCategoryMapping((prev) => {
         const next = new Map(prev)
-        if (categoryId === null) {
+        if (categoryId === undefined) {
           next.delete(budgetOkName)
         } else {
           next.set(budgetOkName, categoryId)
@@ -216,10 +214,10 @@ export function BudgetOkImportWizard({
 
   // Income source mapping change
   const handleIncomeSourceMappingChange = useCallback(
-    (budgetOkName: string, incomeSourceId: number | null) => {
+    (budgetOkName: string, incomeSourceId: number | undefined) => {
       setIncomeSourceMapping((prev) => {
         const next = new Map(prev)
-        if (incomeSourceId === null) {
+        if (incomeSourceId === undefined) {
           next.delete(budgetOkName)
         } else {
           next.set(budgetOkName, incomeSourceId)
@@ -235,7 +233,7 @@ export function BudgetOkImportWizard({
     if (!parsedData) return
 
     setIsImporting(true)
-    setImportResult(null)
+    setImportResult(undefined)
 
     try {
       const result = await executeImport({

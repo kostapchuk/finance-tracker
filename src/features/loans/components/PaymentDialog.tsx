@@ -25,8 +25,21 @@ import {
   reverseTransactionBalance,
 } from '@/utils/transactionBalance'
 
+function sanitizeAmount(value: string) {
+  let v = value.replaceAll(',', '.').replaceAll(/[^0-9.]/g, '')
+  const parts = v.split('.')
+  if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
+  v = v.replace(/^0+(?=\d)/, '')
+  const dotIndex = v.indexOf('.')
+  v =
+    dotIndex === -1
+      ? v.slice(0, 10)
+      : v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
+  return v
+}
+
 interface PaymentDialogProps {
-  loan: Loan | null
+  loan: Loan | undefined
   open: boolean
   onClose: () => void
   editTransaction?: Transaction
@@ -47,20 +60,9 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
   const isEditMode = !!editTransaction
   const selectedAccount = selectedAccountId
-    ? accounts.find((a) => a.id === parseInt(selectedAccountId))
-    : null
+    ? accounts.find((a) => a.id === Number.parseInt(selectedAccountId))
+    : undefined
   const isMultiCurrency = loan && selectedAccount && loan.currency !== selectedAccount.currency
-
-  const sanitizeAmount = (value: string) => {
-    let v = value.replace(/,/g, '.').replace(/[^0-9.]/g, '')
-    const parts = v.split('.')
-    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('')
-    v = v.replace(/^0+(?=\d)/, '')
-    const dotIndex = v.indexOf('.')
-    if (dotIndex !== -1) v = v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
-    else v = v.slice(0, 10)
-    return v
-  }
 
   useResetOnChange([open, editTransaction, loan], () => {
     if (open) {
@@ -104,14 +106,15 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     e.preventDefault()
     if (!loan?.id || !amount || !selectedAccountId) return
 
-    const paymentAmount = parseFloat(amount)
-    if (isNaN(paymentAmount) || paymentAmount <= 0 || paymentAmount > effectiveRemaining) return
+    const paymentAmount = Number.parseFloat(amount)
+    if (Number.isNaN(paymentAmount) || paymentAmount <= 0 || paymentAmount > effectiveRemaining)
+      return
 
     if (isMultiCurrency && !accountAmount) return
-    const acctAmount = isMultiCurrency ? parseFloat(accountAmount) : paymentAmount
-    if (isMultiCurrency && (isNaN(acctAmount) || acctAmount <= 0)) return
+    const acctAmount = isMultiCurrency ? Number.parseFloat(accountAmount) : paymentAmount
+    if (isMultiCurrency && (Number.isNaN(acctAmount) || acctAmount <= 0)) return
 
-    const acctId = parseInt(selectedAccountId)
+    const acctId = Number.parseInt(selectedAccountId)
 
     setIsLoading(true)
     try {
@@ -185,9 +188,13 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
     }
   }
 
-  if (!loan) return null
+  if (!loan) return
 
   const displayRemaining = loan.amount - loan.paidAmount
+
+  let submitLabel = t('recordPayment')
+  if (isLoading) submitLabel = t('recording')
+  else if (isEditMode) submitLabel = t('update')
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
@@ -345,11 +352,11 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
                 !amount ||
                 !selectedAccountId ||
                 (!!isMultiCurrency && !accountAmount) ||
-                parseFloat(amount) > effectiveRemaining
+                Number.parseFloat(amount) > effectiveRemaining
               }
               className="flex-1 sm:flex-none"
             >
-              {isLoading ? t('recording') : isEditMode ? t('update') : t('recordPayment')}
+              {submitLabel}
             </Button>
           </DialogFooter>
         </form>

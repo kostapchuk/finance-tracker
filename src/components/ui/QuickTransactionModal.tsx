@@ -17,6 +17,25 @@ export type TransactionMode =
   | { type: 'expense'; category: Category; preselectedAccountId?: number }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
 
+function sanitizeAmount(value: string) {
+  // Allow only digits and dot, treat comma as dot
+  let v = value.replaceAll(',', '.').replaceAll(/[^0-9.]/g, '')
+  // Only one dot allowed
+  const parts = v.split('.')
+  if (parts.length > 2) {
+    v = parts[0] + '.' + parts.slice(1).join('')
+  }
+  // Strip leading zeros (except "0." or just "0")
+  v = v.replace(/^0+(?=\d)/, '')
+  // Limit to 10 digits before dot and 2 after
+  const dotIndex = v.indexOf('.')
+  v =
+    dotIndex === -1
+      ? v.slice(0, 10)
+      : v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
+  return v
+}
+
 interface QuickTransactionModalProps {
   mode: TransactionMode
   accounts: Account[]
@@ -52,7 +71,7 @@ export function QuickTransactionModal({
   const [targetAmount, setTargetAmount] = useState('') // mainCurrency amount for totals
   const [accountAmount, setAccountAmount] = useState('') // account currency amount (for income when account != source)
   const [activeField, setActiveField] = useState<
-    'source' | 'target' | 'account' | 'comment' | 'date' | null
+    'source' | 'target' | 'account' | 'comment' | 'date'
   >('source')
   const [selectedAccountId, setSelectedAccountId] = useState<number | undefined>(
     preselectedAccountId ?? accounts[0]?.id
@@ -206,10 +225,10 @@ export function QuickTransactionModal({
       setAmount(editTransaction.amount.toString())
       setDate(new Date(editTransaction.date).toISOString().split('T')[0])
       setComment(editTransaction.comment || '')
-      if (editTransaction.mainCurrencyAmount != null) {
+      if (editTransaction.mainCurrencyAmount != undefined) {
         setTargetAmount(editTransaction.mainCurrencyAmount.toString())
       }
-      if (editTransaction.toAmount != null) {
+      if (editTransaction.toAmount != undefined) {
         setTargetAmount(editTransaction.toAmount.toString())
       }
     }
@@ -221,21 +240,23 @@ export function QuickTransactionModal({
     const timers = [50, 150, 300, 500].map((ms) =>
       setTimeout(() => amountInputRef.current?.focus(), ms)
     )
-    return () => timers.forEach(clearTimeout)
+    return () => {
+      for (const timer of timers) clearTimeout(timer)
+    }
   }, [disableAutoFocus])
 
   // Get the currently selected income source
   const selectedSource =
     mode.type === 'income'
       ? incomeSources.find((s) => s.id === selectedSourceId) || mode.source
-      : null
+      : undefined
 
   // Get the currently selected category (filter out loan categories)
   const expenseCategories = categories.filter((c) => c.categoryType !== 'loan')
   const selectedCategory =
     mode.type === 'expense'
       ? expenseCategories.find((c) => c.id === selectedCategoryId) || mode.category
-      : null
+      : undefined
 
   // Calculate monthly total for selected category
   const categoryMonthlyTotal = useMemo(() => {
@@ -273,11 +294,11 @@ export function QuickTransactionModal({
   const selectedFromAccount =
     mode.type === 'transfer'
       ? accounts.find((a) => a.id === selectedFromAccountId) || mode.fromAccount
-      : null
+      : undefined
   const selectedToAccount =
     mode.type === 'transfer'
       ? accounts.find((a) => a.id === selectedToAccountId) || mode.toAccount
-      : null
+      : undefined
 
   // Detect multi-currency transfer
   const isMultiCurrencyTransfer =
@@ -378,46 +399,26 @@ export function QuickTransactionModal({
       : (selectedToAccount ?? mode.toAccount).currency
   }
 
-  const sanitizeAmount = (value: string) => {
-    // Allow only digits and dot, treat comma as dot
-    let v = value.replace(/,/g, '.').replace(/[^0-9.]/g, '')
-    // Only one dot allowed
-    const parts = v.split('.')
-    if (parts.length > 2) {
-      v = parts[0] + '.' + parts.slice(1).join('')
-    }
-    // Strip leading zeros (except "0." or just "0")
-    v = v.replace(/^0+(?=\d)/, '')
-    // Limit to 10 digits before dot and 2 after
-    const dotIndex = v.indexOf('.')
-    if (dotIndex !== -1) {
-      v = v.slice(0, Math.min(dotIndex, 10)) + v.slice(dotIndex, dotIndex + 3)
-    } else {
-      v = v.slice(0, 10)
-    }
-    return v
-  }
-
   const handleSubmit = async () => {
-    const numAmount = parseFloat(amount)
-    if (isNaN(numAmount) || numAmount <= 0 || isSubmitting) return
+    const numAmount = Number.parseFloat(amount)
+    if (Number.isNaN(numAmount) || numAmount <= 0 || isSubmitting) return
 
     // For multi-currency transfer, also need target amount
     if (isMultiCurrencyTransfer) {
-      const numTargetAmount = parseFloat(targetAmount)
-      if (isNaN(numTargetAmount) || numTargetAmount <= 0) return
+      const numTargetAmount = Number.parseFloat(targetAmount)
+      if (Number.isNaN(numTargetAmount) || numTargetAmount <= 0) return
     }
 
     // For multi-currency income/expense, also need mainCurrency amount
     if (isMultiCurrencyIncomeExpense) {
-      const numTargetAmount = parseFloat(targetAmount)
-      if (isNaN(numTargetAmount) || numTargetAmount <= 0) return
+      const numTargetAmount = Number.parseFloat(targetAmount)
+      if (Number.isNaN(numTargetAmount) || numTargetAmount <= 0) return
     }
 
     // For income with different account currency, also need account amount
     if (needsAccountConversion) {
-      const numAccountAmount = parseFloat(accountAmount)
-      if (isNaN(numAccountAmount) || numAccountAmount <= 0) return
+      const numAccountAmount = Number.parseFloat(accountAmount)
+      if (Number.isNaN(numAccountAmount) || numAccountAmount <= 0) return
     }
 
     // For income/expense, we need a selected account
@@ -438,7 +439,9 @@ export function QuickTransactionModal({
         // Handle transfer between accounts - single transaction record
         const fromAccount = selectedFromAccount ?? mode.fromAccount
         const toAccount = selectedToAccount ?? mode.toAccount
-        const numTargetAmount = isMultiCurrencyTransfer ? parseFloat(targetAmount) : numAmount
+        const numTargetAmount = isMultiCurrencyTransfer
+          ? Number.parseFloat(targetAmount)
+          : numAmount
 
         const transactionData = {
           type: 'transfer' as const,
@@ -476,7 +479,7 @@ export function QuickTransactionModal({
           const incomeSource = selectedSource || mode.source
           const sourceAmount = numAmount // source currency
           const balanceAmount = needsAccountConversion
-            ? parseFloat(accountAmount) // account currency if different from source
+            ? Number.parseFloat(accountAmount) // account currency if different from source
             : numAmount // same as source if currencies match
 
           // Determine mainCurrencyAmount:
@@ -491,7 +494,7 @@ export function QuickTransactionModal({
           } else if (accountIsMain) {
             storedMainCurrencyAmount = balanceAmount // account amount = main currency amount
           } else if (isMultiCurrencyIncome) {
-            storedMainCurrencyAmount = parseFloat(targetAmount) // separate field
+            storedMainCurrencyAmount = Number.parseFloat(targetAmount) // separate field
           }
 
           const transactionData = {
@@ -525,7 +528,7 @@ export function QuickTransactionModal({
           const expenseCategory = selectedCategory || mode.category
           const transactionAmount = numAmount
           const storedMainCurrencyAmount = isMultiCurrencyExpense
-            ? parseFloat(targetAmount)
+            ? Number.parseFloat(targetAmount)
             : undefined
 
           const transactionData = {
@@ -565,6 +568,380 @@ export function QuickTransactionModal({
     }
   }
 
+  function renderTransactionHeader() {
+    if (mode.type === 'transfer') {
+      // Transfer: fromAccount + balance → toAccount + balance
+      return (
+        <div className="flex items-center justify-between flex-1 min-w-0">
+          <button
+            onClick={() => setShowFromAccountPicker(true)}
+            className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor:
+                  ((selectedFromAccount ?? mode.fromAccount).color || '#6366f1') + '20',
+              }}
+            >
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{
+                  backgroundColor: (selectedFromAccount ?? mode.fromAccount).color || '#6366f1',
+                }}
+              />
+            </div>
+            <div className="min-w-0 text-left">
+              <p className="font-semibold truncate">
+                {(selectedFromAccount ?? mode.fromAccount).name}
+              </p>
+              <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                {formatCurrency(
+                  (selectedFromAccount ?? mode.fromAccount).balance,
+                  (selectedFromAccount ?? mode.fromAccount).currency
+                )}
+              </BlurredAmount>
+            </div>
+          </button>
+          <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+          <button
+            onClick={() => setShowToAccountPicker(true)}
+            className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                backgroundColor: ((selectedToAccount ?? mode.toAccount).color || '#6366f1') + '20',
+              }}
+            >
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{
+                  backgroundColor: (selectedToAccount ?? mode.toAccount).color || '#6366f1',
+                }}
+              />
+            </div>
+            <div className="min-w-0 text-left">
+              <p className="font-semibold truncate">{(selectedToAccount ?? mode.toAccount).name}</p>
+              <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                {formatCurrency(
+                  (selectedToAccount ?? mode.toAccount).balance,
+                  (selectedToAccount ?? mode.toAccount).currency
+                )}
+              </BlurredAmount>
+            </div>
+          </button>
+        </div>
+      )
+    }
+    if (mode.type === 'income') {
+      // Income: source → account
+      return (
+        <div className="flex items-center justify-between flex-1 min-w-0">
+          <button
+            onClick={() => setShowSourcePicker(true)}
+            className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: (selectedSource?.color || color) + '20' }}
+            >
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: selectedSource?.color || color }}
+              />
+            </div>
+            <div className="min-w-0 text-left">
+              <p className="font-semibold truncate">{selectedSource?.name}</p>
+              <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                {formatCurrency(sourceMonthlyTotal, selectedSource?.currency || mainCurrency)}
+              </BlurredAmount>
+            </div>
+          </button>
+          <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+          <button
+            onClick={() => setShowAccountPicker(true)}
+            className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+            >
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
+              />
+            </div>
+            <div className="min-w-0 text-left">
+              <p className="font-semibold truncate">{selectedAccount?.name}</p>
+              <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                {formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}
+              </BlurredAmount>
+            </div>
+          </button>
+        </div>
+      )
+    }
+    if (mode.type === 'expense') {
+      // Expense: account → category
+      return (
+        <div className="flex items-center justify-between flex-1 min-w-0">
+          <button
+            onClick={() => setShowAccountPicker(true)}
+            className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+            >
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
+              />
+            </div>
+            <div className="min-w-0 text-left">
+              <p className="font-semibold truncate">{selectedAccount?.name}</p>
+              <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                {formatCurrency(selectedAccount?.balance || 0, selectedAccount?.currency || '')}
+              </BlurredAmount>
+            </div>
+          </button>
+          <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
+          <button
+            onClick={() => setShowCategoryPicker(true)}
+            className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
+          >
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: (selectedCategory?.color || color) + '20' }}
+            >
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: selectedCategory?.color || color }}
+              />
+            </div>
+            <div className="min-w-0 text-left">
+              <p className="font-semibold truncate">{selectedCategory?.name}</p>
+              <BlurredAmount className="text-sm text-muted-foreground truncate block">
+                {formatCurrency(categoryMonthlyTotal, mainCurrency)}
+              </BlurredAmount>
+            </div>
+          </button>
+        </div>
+      )
+    }
+    return
+  }
+
+  function renderAmountFields() {
+    if (isMultiCurrencyTransfer) {
+      // Multi-currency transfer: show both amounts
+      return (
+        <div className="p-4">
+          <div className="flex items-center justify-center gap-3">
+            {/* Source Amount */}
+            <div
+              className={cn(
+                'flex-1 p-4 rounded-xl transition-all',
+                activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+              )}
+            >
+              <p className="text-xs text-muted-foreground mb-1">
+                {(selectedFromAccount ?? mode.fromAccount).currency}
+              </p>
+              <div className="flex items-baseline gap-1">
+                <input
+                  ref={amountInputRef}
+                  autoFocus={!disableAutoFocus}
+                  type="text"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                  onFocus={() => setActiveField('source')}
+                  onTouchStart={handleInputTouchStart}
+                  placeholder="0"
+                  className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                />
+                <span className="text-2xl font-bold tabular-nums text-muted-foreground">
+                  {getCurrencySymbol((selectedFromAccount ?? mode.fromAccount).currency)}
+                </span>
+              </div>
+            </div>
+
+            <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+
+            {/* Target Amount */}
+            <div
+              className={cn(
+                'flex-1 p-4 rounded-xl transition-all',
+                activeField === 'target' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+              )}
+            >
+              <p className="text-xs text-muted-foreground mb-1">
+                {(selectedToAccount ?? mode.toAccount).currency}
+              </p>
+              <div className="flex items-baseline gap-1">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={targetAmount}
+                  onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
+                  onFocus={() => setActiveField('target')}
+                  onTouchStart={handleInputTouchStart}
+                  placeholder="0"
+                  className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                />
+                <span className="text-2xl font-bold tabular-nums text-muted-foreground">
+                  {getCurrencySymbol((selectedToAccount ?? mode.toAccount).currency)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    if ((isMultiCurrencyIncomeExpense || needsAccountConversion) && selectedAccount) {
+      // Multi-currency income/expense
+      return (
+        <div className="p-4">
+          <div className="flex items-center justify-center gap-2">
+            {/* Source Amount - for income: source currency, for expense: account currency */}
+            <div
+              className={cn(
+                'flex-1 p-3 rounded-xl transition-all',
+                activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+              )}
+            >
+              <p className="text-xs text-muted-foreground mb-1">
+                {mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency}
+              </p>
+              <div className="flex items-baseline gap-1">
+                <input
+                  ref={amountInputRef}
+                  autoFocus={!disableAutoFocus}
+                  type="text"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                  onFocus={() => setActiveField('source')}
+                  onTouchStart={handleInputTouchStart}
+                  placeholder="0"
+                  className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                />
+                <span className="text-xl font-bold tabular-nums text-muted-foreground">
+                  {getCurrencySymbol(
+                    mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* MainCurrency Amount (for totals) - shown when source != mainCurrency */}
+            {isMultiCurrencyIncomeExpense && (
+              <>
+                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div
+                  className={cn(
+                    'flex-1 p-3 rounded-xl transition-all',
+                    activeField === 'target'
+                      ? 'bg-primary/20 ring-2 ring-primary'
+                      : 'bg-secondary/50'
+                  )}
+                >
+                  <p className="text-xs text-muted-foreground mb-1">{mainCurrency}</p>
+                  <div className="flex items-baseline gap-1">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      step="0.01"
+                      value={targetAmount}
+                      onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
+                      onFocus={() => setActiveField('target')}
+                      onTouchStart={handleInputTouchStart}
+                      placeholder="0"
+                      className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                    />
+                    <span className="text-xl font-bold tabular-nums text-muted-foreground">
+                      {getCurrencySymbol(mainCurrency)}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Account Amount (for balance) - shown for income when account != source */}
+            {needsAccountConversion && (
+              <>
+                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <div
+                  className={cn(
+                    'flex-1 p-3 rounded-xl transition-all',
+                    activeField === 'account'
+                      ? 'bg-primary/20 ring-2 ring-primary'
+                      : 'bg-secondary/50'
+                  )}
+                >
+                  <p className="text-xs text-muted-foreground mb-1">{selectedAccount.currency}</p>
+                  <div className="flex items-baseline gap-1">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      step="0.01"
+                      value={accountAmount}
+                      onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
+                      onFocus={() => setActiveField('account')}
+                      onTouchStart={handleInputTouchStart}
+                      placeholder="0"
+                      className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
+                    />
+                    <span className="text-xl font-bold tabular-nums text-muted-foreground">
+                      {getCurrencySymbol(selectedAccount.currency)}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // Single currency: show one amount
+    return (
+      <div className="p-4">
+        <div
+          className={cn(
+            'p-4 rounded-xl transition-all',
+            activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
+          )}
+        >
+          <div className="flex items-baseline justify-center gap-2">
+            <input
+              ref={amountInputRef}
+              autoFocus={!disableAutoFocus}
+              type="text"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+              onFocus={() => setActiveField('source')}
+              onTouchStart={handleInputTouchStart}
+              placeholder="0"
+              className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
+            />
+            <span className="text-5xl font-bold tabular-nums text-muted-foreground">
+              {getCurrencySymbol(getCurrentCurrency())}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  let submitLabel = t('save')
+  if (isSubmitting) submitLabel = t('saving')
+  else if (isEditMode) submitLabel = t('update')
+
   return (
     <div
       ref={modalRef}
@@ -577,171 +954,7 @@ export function QuickTransactionModal({
       <div className="w-full max-w-lg mx-auto bg-card animate-in fade-in duration-200">
         {/* Header */}
         <div className="flex items-center gap-2 p-4 border-b border-border">
-          <div className="flex items-center flex-1 min-w-0">
-            {mode.type === 'transfer' ? (
-              // Transfer: fromAccount + balance → toAccount + balance
-              <div className="flex items-center justify-between flex-1 min-w-0">
-                <button
-                  onClick={() => setShowFromAccountPicker(true)}
-                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{
-                      backgroundColor:
-                        ((selectedFromAccount ?? mode.fromAccount).color || '#6366f1') + '20',
-                    }}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{
-                        backgroundColor:
-                          (selectedFromAccount ?? mode.fromAccount).color || '#6366f1',
-                      }}
-                    />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p className="font-semibold truncate">
-                      {(selectedFromAccount ?? mode.fromAccount).name}
-                    </p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(
-                        (selectedFromAccount ?? mode.fromAccount).balance,
-                        (selectedFromAccount ?? mode.fromAccount).currency
-                      )}
-                    </BlurredAmount>
-                  </div>
-                </button>
-                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
-                <button
-                  onClick={() => setShowToAccountPicker(true)}
-                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{
-                      backgroundColor:
-                        ((selectedToAccount ?? mode.toAccount).color || '#6366f1') + '20',
-                    }}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{
-                        backgroundColor: (selectedToAccount ?? mode.toAccount).color || '#6366f1',
-                      }}
-                    />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p className="font-semibold truncate">
-                      {(selectedToAccount ?? mode.toAccount).name}
-                    </p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(
-                        (selectedToAccount ?? mode.toAccount).balance,
-                        (selectedToAccount ?? mode.toAccount).currency
-                      )}
-                    </BlurredAmount>
-                  </div>
-                </button>
-              </div>
-            ) : mode.type === 'income' ? (
-              // Income: source → account
-              <div className="flex items-center justify-between flex-1 min-w-0">
-                <button
-                  onClick={() => setShowSourcePicker(true)}
-                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: (selectedSource?.color || color) + '20' }}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: selectedSource?.color || color }}
-                    />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p className="font-semibold truncate">{selectedSource?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(sourceMonthlyTotal, selectedSource?.currency || mainCurrency)}
-                    </BlurredAmount>
-                  </div>
-                </button>
-                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
-                <button
-                  onClick={() => setShowAccountPicker(true)}
-                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
-                    />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p className="font-semibold truncate">{selectedAccount?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(
-                        selectedAccount?.balance || 0,
-                        selectedAccount?.currency || ''
-                      )}
-                    </BlurredAmount>
-                  </div>
-                </button>
-              </div>
-            ) : mode.type === 'expense' ? (
-              // Expense: account → category
-              <div className="flex items-center justify-between flex-1 min-w-0">
-                <button
-                  onClick={() => setShowAccountPicker(true)}
-                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
-                    />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p className="font-semibold truncate">{selectedAccount?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(
-                        selectedAccount?.balance || 0,
-                        selectedAccount?.currency || ''
-                      )}
-                    </BlurredAmount>
-                  </div>
-                </button>
-                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mx-2" />
-                <button
-                  onClick={() => setShowCategoryPicker(true)}
-                  className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: (selectedCategory?.color || color) + '20' }}
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: selectedCategory?.color || color }}
-                    />
-                  </div>
-                  <div className="min-w-0 text-left">
-                    <p className="font-semibold truncate">{selectedCategory?.name}</p>
-                    <BlurredAmount className="text-sm text-muted-foreground truncate block">
-                      {formatCurrency(categoryMonthlyTotal, mainCurrency)}
-                    </BlurredAmount>
-                  </div>
-                </button>
-              </div>
-            ) : null}
-          </div>
+          <div className="flex items-center flex-1 min-w-0">{renderTransactionHeader()}</div>
           {isEditMode && onDelete && editTransaction && (
             <button
               onClick={() => onDelete(editTransaction)}
@@ -754,200 +967,7 @@ export function QuickTransactionModal({
         </div>
 
         {/* Amount Display */}
-        {isMultiCurrencyTransfer ? (
-          // Multi-currency transfer: show both amounts
-          <div className="p-4">
-            <div className="flex items-center justify-center gap-3">
-              {/* Source Amount */}
-              <div
-                className={cn(
-                  'flex-1 p-4 rounded-xl transition-all',
-                  activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
-                )}
-              >
-                <p className="text-xs text-muted-foreground mb-1">
-                  {(selectedFromAccount ?? mode.fromAccount).currency}
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <input
-                    ref={amountInputRef}
-                    autoFocus={!disableAutoFocus}
-                    type="text"
-                    inputMode="decimal"
-                    value={amount}
-                    onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => setActiveField('source')}
-                    onTouchStart={handleInputTouchStart}
-                    placeholder="0"
-                    className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
-                  />
-                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">
-                    {getCurrencySymbol((selectedFromAccount ?? mode.fromAccount).currency)}
-                  </span>
-                </div>
-              </div>
-
-              <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-
-              {/* Target Amount */}
-              <div
-                className={cn(
-                  'flex-1 p-4 rounded-xl transition-all',
-                  activeField === 'target' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
-                )}
-              >
-                <p className="text-xs text-muted-foreground mb-1">
-                  {(selectedToAccount ?? mode.toAccount).currency}
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={targetAmount}
-                    onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => setActiveField('target')}
-                    onTouchStart={handleInputTouchStart}
-                    placeholder="0"
-                    className="w-full bg-transparent text-2xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
-                  />
-                  <span className="text-2xl font-bold tabular-nums text-muted-foreground">
-                    {getCurrencySymbol((selectedToAccount ?? mode.toAccount).currency)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (isMultiCurrencyIncomeExpense || needsAccountConversion) && selectedAccount ? (
-          // Multi-currency income/expense
-          <div className="p-4">
-            <div className="flex items-center justify-center gap-2">
-              {/* Source Amount - for income: source currency, for expense: account currency */}
-              <div
-                className={cn(
-                  'flex-1 p-3 rounded-xl transition-all',
-                  activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
-                )}
-              >
-                <p className="text-xs text-muted-foreground mb-1">
-                  {mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency}
-                </p>
-                <div className="flex items-baseline gap-1">
-                  <input
-                    ref={amountInputRef}
-                    autoFocus={!disableAutoFocus}
-                    type="text"
-                    inputMode="decimal"
-                    value={amount}
-                    onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                    onFocus={() => setActiveField('source')}
-                    onTouchStart={handleInputTouchStart}
-                    placeholder="0"
-                    className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
-                  />
-                  <span className="text-xl font-bold tabular-nums text-muted-foreground">
-                    {getCurrencySymbol(
-                      mode.type === 'income' ? currentSourceCurrency : selectedAccount.currency
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* MainCurrency Amount (for totals) - shown when source != mainCurrency */}
-              {isMultiCurrencyIncomeExpense && (
-                <>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div
-                    className={cn(
-                      'flex-1 p-3 rounded-xl transition-all',
-                      activeField === 'target'
-                        ? 'bg-primary/20 ring-2 ring-primary'
-                        : 'bg-secondary/50'
-                    )}
-                  >
-                    <p className="text-xs text-muted-foreground mb-1">{mainCurrency}</p>
-                    <div className="flex items-baseline gap-1">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        step="0.01"
-                        value={targetAmount}
-                        onChange={(e) => setTargetAmount(sanitizeAmount(e.target.value))}
-                        onFocus={() => setActiveField('target')}
-                        onTouchStart={handleInputTouchStart}
-                        placeholder="0"
-                        className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
-                      />
-                      <span className="text-xl font-bold tabular-nums text-muted-foreground">
-                        {getCurrencySymbol(mainCurrency)}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Account Amount (for balance) - shown for income when account != source */}
-              {needsAccountConversion && (
-                <>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div
-                    className={cn(
-                      'flex-1 p-3 rounded-xl transition-all',
-                      activeField === 'account'
-                        ? 'bg-primary/20 ring-2 ring-primary'
-                        : 'bg-secondary/50'
-                    )}
-                  >
-                    <p className="text-xs text-muted-foreground mb-1">{selectedAccount.currency}</p>
-                    <div className="flex items-baseline gap-1">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        step="0.01"
-                        value={accountAmount}
-                        onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
-                        onFocus={() => setActiveField('account')}
-                        onTouchStart={handleInputTouchStart}
-                        placeholder="0"
-                        className="w-full bg-transparent text-xl font-bold tabular-nums outline-none placeholder:text-muted-foreground"
-                      />
-                      <span className="text-xl font-bold tabular-nums text-muted-foreground">
-                        {getCurrencySymbol(selectedAccount.currency)}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        ) : (
-          // Single currency: show one amount
-          <div className="p-4">
-            <div
-              className={cn(
-                'p-4 rounded-xl transition-all',
-                activeField === 'source' ? 'bg-primary/20 ring-2 ring-primary' : 'bg-secondary/50'
-              )}
-            >
-              <div className="flex items-baseline justify-center gap-2">
-                <input
-                  ref={amountInputRef}
-                  autoFocus={!disableAutoFocus}
-                  type="text"
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                  onFocus={() => setActiveField('source')}
-                  onTouchStart={handleInputTouchStart}
-                  placeholder="0"
-                  className="w-full bg-transparent text-5xl font-bold tabular-nums text-foreground outline-none text-right placeholder:text-muted-foreground"
-                />
-                <span className="text-5xl font-bold tabular-nums text-muted-foreground">
-                  {getCurrencySymbol(getCurrentCurrency())}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderAmountFields()}
 
         {/* Comment */}
         <div className="px-4 pb-3">
@@ -1018,7 +1038,7 @@ export function QuickTransactionModal({
               'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
-            {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
+            {submitLabel}
           </button>
         </div>
       </div>
@@ -1045,7 +1065,7 @@ export function QuickTransactionModal({
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
-              {isSubmitting ? t('saving') : isEditMode ? t('update') : t('save')}
+              {submitLabel}
             </button>
           </div>
         </div>

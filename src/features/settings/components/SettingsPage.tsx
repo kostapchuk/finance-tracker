@@ -78,7 +78,7 @@ import { buildBackupData, parseBackupData } from '@/utils/backup'
 import { formatCurrency } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
 
-type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | null
+type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | undefined
 
 export function SettingsPage() {
   const {
@@ -101,7 +101,7 @@ export function SettingsPage() {
   const { language, setLanguage, t } = useLanguage()
   const { needRefresh, updateServiceWorker } = useServiceWorker()
 
-  const [activeSection, setActiveSection] = useState<ManagementSection>(null)
+  const [activeSection, setActiveSection] = useState<ManagementSection>()
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importError, setImportError] = useState('')
@@ -110,15 +110,15 @@ export function SettingsPage() {
 
   // Form states
   const [accountFormOpen, setAccountFormOpen] = useState(false)
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
+  const [editingAccount, setEditingAccount] = useState<Account>()
   const [categoryFormOpen, setCategoryFormOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [editingCategory, setEditingCategory] = useState<Category>()
   const [incomeFormOpen, setIncomeFormOpen] = useState(false)
-  const [editingIncome, setEditingIncome] = useState<IncomeSource | null>(null)
+  const [editingIncome, setEditingIncome] = useState<IncomeSource>()
   const [currencyFormOpen, setCurrencyFormOpen] = useState(false)
-  const [editingCurrency, setEditingCurrency] = useState<CustomCurrency | null>(null)
+  const [editingCurrency, setEditingCurrency] = useState<CustomCurrency>()
   const [importWizardOpen, setImportWizardOpen] = useState(false)
-  const [savedImportState, setSavedImportState] = useState<SavedImportState | null>(null)
+  const [savedImportState, setSavedImportState] = useState<SavedImportState>()
 
   // Drag-to-reorder sensors
   const reorderSensors = useSensors(
@@ -171,7 +171,7 @@ export function SettingsPage() {
         loans,
         customCurrencies,
       })
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const blob = new Blob([JSON.stringify(data, undefined, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -287,9 +287,9 @@ export function SettingsPage() {
     return (
       <ManagementView
         title={t('manageAccounts')}
-        onBack={() => setActiveSection(null)}
+        onBack={() => setActiveSection(undefined)}
         onAdd={() => {
-          setEditingAccount(null)
+          setEditingAccount(undefined)
           setAccountFormOpen(true)
         }}
         backLabel={t('back')}
@@ -325,9 +325,9 @@ export function SettingsPage() {
     return (
       <ManagementView
         title={t('manageCategories')}
-        onBack={() => setActiveSection(null)}
+        onBack={() => setActiveSection(undefined)}
         onAdd={() => {
-          setEditingCategory(null)
+          setEditingCategory(undefined)
           setCategoryFormOpen(true)
         }}
         backLabel={t('back')}
@@ -360,9 +360,9 @@ export function SettingsPage() {
     return (
       <ManagementView
         title={t('manageIncomeSources')}
-        onBack={() => setActiveSection(null)}
+        onBack={() => setActiveSection(undefined)}
         onAdd={() => {
-          setEditingIncome(null)
+          setEditingIncome(undefined)
           setIncomeFormOpen(true)
         }}
         backLabel={t('back')}
@@ -400,9 +400,9 @@ export function SettingsPage() {
     return (
       <ManagementView
         title={t('manageCurrencies')}
-        onBack={() => setActiveSection(null)}
+        onBack={() => setActiveSection(undefined)}
         onAdd={() => {
-          setEditingCurrency(null)
+          setEditingCurrency(undefined)
           setCurrencyFormOpen(true)
         }}
         backLabel={t('back')}

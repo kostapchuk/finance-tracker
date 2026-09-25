@@ -15,7 +15,7 @@ describe('getIcon', () => {
   })
 
   it('should return Circle fallback for undefined icon names', () => {
-    expect(getIcon(undefined)).toBe(Circle)
+    expect(getIcon()).toBe(Circle)
   })
 
   it('should return custom fallback when provided', () => {

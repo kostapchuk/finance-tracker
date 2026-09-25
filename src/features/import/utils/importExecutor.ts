@@ -155,7 +155,7 @@ function transformRowsToTransactions(
           comment: row.comment || undefined,
           accountId,
           toAccountId,
-          toAmount: toAmount !== fromAmount ? toAmount : undefined,
+          toAmount: toAmount === fromAmount ? undefined : toAmount,
           createdAt: now,
           updatedAt: now,
         })
@@ -190,14 +190,14 @@ function transformRowsToTransactions(
 function determineBalanceAmount(row: BudgetOkRow, accountCurrency: string): number {
   // Normalize currencies for comparison
   const rowCurrency = normalizeCurrency(row.currency)
-  const rowCurrencyDop = row.currencyDop ? normalizeCurrency(row.currencyDop) : null
+  const rowCurrencyDop = row.currencyDop ? normalizeCurrency(row.currencyDop) : undefined
   const accCurrency = normalizeCurrency(accountCurrency)
 
   if (rowCurrency === accCurrency) {
     return row.amount
   }
 
-  if (rowCurrencyDop && rowCurrencyDop === accCurrency && row.amountDop !== null) {
+  if (rowCurrencyDop && rowCurrencyDop === accCurrency && row.amountDop !== undefined) {
     return row.amountDop
   }
 
@@ -210,11 +210,11 @@ function determineBalanceAmount(row: BudgetOkRow, accountCurrency: string): numb
  */
 function determineToAmount(row: BudgetOkRow, toAccountCurrency: string): number {
   const rowCurrency = normalizeCurrency(row.currency)
-  const rowCurrencyDop = row.currencyDop ? normalizeCurrency(row.currencyDop) : null
+  const rowCurrencyDop = row.currencyDop ? normalizeCurrency(row.currencyDop) : undefined
   const toCurrency = normalizeCurrency(toAccountCurrency)
 
   // For multi-currency transfers, amount_dop is typically the destination amount
-  if (rowCurrencyDop && rowCurrencyDop === toCurrency && row.amountDop !== null) {
+  if (rowCurrencyDop && rowCurrencyDop === toCurrency && row.amountDop !== undefined) {
     return row.amountDop
   }
 
@@ -243,7 +243,7 @@ function addDelta(map: Map<number, number>, accountId: number, delta: number): v
 
 /**
  * Validate that all mappings are complete
- * Returns error message if validation fails, null if all good
+ * Returns error message if validation fails, undefined if all good
  */
 export function validateMappings(
   parsedData: {
@@ -254,7 +254,7 @@ export function validateMappings(
   accountMapping: Map<string, number>,
   categoryMapping: Map<string, number>,
   incomeSourceMapping: Map<string, number>
-): string | null {
+): string | undefined {
   const unmappedAccounts = parsedData.uniqueAccounts
     .filter((a) => !accountMapping.has(a.name))
     .map((a) => a.name)
@@ -275,5 +275,5 @@ export function validateMappings(
     errors.push(`Unmapped income sources: ${unmappedIncomeSources.join(', ')}`)
   }
 
-  return errors.length > 0 ? errors.join('\n') : null
+  return errors.length > 0 ? errors.join('\n') : undefined
 }

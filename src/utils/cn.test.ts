@@ -17,7 +17,7 @@ describe('cn', () => {
   })
 
   it('handles undefined and null', () => {
-    expect(cn('foo', undefined, null, 'bar')).toBe('foo bar')
+    expect(cn('foo', undefined, undefined, 'bar')).toBe('foo bar')
   })
 
   it('handles objects', () => {

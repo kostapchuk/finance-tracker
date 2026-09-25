@@ -14,7 +14,7 @@ import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 
 interface IncomeSourceFormProps {
-  source?: IncomeSource | null
+  source?: IncomeSource
   open: boolean
   onClose: () => void
 }
@@ -48,21 +48,19 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
 
     setIsLoading(true)
     try {
-      if (source?.id) {
-        await incomeSourceRepo.update(source.id, {
-          name: name.trim(),
-          currency,
-          color,
-          hiddenFromDashboard,
-        })
-      } else {
-        await incomeSourceRepo.create({
-          name: name.trim(),
-          currency,
-          color,
-          hiddenFromDashboard,
-        })
-      }
+      await (source?.id
+        ? incomeSourceRepo.update(source.id, {
+            name: name.trim(),
+            currency,
+            color,
+            hiddenFromDashboard,
+          })
+        : incomeSourceRepo.create({
+            name: name.trim(),
+            currency,
+            color,
+            hiddenFromDashboard,
+          }))
       await refreshIncomeSources()
       onClose()
     } catch (error) {

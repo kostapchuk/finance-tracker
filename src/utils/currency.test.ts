@@ -30,7 +30,7 @@ describe('currency utilities', () => {
     })
 
     it('formats BTC with 8 decimal places', () => {
-      expect(formatCurrency(0.12345678, 'BTC')).toBe('0.12345678 ₿')
+      expect(formatCurrency(0.123_456_78, 'BTC')).toBe('0.12345678 ₿')
     })
 
     it('formats ETH with 8 decimal places', () => {

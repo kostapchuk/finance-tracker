@@ -26,10 +26,10 @@ export function ReportPage() {
       (t) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    const totalBalance = accounts.reduce((sum, a) => {
-      if (a.currency === mainCurrency) return sum + a.balance
-      return sum
-    }, 0)
+    let totalBalance = 0
+    for (const a of accounts) {
+      if (a.currency === mainCurrency) totalBalance += a.balance
+    }
 
     // Exclude transfers (they don't have incomeSourceId/categoryId)
     const monthlyIncome = monthlyTransactions
@@ -67,28 +67,22 @@ export function ReportPage() {
         t.type === 'expense' && new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    const byCategory = monthlyExpenses.reduce(
-      (acc, t) => {
-        const categoryId = t.categoryId || 0
-        if (!acc[categoryId]) {
-          acc[categoryId] = 0
-        }
-        acc[categoryId] += t.mainCurrencyAmount ?? t.amount
-        return acc
-      },
-      {} as Record<number, number>
-    )
+    const byCategory: Record<number, number> = {}
+    for (const t of monthlyExpenses) {
+      const categoryId = t.categoryId || 0
+      byCategory[categoryId] = (byCategory[categoryId] ?? 0) + (t.mainCurrencyAmount ?? t.amount)
+    }
 
     return Object.entries(byCategory)
       .map(([categoryId, amount]) => {
-        const category = categories.find((c) => c.id === parseInt(categoryId))
+        const category = categories.find((c) => c.id === Number.parseInt(categoryId))
         return {
           name: category?.name || 'Unknown',
           value: amount,
           color: category?.color || '#888888',
         }
       })
-      .sort((a, b) => b.value - a.value)
+      .toSorted((a, b) => b.value - a.value)
   }, [transactions, categories, selectedMonth])
 
   const monthlyTrend = useMemo(() => {
@@ -102,7 +96,7 @@ export function ReportPage() {
     }
 
     // Exclude transfers (they don't have incomeSourceId/categoryId)
-    transactions.forEach((t) => {
+    for (const t of transactions) {
       const date = new Date(t.date)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 
@@ -114,10 +108,10 @@ export function ReportPage() {
           months[monthKey].expenses += amount
         }
       }
-    })
+    }
 
     return Object.entries(months)
-      .sort(([a], [b]) => a.localeCompare(b))
+      .toSorted(([a], [b]) => a.localeCompare(b))
       .map(([month, data]) => ({
         month: new Date(month + '-01').toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
           month: 'short',

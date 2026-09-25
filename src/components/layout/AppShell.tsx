@@ -39,7 +39,7 @@ export function AppShell({ children }: AppShellProps) {
       <main className="flex-1 overflow-auto pb-20 pt-safe">{children}</main>
       <BottomNav />
       {onboardingStep > 0 && (
-        <Suspense fallback={null}>
+        <Suspense fallback={undefined}>
           <OnboardingOverlay />
         </Suspense>
       )}

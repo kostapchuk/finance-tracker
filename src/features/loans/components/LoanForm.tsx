@@ -34,7 +34,7 @@ export interface LoanFormData {
 }
 
 interface LoanFormProps {
-  loan?: Loan | null
+  loan?: Loan
   open: boolean
   onClose: () => void
   onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number) => Promise<void>
@@ -56,7 +56,9 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   const [accountAmount, setAccountAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
 
-  const selectedAccount = accountId ? accounts.find((a) => a.id === parseInt(accountId)) : null
+  const selectedAccount = accountId
+    ? accounts.find((a) => a.id === Number.parseInt(accountId))
+    : undefined
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
 
   useResetOnChange([loan, open, mainCurrency, accounts], () => {
@@ -85,11 +87,11 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
     if (!personName.trim() || !amount || !accountId) return
     if (isMultiCurrency && !accountAmount) return
 
-    const parsedAmount = parseFloat(amount)
-    const parsedAccountAmount = isMultiCurrency ? parseFloat(accountAmount) : undefined
+    const parsedAmount = Number.parseFloat(amount)
+    const parsedAccountAmount = isMultiCurrency ? Number.parseFloat(accountAmount) : undefined
 
-    if (isNaN(parsedAmount) || parsedAmount <= 0) return
-    if (isMultiCurrency && (isNaN(parsedAccountAmount!) || parsedAccountAmount! <= 0)) return
+    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) return
+    if (isMultiCurrency && (Number.isNaN(parsedAccountAmount!) || parsedAccountAmount! <= 0)) return
 
     setIsLoading(true)
     try {
@@ -99,7 +101,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
         description: description.trim() || undefined,
         amount: parsedAmount,
         currency,
-        accountId: parseInt(accountId),
+        accountId: Number.parseInt(accountId),
         accountAmount: parsedAccountAmount,
         dueDate: dueDate ? new Date(dueDate) : undefined,
       }
@@ -108,29 +110,27 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
         await onSave(formData, !!loan?.id, loan?.id)
       } else {
         // Fallback: save directly if no onSave handler is provided
-        if (loan?.id) {
-          await loanRepo.update(loan.id, {
-            type: formData.type,
-            personName: formData.personName,
-            description: formData.description,
-            amount: formData.amount,
-            currency: formData.currency,
-            accountId: formData.accountId,
-            dueDate: formData.dueDate,
-          })
-        } else {
-          await loanRepo.create({
-            type: formData.type,
-            personName: formData.personName,
-            description: formData.description,
-            amount: formData.amount,
-            currency: formData.currency,
-            paidAmount: 0,
-            status: 'active',
-            accountId: formData.accountId,
-            dueDate: formData.dueDate,
-          })
-        }
+        await (loan?.id
+          ? loanRepo.update(loan.id, {
+              type: formData.type,
+              personName: formData.personName,
+              description: formData.description,
+              amount: formData.amount,
+              currency: formData.currency,
+              accountId: formData.accountId,
+              dueDate: formData.dueDate,
+            })
+          : loanRepo.create({
+              type: formData.type,
+              personName: formData.personName,
+              description: formData.description,
+              amount: formData.amount,
+              currency: formData.currency,
+              paidAmount: 0,
+              status: 'active',
+              accountId: formData.accountId,
+              dueDate: formData.dueDate,
+            }))
         await refreshLoans()
       }
       onClose()

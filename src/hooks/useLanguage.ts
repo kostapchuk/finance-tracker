@@ -35,7 +35,7 @@ export function useLanguage() {
     setStoredLanguage(lang)
     document.documentElement.lang = lang
     // Notify all subscribers
-    subscribers.forEach((fn) => fn())
+    for (const fn of subscribers) fn()
   }, [])
 
   const t = useCallback((key: TranslationKey): string => {

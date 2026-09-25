@@ -105,7 +105,7 @@ describe('backup utilities', () => {
   describe('parseBackupData', () => {
     it('throws on invalid input missing required fields', () => {
       expect(() => parseBackupData({})).toThrow('Invalid backup file format')
-      expect(() => parseBackupData(null)).toThrow('Invalid backup file format')
+      expect(() => parseBackupData()).toThrow('Invalid backup file format')
       expect(() => parseBackupData({ version: 1, accounts: [] })).toThrow(
         'Invalid backup file format'
       )

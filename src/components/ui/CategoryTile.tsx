@@ -28,11 +28,6 @@ export function CategoryTile({
   // Get icon component from lucide-react
   const IconComponent = useMemo(() => getIcon(icon), [icon])
 
-  // Get color based on amount and type
-  const getAmountColor = () => {
-    return 'text-foreground'
-  }
-
   return (
     <button
       onClick={onClick}
@@ -58,7 +53,7 @@ export function CategoryTile({
       </div>
       <div className="text-center w-full min-w-0 overflow-hidden">
         <p className="text-sm text-muted-foreground truncate">{name}</p>
-        <BlurredAmount className={cn('text-xs font-semibold truncate block', getAmountColor())}>
+        <BlurredAmount className="text-xs font-semibold truncate block text-foreground">
           {formatCurrency(amount, currency)}
         </BlurredAmount>
       </div>

@@ -17,8 +17,8 @@ vi.mock('@/database/repositories', () => ({
 }))
 
 vi.mock('@/utils/transactionBalance', () => ({
-  applyTransactionBalance: vi.fn().mockResolvedValue(undefined),
-  reverseTransactionBalance: vi.fn().mockResolvedValue(undefined),
+  applyTransactionBalance: vi.fn().mockImplementation(() => Promise.resolve()),
+  reverseTransactionBalance: vi.fn().mockImplementation(() => Promise.resolve()),
 }))
 
 vi.mock('@/hooks/useLanguage', () => ({
@@ -81,7 +81,7 @@ function openOverlay(container: HTMLElement) {
 describe('QuickTransactionModal transfer account pickers', () => {
   beforeEach(() => {
     createMock.mockReset().mockResolvedValue(99)
-    getByIdMock.mockReset().mockResolvedValue(undefined)
+    getByIdMock.mockReset().mockImplementation(() => Promise.resolve())
   })
 
   it('lets the user pick a different "from" account from the header', () => {

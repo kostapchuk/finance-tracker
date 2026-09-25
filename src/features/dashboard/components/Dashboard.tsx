@@ -51,10 +51,8 @@ type TransactionMode =
   | { type: 'income'; source: IncomeSource; preselectedAccountId?: number }
   | { type: 'expense'; category: Category; preselectedAccountId?: number }
   | { type: 'transfer'; fromAccount: Account; toAccount: Account }
-  | null
 
-type DraggedItem =
-  { type: 'income'; source: IncomeSource } | { type: 'account'; account: Account } | null
+type DraggedItem = { type: 'income'; source: IncomeSource } | { type: 'account'; account: Account }
 
 export function Dashboard() {
   const accounts = useAppStore((state) => state.accounts)
@@ -72,8 +70,8 @@ export function Dashboard() {
     return saved === null ? true : saved === 'true'
   })
   const [expensesExpanded, setExpensesExpanded] = useState(true)
-  const [transactionMode, setTransactionMode] = useState<TransactionMode>(null)
-  const [draggedItem, setDraggedItem] = useState<DraggedItem>(null)
+  const [transactionMode, setTransactionMode] = useState<TransactionMode>()
+  const [draggedItem, setDraggedItem] = useState<DraggedItem>()
   const [incomeFormOpen, setIncomeFormOpen] = useState(false)
   const [accountFormOpen, setAccountFormOpen] = useState(false)
   const [categoryFormOpen, setCategoryFormOpen] = useState(false)
@@ -114,22 +112,18 @@ export function Dashboard() {
 
     const incomeBySource: Record<number, number> = {}
     let totalIncome = 0
-    monthlyTransactions
-      .filter((t) => t.type === 'income' && t.incomeSourceId)
-      .forEach((t) => {
-        incomeBySource[t.incomeSourceId!] = (incomeBySource[t.incomeSourceId!] || 0) + t.amount
-        totalIncome += t.mainCurrencyAmount ?? t.amount
-      })
+    for (const t of monthlyTransactions.filter((t) => t.type === 'income' && t.incomeSourceId)) {
+      incomeBySource[t.incomeSourceId!] = (incomeBySource[t.incomeSourceId!] || 0) + t.amount
+      totalIncome += t.mainCurrencyAmount ?? t.amount
+    }
 
     const expensesByCategory: Record<number, number> = {}
     let totalExpenses = 0
-    monthlyTransactions
-      .filter((t) => t.type === 'expense' && t.categoryId)
-      .forEach((t) => {
-        const mainAmount = t.mainCurrencyAmount ?? t.amount
-        expensesByCategory[t.categoryId!] = (expensesByCategory[t.categoryId!] || 0) + mainAmount
-        totalExpenses += mainAmount
-      })
+    for (const t of monthlyTransactions.filter((t) => t.type === 'expense' && t.categoryId)) {
+      const mainAmount = t.mainCurrencyAmount ?? t.amount
+      expensesByCategory[t.categoryId!] = (expensesByCategory[t.categoryId!] || 0) + mainAmount
+      totalExpenses += mainAmount
+    }
 
     return { incomeBySource, expensesByCategory, totalIncome, totalExpenses }
   }, [transactions, selectedMonth])
@@ -146,7 +140,7 @@ export function Dashboard() {
   }
 
   const handleCloseModal = () => {
-    setTransactionMode(null)
+    setTransactionMode(undefined)
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -162,7 +156,7 @@ export function Dashboard() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
-    setDraggedItem(null)
+    setDraggedItem(undefined)
 
     if (!over) return
 
@@ -369,7 +363,7 @@ export function Dashboard() {
         </section>
 
         {transactionMode && (
-          <Suspense fallback={null}>
+          <Suspense fallback={undefined}>
             <QuickTransactionModal
               mode={transactionMode}
               accounts={accounts}
@@ -407,7 +401,7 @@ export function Dashboard() {
         </DragOverlay>
       </div>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={undefined}>
         <IncomeSourceForm open={incomeFormOpen} onClose={() => setIncomeFormOpen(false)} />
         <AccountForm open={accountFormOpen} onClose={() => setAccountFormOpen(false)} />
         <CategoryForm open={categoryFormOpen} onClose={() => setCategoryFormOpen(false)} />

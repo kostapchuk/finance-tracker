@@ -15,7 +15,7 @@ interface ImportIncomeSourceMappingProps {
   uniqueIncomeSources: string[]
   incomeSources: IncomeSource[]
   mapping: Map<string, number>
-  onMappingChange: (budgetOkName: string, incomeSourceId: number | null) => void
+  onMappingChange: (budgetOkName: string, incomeSourceId: number | undefined) => void
   onNext: () => void
   onBack: () => void
 }
@@ -30,7 +30,7 @@ export function ImportIncomeSourceMapping({
 }: ImportIncomeSourceMappingProps) {
   const { t } = useLanguage()
 
-  const mappedCount = [...mapping.values()].filter((v) => v !== null).length
+  const mappedCount = mapping.size
   const allMapped = mappedCount === uniqueIncomeSources.length
   const canProceed = allMapped
 
@@ -82,7 +82,7 @@ export function ImportIncomeSourceMapping({
         <div className="space-y-3">
           {uniqueIncomeSources.map((budgetOkName) => {
             const mappedId = mapping.get(budgetOkName)
-            const isMapped = mappedId !== undefined && mappedId !== null
+            const isMapped = mappedId !== undefined
 
             return (
               <div
@@ -106,10 +106,10 @@ export function ImportIncomeSourceMapping({
                 <Select
                   value={mappedId?.toString() ?? ''}
                   onValueChange={(value) =>
-                    onMappingChange(budgetOkName, value ? parseInt(value, 10) : null)
+                    onMappingChange(budgetOkName, value ? Number.parseInt(value, 10) : undefined)
                   }
                 >
-                  <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
+                  <SelectTrigger className={isMapped ? '' : 'border-destructive/50'}>
                     <SelectValue placeholder={t('importSelectIncomeSource')}>
                       {mappedId ? incomeSources.find((s) => s.id === mappedId)?.name : undefined}
                     </SelectValue>

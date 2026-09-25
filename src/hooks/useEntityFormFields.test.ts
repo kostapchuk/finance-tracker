@@ -36,7 +36,7 @@ describe('useEntityFormFields', () => {
       result.current.resetFields({ name: 'Groceries', color: '#ff0000', hiddenFromDashboard: true })
     })
     act(() => {
-      result.current.resetFields(null)
+      result.current.resetFields()
     })
 
     expect(result.current.name).toBe('')

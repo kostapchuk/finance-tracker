@@ -26,7 +26,7 @@ export function LoansPage() {
   const [loanFormOpen, setLoanFormOpen] = useState(false)
   const [givenExpanded, setGivenExpanded] = useState(true)
   const [receivedExpanded, setReceivedExpanded] = useState(true)
-  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null)
+  const [selectedLoan, setSelectedLoan] = useState<Loan>()
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
 
   // Split loans by type and status
@@ -36,7 +36,7 @@ export function LoansPage() {
     const paidGiven: Loan[] = []
     const paidReceived: Loan[] = []
 
-    loans.forEach((loan) => {
+    for (const loan of loans) {
       if (loan.type === 'given') {
         if (loan.status === 'fully_paid') {
           paidGiven.push(loan)
@@ -50,7 +50,7 @@ export function LoansPage() {
           activeReceived.push(loan)
         }
       }
-    })
+    }
 
     return { activeGiven, activeReceived, paidGiven, paidReceived }
   }, [loans])
@@ -58,15 +58,15 @@ export function LoansPage() {
   // Calculate totals grouped by currency
   const totals = useMemo(() => {
     const givenByCurrency: Record<string, number> = {}
-    activeGiven.forEach((l) => {
+    for (const l of activeGiven) {
       givenByCurrency[l.currency] = (givenByCurrency[l.currency] || 0) + (l.amount - l.paidAmount)
-    })
+    }
 
     const receivedByCurrency: Record<string, number> = {}
-    activeReceived.forEach((l) => {
+    for (const l of activeReceived) {
       receivedByCurrency[l.currency] =
         (receivedByCurrency[l.currency] || 0) + (l.amount - l.paidAmount)
-    })
+    }
 
     return { givenByCurrency, receivedByCurrency }
   }, [activeGiven, activeReceived])
@@ -289,7 +289,7 @@ export function LoansPage() {
 
       {/* Loan Form */}
       <LoanForm
-        loan={null}
+        loan={undefined}
         open={loanFormOpen}
         onClose={() => setLoanFormOpen(false)}
         onSave={handleSaveLoan}
@@ -301,7 +301,7 @@ export function LoansPage() {
         open={paymentDialogOpen}
         onClose={() => {
           setPaymentDialogOpen(false)
-          setSelectedLoan(null)
+          setSelectedLoan(undefined)
         }}
       />
     </div>

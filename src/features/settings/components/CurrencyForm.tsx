@@ -1,13 +1,7 @@
 import { useState } from 'react'
 
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { FormDialogFooter } from '@/components/ui/FormDialogFooter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { customCurrencyRepo } from '@/database/repositories'
@@ -17,7 +11,7 @@ import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 
 interface CurrencyFormProps {
-  currency?: CustomCurrency | null
+  currency?: CustomCurrency
   open: boolean
   onClose: () => void
 }
@@ -49,19 +43,14 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
 
     setIsLoading(true)
     try {
-      if (currency?.id) {
-        await customCurrencyRepo.update(currency.id, {
-          code: code.trim().toUpperCase(),
-          name: name.trim(),
-          symbol: symbol.trim() || code.trim().toUpperCase(), // Use code as symbol if not provided
-        })
-      } else {
-        await customCurrencyRepo.create({
-          code: code.trim().toUpperCase(),
-          name: name.trim(),
-          symbol: symbol.trim() || code.trim().toUpperCase(), // Use code as symbol if not provided
-        })
+      const payload = {
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        symbol: symbol.trim() || code.trim().toUpperCase(), // Use code as symbol if not provided
       }
+      await (currency?.id
+        ? customCurrencyRepo.update(currency.id, payload)
+        : customCurrencyRepo.create(payload))
       await refreshCustomCurrencies()
       onClose()
     } catch (error) {
@@ -114,14 +103,7 @@ export function CurrencyForm({ currency, open, onClose }: CurrencyFormProps) {
             <p className="text-xs text-muted-foreground">{t('symbolHint')}</p>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? t('saving') : currency ? t('update') : t('create')}
-            </Button>
-          </DialogFooter>
+          <FormDialogFooter isEditing={!!currency} isLoading={isLoading} onCancel={onClose} />
         </form>
       </DialogContent>
     </Dialog>
