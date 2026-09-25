@@ -262,6 +262,7 @@ npm run type-coverage     # TypeScript type coverage
 npm run test:coverage     # Unit tests with coverage
 npm audit --audit-level=moderate  # Security audit
 npm run build             # Production build
+npm run size              # Bundle size budget (after build)
 npx playwright test       # E2E tests (if applicable)
 ```
 

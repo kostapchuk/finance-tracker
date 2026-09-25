@@ -1,15 +1,43 @@
 # Finance Tracker
 
+<!-- CI & quality -->
 [![Test and Deploy](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml)
+[![E2E tests](https://img.shields.io/github/check-runs/kostapchuk/finance-tracker/main?nameFilter=E2E%20Tests&label=e2e&logo=playwright)](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml)
 [![Security & Quality](https://github.com/kostapchuk/finance-tracker/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/security.yml)
 [![CodeQL](https://github.com/kostapchuk/finance-tracker/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/codeql.yml)
 [![Lint GitHub Actions](https://github.com/kostapchuk/finance-tracker/actions/workflows/actionlint.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/actionlint.yml)
 [![codecov](https://codecov.io/gh/kostapchuk/finance-tracker/graph/badge.svg)](https://codecov.io/gh/kostapchuk/finance-tracker)
+[![Type coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Ftype-coverage.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kostapchuk/finance-tracker/badge)](https://scorecard.dev/viewer/?uri=github.com/kostapchuk/finance-tracker)
+[![Vulnerabilities](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Fvulnerabilities.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
+
+<!-- Lighthouse (mobile) & bundle size -->
+[![Lighthouse performance](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Flighthouse-performance.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
+[![Lighthouse accessibility](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Flighthouse-accessibility.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
+[![Lighthouse best practices](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Flighthouse-best-practices.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
+[![Lighthouse SEO](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Flighthouse-seo.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
+[![Bundle size](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Fbundle-size.json)](.size-limit.json)
+
+<!-- Deploy & product -->
+[![Live demo](https://img.shields.io/badge/demo-live-success?logo=vercel)](https://finance-tracker-swart.vercel.app)
+[![Vercel deployment](https://img.shields.io/github/deployments/kostapchuk/finance-tracker/production?label=vercel&logo=vercel)](https://github.com/kostapchuk/finance-tracker/deployments/production)
+[![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://finance-tracker-swart.vercel.app)
+[![iOS Safari](https://img.shields.io/badge/iOS%20Safari-supported-000000?logo=safari&logoColor=white)](https://finance-tracker-swart.vercel.app)
+[![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20RU-blue)](src/utils/i18n.ts)
+
+<!-- Stack -->
 [![Version](https://img.shields.io/github/package-json/v/kostapchuk/finance-tracker)](package.json)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Code style: Prettier](https://img.shields.io/badge/code%20style-prettier-ff69b4?logo=prettier&logoColor=white)](https://prettier.io/)
+[![Linted with ESLint](https://img.shields.io/badge/linted%20with-ESLint-4B32C3?logo=eslint&logoColor=white)](eslint.config.js)
+
+<!-- Maintenance -->
+[![Dependabot](https://img.shields.io/badge/dependabot-enabled-025E8C?logo=dependabot)](.github/dependabot.yml)
+[![Last commit](https://img.shields.io/github/last-commit/kostapchuk/finance-tracker)](https://github.com/kostapchuk/finance-tracker/commits/main)
+[![Open issues](https://img.shields.io/github/issues/kostapchuk/finance-tracker)](https://github.com/kostapchuk/finance-tracker/issues)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/kostapchuk/finance-tracker/pulls)
 
 A mobile-first Progressive Web App for personal money management with drag-and-drop transaction entry.
 
@@ -52,6 +80,7 @@ npm ci
 | `npm run test:coverage` | Run unit tests with coverage report |
 | `npm run type-coverage` | Check TypeScript type coverage (90% threshold) |
 | `npm run preview` | Preview production build locally |
+| `npm run size` | Check gzip bundle size against `.size-limit.json` budgets (run after build) |
 | `npm run test:e2e` | Run Playwright E2E tests |
 | `npm run test:e2e:mobile` | Run E2E tests with mobile viewport |
 | `npm run test:e2e:ui` | Run E2E tests with Playwright UI |
