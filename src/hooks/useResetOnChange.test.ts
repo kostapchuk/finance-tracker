@@ -56,11 +56,11 @@ describe('useResetOnChange', () => {
   it('treats NaN as unchanged, matching Object.is semantics', () => {
     const reset = vi.fn()
     const { rerender } = renderHook(({ deps }) => useResetOnChange(deps, reset), {
-      initialProps: { deps: [NaN] as unknown[] },
+      initialProps: { deps: [Number.NaN] as unknown[] },
     })
     reset.mockClear()
 
-    rerender({ deps: [NaN] })
+    rerender({ deps: [Number.NaN] })
     expect(reset).not.toHaveBeenCalled()
   })
 
@@ -100,7 +100,7 @@ describe('useResetOnChange', () => {
 
   it('supports resetting several state values at once', () => {
     const { result, rerender } = renderHook(
-      ({ entity }: { entity: { name: string; color: string } | null }) => {
+      ({ entity }: { entity: { name: string; color: string } | undefined }) => {
         const [name, setName] = useState(entity?.name ?? '')
         const [color, setColor] = useState(entity?.color ?? '')
 
@@ -113,7 +113,7 @@ describe('useResetOnChange', () => {
       },
       {
         initialProps: {
-          entity: { name: 'Cash', color: 'red' } as { name: string; color: string } | null,
+          entity: { name: 'Cash', color: 'red' } as { name: string; color: string } | undefined,
         },
       }
     )
@@ -125,7 +125,7 @@ describe('useResetOnChange', () => {
 
     // Clearing the entity (e.g. switching the dialog to "create") empties the form.
     act(() => {
-      rerender({ entity: null })
+      rerender({ entity: undefined })
     })
     expect(result.current).toEqual({ name: '', color: '' })
   })

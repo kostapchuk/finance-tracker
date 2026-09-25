@@ -11,7 +11,7 @@ import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 
 interface CategoryFormProps {
-  category?: Category | null
+  category?: Category
   open: boolean
   onClose: () => void
 }
@@ -40,21 +40,19 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
 
     setIsLoading(true)
     try {
-      if (category?.id) {
-        await categoryRepo.update(category.id, {
-          name: name.trim(),
-          color,
-          categoryType: 'expense',
-          hiddenFromDashboard,
-        })
-      } else {
-        await categoryRepo.create({
-          name: name.trim(),
-          color,
-          categoryType: 'expense',
-          hiddenFromDashboard,
-        })
-      }
+      await (category?.id
+        ? categoryRepo.update(category.id, {
+            name: name.trim(),
+            color,
+            categoryType: 'expense',
+            hiddenFromDashboard,
+          })
+        : categoryRepo.create({
+            name: name.trim(),
+            color,
+            categoryType: 'expense',
+            hiddenFromDashboard,
+          }))
       await refreshCategories()
       onClose()
     } catch (error) {

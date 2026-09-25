@@ -137,7 +137,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       }
     }
 
-    if (!open) return null
+    if (!open) return
 
     return (
       <div className="fixed inset-0 z-[60]">

@@ -15,7 +15,7 @@ interface ImportCategoryMappingProps {
   uniqueCategories: string[]
   categories: Category[]
   mapping: Map<string, number>
-  onMappingChange: (budgetOkName: string, categoryId: number | null) => void
+  onMappingChange: (budgetOkName: string, categoryId: number | undefined) => void
   onNext: () => void
   onBack: () => void
 }
@@ -30,7 +30,7 @@ export function ImportCategoryMapping({
 }: ImportCategoryMappingProps) {
   const { t } = useLanguage()
 
-  const mappedCount = [...mapping.values()].filter((v) => v !== null).length
+  const mappedCount = mapping.size
   const allMapped = mappedCount === uniqueCategories.length
   const canProceed = allMapped
 
@@ -82,7 +82,7 @@ export function ImportCategoryMapping({
         <div className="space-y-3">
           {uniqueCategories.map((budgetOkName) => {
             const mappedId = mapping.get(budgetOkName)
-            const isMapped = mappedId !== undefined && mappedId !== null
+            const isMapped = mappedId !== undefined
 
             return (
               <div
@@ -106,10 +106,10 @@ export function ImportCategoryMapping({
                 <Select
                   value={mappedId?.toString() ?? ''}
                   onValueChange={(value) =>
-                    onMappingChange(budgetOkName, value ? parseInt(value, 10) : null)
+                    onMappingChange(budgetOkName, value ? Number.parseInt(value, 10) : undefined)
                   }
                 >
-                  <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
+                  <SelectTrigger className={isMapped ? '' : 'border-destructive/50'}>
                     <SelectValue placeholder={t('importSelectCategory')}>
                       {mappedId ? categories.find((c) => c.id === mappedId)?.name : undefined}
                     </SelectValue>

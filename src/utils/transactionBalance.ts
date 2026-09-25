@@ -41,19 +41,21 @@ export async function reverseTransactionBalance(
   const appliedAmount = accountAmount ?? amount
 
   switch (type) {
-    case 'income':
+    case 'income': {
       if (accountId) {
         await accountRepo.updateBalance(accountId, -appliedAmount)
       }
       break
+    }
 
-    case 'expense':
+    case 'expense': {
       if (accountId) {
         await accountRepo.updateBalance(accountId, appliedAmount)
       }
       break
+    }
 
-    case 'transfer':
+    case 'transfer': {
       // Reverse transfer: add back to source, subtract from target
       if (accountId) {
         await accountRepo.updateBalance(accountId, amount)
@@ -63,22 +65,25 @@ export async function reverseTransactionBalance(
         await accountRepo.updateBalance(toAccountId, -targetAmount)
       }
       break
+    }
 
-    case 'loan_given':
+    case 'loan_given': {
       // Original: balance decreased (money went out) → reverse: add back
       if (accountId) {
         await accountRepo.updateBalance(accountId, appliedAmount)
       }
       break
+    }
 
-    case 'loan_received':
+    case 'loan_received': {
       // Original: balance increased (money came in) → reverse: subtract
       if (accountId) {
         await accountRepo.updateBalance(accountId, -appliedAmount)
       }
       break
+    }
 
-    case 'loan_payment':
+    case 'loan_payment': {
       if (loanId) {
         const paymentAmount = mainCurrencyAmount ?? amount
         await loanRepo.reversePayment(loanId, paymentAmount)
@@ -96,6 +101,7 @@ export async function reverseTransactionBalance(
         }
       }
       break
+    }
   }
 }
 
@@ -122,19 +128,21 @@ export async function applyTransactionBalance(
   const appliedAmount = accountAmount ?? amount
 
   switch (type) {
-    case 'income':
+    case 'income': {
       if (accountId) {
         await accountRepo.updateBalance(accountId, appliedAmount)
       }
       break
+    }
 
-    case 'expense':
+    case 'expense': {
       if (accountId) {
         await accountRepo.updateBalance(accountId, -appliedAmount)
       }
       break
+    }
 
-    case 'transfer':
+    case 'transfer': {
       if (accountId) {
         await accountRepo.updateBalance(accountId, -amount)
       }
@@ -143,22 +151,25 @@ export async function applyTransactionBalance(
         await accountRepo.updateBalance(toAccountId, targetAmount)
       }
       break
+    }
 
-    case 'loan_given':
+    case 'loan_given': {
       // Money goes out → balance decreases
       if (accountId) {
         await accountRepo.updateBalance(accountId, -appliedAmount)
       }
       break
+    }
 
-    case 'loan_received':
+    case 'loan_received': {
       // Money comes in → balance increases
       if (accountId) {
         await accountRepo.updateBalance(accountId, appliedAmount)
       }
       break
+    }
 
-    case 'loan_payment':
+    case 'loan_payment': {
       if (loanId) {
         const paymentAmount = mainCurrencyAmount ?? amount
         await loanRepo.recordPayment(loanId, paymentAmount)
@@ -176,5 +187,6 @@ export async function applyTransactionBalance(
         }
       }
       break
+    }
   }
 }

@@ -14,7 +14,7 @@ import type { LoanStatus } from './types'
 export const accountRepo = {
   async getAll() {
     const items = await db.accounts.toArray()
-    return items.sort(
+    return items.toSorted(
       (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
     )
   },
@@ -57,7 +57,7 @@ export const accountRepo = {
 export const incomeSourceRepo = {
   async getAll() {
     const items = await db.incomeSources.toArray()
-    return items.sort(
+    return items.toSorted(
       (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
     )
   },
@@ -91,7 +91,7 @@ export const incomeSourceRepo = {
 export const categoryRepo = {
   async getAll() {
     const items = await db.categories.toArray()
-    return items.sort(
+    return items.toSorted(
       (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.name.localeCompare(b.name)
     )
   },
@@ -253,7 +253,7 @@ export const loanRepo = {
 export const settingsRepo = {
   async get() {
     const settings = await db.settings.toArray()
-    return settings[0] || null
+    return settings[0] || undefined
   },
 
   async create(settings: Omit<AppSettings, 'id' | 'createdAt' | 'updatedAt'>) {
@@ -273,7 +273,7 @@ export const settingsRepo = {
         updatedAt: new Date(),
       })
     }
-    return undefined
+    return
   },
 }
 

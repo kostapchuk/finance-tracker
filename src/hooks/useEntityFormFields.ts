@@ -21,7 +21,7 @@ export function useEntityFormFields() {
   const [hiddenFromDashboard, setHiddenFromDashboard] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  const resetFields = (entity: EntityFieldsSource | null | undefined) => {
+  const resetFields = (entity?: EntityFieldsSource) => {
     if (entity) {
       setName(entity.name)
       setColor(entity.color)

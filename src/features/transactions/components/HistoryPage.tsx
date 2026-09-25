@@ -81,25 +81,34 @@ function getInitialFilterState(): FilterState {
 
 function filterReducer(state: FilterState, action: FilterAction): FilterState {
   switch (action.type) {
-    case 'SET_TYPE_FILTER':
+    case 'SET_TYPE_FILTER': {
       return { ...state, typeFilter: action.payload, categoryFilter: 'all', displayCount: 50 }
-    case 'SET_CATEGORY_FILTER':
+    }
+    case 'SET_CATEGORY_FILTER': {
       return { ...state, categoryFilter: action.payload, displayCount: 50 }
-    case 'SET_ACCOUNT_FILTER':
+    }
+    case 'SET_ACCOUNT_FILTER': {
       return { ...state, accountFilter: action.payload, displayCount: 50 }
-    case 'SET_DATE_FILTER':
+    }
+    case 'SET_DATE_FILTER': {
       return { ...state, dateFilter: action.payload, displayCount: 50 }
-    case 'SET_CUSTOM_DATE_FROM':
+    }
+    case 'SET_CUSTOM_DATE_FROM': {
       return { ...state, customDateFrom: action.payload, displayCount: 50 }
-    case 'SET_CUSTOM_DATE_TO':
+    }
+    case 'SET_CUSTOM_DATE_TO': {
       return { ...state, customDateTo: action.payload, displayCount: 50 }
-    case 'SET_SEARCH_QUERY':
+    }
+    case 'SET_SEARCH_QUERY': {
       return { ...state, searchQuery: action.payload, displayCount: 50 }
-    case 'SET_SHOW_FILTERS':
+    }
+    case 'SET_SHOW_FILTERS': {
       return { ...state, showFilters: action.payload }
-    case 'LOAD_MORE':
+    }
+    case 'LOAD_MORE': {
       return { ...state, displayCount: state.displayCount + 50 }
-    case 'APPLY_CATEGORY_NAV':
+    }
+    case 'APPLY_CATEGORY_NAV': {
       return {
         ...state,
         categoryFilter: String(action.payload.categoryId),
@@ -108,15 +117,18 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
         showFilters: true,
         displayCount: 50,
       }
-    case 'APPLY_ACCOUNT_NAV':
+    }
+    case 'APPLY_ACCOUNT_NAV': {
       return {
         ...state,
         accountFilter: String(action.payload),
         showFilters: true,
         displayCount: 50,
       }
-    default:
+    }
+    default: {
       return state
+    }
   }
 }
 
@@ -135,7 +147,7 @@ export function HistoryPage() {
   const historyCategoryFilter = useAppStore((state) => state.historyCategoryFilter)
   const historyAccountFilter = useAppStore((state) => state.historyAccountFilter)
 
-  const [filterState, dispatch] = useReducer(filterReducer, null, getInitialFilterState)
+  const [filterState, dispatch] = useReducer(filterReducer, undefined, getInitialFilterState)
   const {
     typeFilter,
     categoryFilter,
@@ -151,15 +163,15 @@ export function HistoryPage() {
   const [showSearch, setShowSearch] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
-  const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment' | null>(null)
-  const [editTransactionMode, setEditTransactionMode] = useState<TransactionMode | null>(null)
-  const [editingLoan, setEditingLoan] = useState<Loan | null>(null)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction>()
+  const [editModalType, setEditModalType] = useState<'quick' | 'loan' | 'payment'>()
+  const [editTransactionMode, setEditTransactionMode] = useState<TransactionMode>()
+  const [editingLoan, setEditingLoan] = useState<Loan>()
 
   const navAppliedRef = useRef(false)
 
   useEffect(() => {
-    if (historyCategoryFilter !== null && !navAppliedRef.current) {
+    if (historyCategoryFilter !== undefined && !navAppliedRef.current) {
       navAppliedRef.current = true
       dispatch({
         type: 'APPLY_CATEGORY_NAV',
@@ -168,15 +180,15 @@ export function HistoryPage() {
           selectedMonth: useAppStore.getState().selectedMonth,
         },
       })
-      useAppStore.setState({ historyCategoryFilter: null })
+      useAppStore.setState({ historyCategoryFilter: undefined })
     }
   }, [historyCategoryFilter])
 
   useEffect(() => {
-    if (historyAccountFilter !== null && !navAppliedRef.current) {
+    if (historyAccountFilter !== undefined && !navAppliedRef.current) {
       navAppliedRef.current = true
       dispatch({ type: 'APPLY_ACCOUNT_NAV', payload: historyAccountFilter })
-      useAppStore.setState({ historyAccountFilter: null })
+      useAppStore.setState({ historyAccountFilter: undefined })
     }
   }, [historyAccountFilter])
 
@@ -292,7 +304,7 @@ export function HistoryPage() {
         }
         return true
       })
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         const dateA = new Date(a.date)
         const dateB = new Date(b.date)
         const dateOnlyA = new Date(dateA.getFullYear(), dateA.getMonth(), dateA.getDate()).getTime()
@@ -379,11 +391,11 @@ export function HistoryPage() {
     }
 
     const groups: Record<string, Transaction[]> = {}
-    displayedTransactions.forEach((tx) => {
+    for (const tx of displayedTransactions) {
       const group = getDateGroup(new Date(tx.date))
       if (!groups[group]) groups[group] = []
       groups[group].push(tx)
-    })
+    }
     return groups
   }, [displayedTransactions, t, language])
 
@@ -470,10 +482,10 @@ export function HistoryPage() {
   }
 
   const handleCloseEditModal = () => {
-    setEditingTransaction(null)
-    setEditModalType(null)
-    setEditTransactionMode(null)
-    setEditingLoan(null)
+    setEditingTransaction(undefined)
+    setEditModalType(undefined)
+    setEditTransactionMode(undefined)
+    setEditingLoan(undefined)
   }
 
   const handleSaveLoan = async (data: LoanFormData, isEdit: boolean, loanId?: number) => {
@@ -523,14 +535,18 @@ export function HistoryPage() {
 
   const getTransactionTitle = (t: Transaction): string => {
     switch (t.type) {
-      case 'income':
+      case 'income': {
         return getIncomeSourceName(t.incomeSourceId)
-      case 'expense':
+      }
+      case 'expense': {
         return getCategoryName(t.categoryId)
-      case 'transfer':
+      }
+      case 'transfer': {
         return `${getAccountName(t.accountId)} → ${getAccountName(t.toAccountId)}`
-      default:
+      }
+      default: {
         return typeConfig[t.type].label
+      }
     }
   }
 
@@ -594,26 +610,29 @@ export function HistoryPage() {
 
       {/* Filter Pills */}
       <div className="px-4 pb-3 flex gap-2 overflow-x-auto">
-        {(['all', 'income', 'expense', 'transfers', 'loans'] as const).map((filter) => (
-          <button
-            key={filter}
-            onClick={() => dispatch({ type: 'SET_TYPE_FILTER', payload: filter })}
-            className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
-              typeFilter === filter
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground'
-            )}
-          >
-            {filter === 'all'
-              ? t('all')
-              : filter === 'transfers'
-                ? t('transfers')
-                : filter === 'loans'
-                  ? t('loansFilter')
-                  : t(filter)}
-          </button>
-        ))}
+        {(['all', 'income', 'expense', 'transfers', 'loans'] as const).map((filter) => {
+          const filterLabels: Record<typeof filter, string> = {
+            all: t('all'),
+            income: t('income'),
+            expense: t('expense'),
+            transfers: t('transfers'),
+            loans: t('loansFilter'),
+          }
+          return (
+            <button
+              key={filter}
+              onClick={() => dispatch({ type: 'SET_TYPE_FILTER', payload: filter })}
+              className={cn(
+                'px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap',
+                typeFilter === filter
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-secondary-foreground'
+              )}
+            >
+              {filterLabels[filter]}
+            </button>
+          )
+        })}
       </div>
 
       {/* Additional Filters */}
@@ -630,21 +649,20 @@ export function HistoryPage() {
               <SelectTrigger className="h-9">
                 <Calendar className="h-4 w-4 mr-2" />
                 <span className="truncate">
-                  {dateFilter === 'today'
-                    ? t('today')
-                    : dateFilter === 'week'
-                      ? t('thisWeek')
-                      : dateFilter === 'month'
-                        ? t('thisMonth')
-                        : dateFilter === 'last3months'
-                          ? t('last3Months')
-                          : dateFilter === 'last6months'
-                            ? t('last6Months')
-                            : dateFilter === 'year'
-                              ? t('thisYear')
-                              : dateFilter === 'custom'
-                                ? t('customRange')
-                                : t('allTime')}
+                  {
+                    (
+                      {
+                        today: t('today'),
+                        week: t('thisWeek'),
+                        month: t('thisMonth'),
+                        last3months: t('last3Months'),
+                        last6months: t('last6Months'),
+                        year: t('thisYear'),
+                        custom: t('customRange'),
+                        all: t('allTime'),
+                      } satisfies Record<DateFilterType, string>
+                    )[dateFilter]
+                  }
                 </span>
               </SelectTrigger>
               <SelectContent>
@@ -669,7 +687,7 @@ export function HistoryPage() {
                 <span className="truncate">
                   {accountFilter === 'all'
                     ? t('allAccounts')
-                    : getAccountNameWithCurrency(parseInt(accountFilter))}
+                    : getAccountNameWithCurrency(Number.parseInt(accountFilter))}
                 </span>
               </SelectTrigger>
               <SelectContent>
@@ -839,7 +857,7 @@ export function HistoryPage() {
                               const toCurrency = toAccount?.currency || fromCurrency
 
                               const isMultiCurrency =
-                                toAmount != null && fromCurrency !== toCurrency
+                                toAmount != undefined && fromCurrency !== toCurrency
 
                               // For same currency, show single amount
                               if (!isMultiCurrency) {
@@ -904,11 +922,11 @@ export function HistoryPage() {
                                   transaction.type === 'income' ? 'text-success' : 'text-foreground'
                                 )}
                               >
-                                {transaction.mainCurrencyAmount != null
-                                  ? formatCurrency(transaction.mainCurrencyAmount, mainCurrency)
-                                  : formatCurrency(transaction.amount, transaction.currency)}
+                                {transaction.mainCurrencyAmount == undefined
+                                  ? formatCurrency(transaction.amount, transaction.currency)
+                                  : formatCurrency(transaction.mainCurrencyAmount, mainCurrency)}
                               </BlurredAmount>
-                              {transaction.mainCurrencyAmount != null &&
+                              {transaction.mainCurrencyAmount != undefined &&
                                 transaction.currency !== mainCurrency && (
                                   <p className="text-xs text-muted-foreground">
                                     <BlurredAmount className="tabular-nums">

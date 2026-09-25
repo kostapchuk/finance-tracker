@@ -19,7 +19,7 @@ const iconRegistry: Record<string, LucideIcon> = {
   Circle,
 }
 
-export function getIcon(name: string | undefined, fallback: LucideIcon = Circle): LucideIcon {
+export function getIcon(name?: string, fallback: LucideIcon = Circle): LucideIcon {
   if (!name) return fallback
   return iconRegistry[name] ?? fallback
 }

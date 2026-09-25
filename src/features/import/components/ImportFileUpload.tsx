@@ -8,8 +8,12 @@ import { useLanguage } from '@/hooks/useLanguage'
 
 interface ImportFileUploadProps {
   onFileSelect: (file: File) => void
-  error: string | null
-  setError: (error: string | null) => void
+  error: string | undefined
+  setError: (error: string | undefined) => void
+}
+
+function handleDragOver(e: React.DragEvent) {
+  e.preventDefault()
 }
 
 export function ImportFileUpload({ onFileSelect, error, setError }: ImportFileUploadProps) {
@@ -26,7 +30,7 @@ export function ImportFileUpload({ onFileSelect, error, setError }: ImportFileUp
       return
     }
 
-    setError(null)
+    setError(undefined)
     onFileSelect(file)
   }
 
@@ -41,12 +45,8 @@ export function ImportFileUpload({ onFileSelect, error, setError }: ImportFileUp
       return
     }
 
-    setError(null)
+    setError(undefined)
     onFileSelect(file)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
   }
 
   return (

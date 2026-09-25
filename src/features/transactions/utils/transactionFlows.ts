@@ -17,7 +17,7 @@ export function calculateFlows(transactions: Transaction[], loans: Loan[]): Tran
   let inflows = 0
   let outflows = 0
 
-  transactions.forEach((tx) => {
+  for (const tx of transactions) {
     const amount = tx.mainCurrencyAmount ?? tx.amount
 
     switch (tx.type) {
@@ -42,7 +42,7 @@ export function calculateFlows(transactions: Transaction[], loans: Loan[]): Tran
       }
       // transfers are not counted
     }
-  })
+  }
 
   return { inflows, outflows, net: inflows - outflows }
 }

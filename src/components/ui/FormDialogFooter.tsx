@@ -22,13 +22,17 @@ export function FormDialogFooter({
 }: FormDialogFooterProps) {
   const { t } = useLanguage()
 
+  let submitLabel = t('create')
+  if (isLoading) submitLabel = t('saving')
+  else if (isEditing) submitLabel = t('update')
+
   return (
     <DialogFooter>
       <Button type="button" variant="outline" onClick={onCancel}>
         {t('cancel')}
       </Button>
       <Button type="submit" disabled={isLoading || submitDisabled}>
-        {isLoading ? t('saving') : isEditing ? t('update') : t('create')}
+        {submitLabel}
       </Button>
     </DialogFooter>
   )

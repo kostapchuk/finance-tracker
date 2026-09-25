@@ -43,22 +43,7 @@ export default defineConfig([
       ],
       'import/no-duplicates': 'error',
       'unicorn/filename-case': 'off',
-      'unicorn/no-null': 'off',
-      'unicorn/no-useless-undefined': 'off',
       'unicorn/prevent-abbreviations': 'off',
-      'unicorn/no-array-reduce': 'off',
-      'unicorn/numeric-separators-style': 'off',
-      'unicorn/no-nested-ternary': 'off',
-      'unicorn/prefer-ternary': 'off',
-      'unicorn/no-negated-condition': 'off',
-      'unicorn/prefer-number-properties': 'off',
-      'unicorn/consistent-function-scoping': 'off',
-      'unicorn/switch-case-braces': 'off',
-      'unicorn/no-array-for-each': 'off',
-      'unicorn/no-array-callback-reference': 'off',
-      'unicorn/prefer-string-replace-all': 'off',
-      'unicorn/no-array-sort': 'off',
-      'unicorn/no-array-reverse': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       'react-refresh/only-export-components': [
@@ -86,6 +71,22 @@ export default defineConfig([
     files: ['**/components/ui/CategoryTile.tsx', '**/components/ui/AccountCard.tsx'],
     rules: {
       'react-hooks/static-components': 'off',
+    },
+  },
+  {
+    // Dexie's `.stores()` schema migrations require the literal `null` (not
+    // `undefined`) to mark a table for deletion between versions.
+    files: ['**/database/db.ts'],
+    rules: {
+      'unicorn/no-null': 'off',
+    },
+  },
+  {
+    // `.reverse()` here is Dexie's `Collection#reverse()` (flips query cursor
+    // direction), not `Array#reverse()` - there is no `Collection#toReversed()`.
+    files: ['**/database/repositories.ts'],
+    rules: {
+      'unicorn/no-array-reverse': 'off',
     },
   },
 ])

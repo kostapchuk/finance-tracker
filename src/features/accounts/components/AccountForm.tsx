@@ -21,7 +21,7 @@ import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
 
 interface AccountFormProps {
-  account?: Account | null
+  account?: Account
   open: boolean
   onClose: () => void
 }
@@ -72,25 +72,23 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
 
     setIsLoading(true)
     try {
-      if (account?.id) {
-        await accountRepo.update(account.id, {
-          name: name.trim(),
-          type,
-          currency,
-          balance: parseFloat(balance) || 0,
-          color,
-          hiddenFromDashboard,
-        })
-      } else {
-        await accountRepo.create({
-          name: name.trim(),
-          type,
-          currency,
-          balance: parseFloat(balance) || 0,
-          color,
-          hiddenFromDashboard,
-        })
-      }
+      await (account?.id
+        ? accountRepo.update(account.id, {
+            name: name.trim(),
+            type,
+            currency,
+            balance: Number.parseFloat(balance) || 0,
+            color,
+            hiddenFromDashboard,
+          })
+        : accountRepo.create({
+            name: name.trim(),
+            type,
+            currency,
+            balance: Number.parseFloat(balance) || 0,
+            color,
+            hiddenFromDashboard,
+          }))
       await refreshAccounts()
       onClose()
     } catch (error) {

@@ -7,10 +7,16 @@ import {
   FileText,
 } from 'lucide-react'
 
-import type { ParsedImportData } from '../types'
+import type { BudgetOkOperationType, ParsedImportData } from '../types'
 
 import { Button } from '@/components/ui/button'
 import { useLanguage } from '@/hooks/useLanguage'
+
+const operationTypeColor: Record<BudgetOkOperationType, string> = {
+  Income: 'text-success',
+  Expense: 'text-destructive',
+  transfer: 'text-primary',
+}
 
 interface ImportDataPreviewProps {
   data: ParsedImportData
@@ -36,10 +42,10 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
               {data.counts.total} {t('importOperations')}
             </p>
           </div>
-          {!hasErrors ? (
-            <CheckCircle2 className="h-5 w-5 text-success" />
-          ) : (
+          {hasErrors ? (
             <AlertCircle className="h-5 w-5 text-destructive" />
+          ) : (
+            <CheckCircle2 className="h-5 w-5 text-success" />
           )}
         </div>
 
@@ -116,17 +122,7 @@ export function ImportDataPreview({ data, fileName, onNext, onBack }: ImportData
             <div className="space-y-1 text-sm max-h-48 overflow-auto">
               {data.rows.slice(0, 5).map((row, i) => (
                 <div key={i} className="p-2 bg-secondary/30 rounded-lg font-mono text-xs">
-                  <span
-                    className={
-                      row.operationType === 'Income'
-                        ? 'text-success'
-                        : row.operationType === 'Expense'
-                          ? 'text-destructive'
-                          : 'text-primary'
-                    }
-                  >
-                    {row.operationType}
-                  </span>{' '}
+                  <span className={operationTypeColor[row.operationType]}>{row.operationType}</span>{' '}
                   | {row.date.toLocaleDateString()} | {row.account} → {row.category} | {row.amount}{' '}
                   {row.currency}
                 </div>

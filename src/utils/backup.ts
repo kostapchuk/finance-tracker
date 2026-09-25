@@ -52,8 +52,8 @@ export function buildBackupData(data: {
  * references whenever the original id sequence has gaps (e.g. after any
  * prior delete).
  */
-export function parseBackupData(raw: unknown): ParsedBackupData {
-  const data = raw as Record<string, unknown> | null
+export function parseBackupData(raw?: unknown): ParsedBackupData {
+  const data = raw as Record<string, unknown> | undefined
   if (!data || typeof data !== 'object' || !data.version || !data.accounts || !data.transactions) {
     throw new Error('Invalid backup file format')
   }

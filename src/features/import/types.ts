@@ -9,8 +9,8 @@ export interface BudgetOkRow {
   category: string // For transfers, this is the destination account name
   amount: number
   currency: string
-  amountDop: number | null
-  currencyDop: string | null
+  amountDop: number | undefined
+  currencyDop: string | undefined
   comment: string
   lineNumber: number
 }
@@ -45,13 +45,13 @@ export type ImportWizardStep = 1 | 2 | 3 | 4 | 5 | 6
 
 export interface ImportWizardState {
   step: ImportWizardStep
-  file: File | null
-  parsedData: ParsedImportData | null
+  file: File | undefined
+  parsedData: ParsedImportData | undefined
   accountMapping: Map<string, number> // БюджетОк account name → app account id
   categoryMapping: Map<string, number> // БюджетОк expense category → app category id
   incomeSourceMapping: Map<string, number> // БюджетОк income category → app income source id
   isImporting: boolean
-  importResult: ImportResult | null
+  importResult: ImportResult | undefined
 }
 
 export interface ImportResult {

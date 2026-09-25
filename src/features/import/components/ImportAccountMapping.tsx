@@ -17,7 +17,7 @@ interface ImportAccountMappingProps {
   uniqueAccounts: SourceAccountInfo[]
   accounts: Account[]
   mapping: Map<string, number>
-  onMappingChange: (budgetOkName: string, accountId: number | null) => void
+  onMappingChange: (budgetOkName: string, accountId: number | undefined) => void
   onNext: () => void
   onBack: () => void
 }
@@ -32,7 +32,7 @@ export function ImportAccountMapping({
 }: ImportAccountMappingProps) {
   const { t } = useLanguage()
 
-  const mappedCount = [...mapping.values()].filter((v) => v !== null).length
+  const mappedCount = mapping.size
   const allMapped = mappedCount === uniqueAccounts.length
   const canProceed = allMapped
 
@@ -61,7 +61,7 @@ export function ImportAccountMapping({
         <div className="space-y-3">
           {uniqueAccounts.map((sourceAccount) => {
             const mappedId = mapping.get(sourceAccount.name)
-            const isMapped = mappedId !== undefined && mappedId !== null
+            const isMapped = mappedId !== undefined
 
             return (
               <div
@@ -88,10 +88,13 @@ export function ImportAccountMapping({
                 <Select
                   value={mappedId?.toString() ?? ''}
                   onValueChange={(value) =>
-                    onMappingChange(sourceAccount.name, value ? parseInt(value, 10) : null)
+                    onMappingChange(
+                      sourceAccount.name,
+                      value ? Number.parseInt(value, 10) : undefined
+                    )
                   }
                 >
-                  <SelectTrigger className={!isMapped ? 'border-destructive/50' : ''}>
+                  <SelectTrigger className={isMapped ? '' : 'border-destructive/50'}>
                     <SelectValue placeholder={t('selectAccount')}>
                       {mappedId ? accounts.find((a) => a.id === mappedId)?.name : undefined}
                     </SelectValue>
