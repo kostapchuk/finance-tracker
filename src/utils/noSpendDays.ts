@@ -1,7 +1,7 @@
-import type { Transaction } from '@/database/types'
-import { getEndOfMonth, getStartOfMonth } from '@/utils/date'
+import type { AppVisit, Transaction } from '@/database/types'
+import { formatDateForInput, getEndOfMonth, getStartOfMonth } from '@/utils/date'
 
-export type DayStatus = 'no-spend' | 'spend' | 'future'
+export type DayStatus = 'no-spend' | 'spend' | 'no-data' | 'future'
 
 export interface DayCell {
   date: Date
@@ -46,13 +46,6 @@ export interface MonthSpendHighlights {
   maxCountDay: DayCount | undefined
 }
 
-export function toDateKey(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 /** A day only breaks a no-spend streak if it has a real expense; loans/transfers/income don't count. */
 function isRealExpense(transaction: Transaction): boolean {
   return transaction.type === 'expense'
@@ -63,14 +56,83 @@ export function buildSpendDayKeys(transactions: Transaction[]): Set<string> {
   const keys = new Set<string>()
   for (const transaction of transactions) {
     if (!isRealExpense(transaction)) continue
-    keys.add(toDateKey(new Date(transaction.date)))
+    keys.add(formatDateForInput(new Date(transaction.date)))
   }
   return keys
 }
 
-function dayStatus(date: Date, spendDayKeys: Set<string>, today: Date): DayStatus {
+/**
+ * Days where we have evidence the app was actually used: either a recorded visit, or any
+ * transaction (of any type) dated that day. Used to tell "opened the app, spent nothing" apart
+ * from "never opened the app that day" once visit tracking exists (see `earliestTrackingDayKey`).
+ */
+function buildActivityDayKeys(transactions: Transaction[], appVisits: AppVisit[]): Set<string> {
+  const keys = new Set<string>()
+  for (const transaction of transactions) {
+    keys.add(formatDateForInput(new Date(transaction.date)))
+  }
+  for (const visit of appVisits) {
+    keys.add(visit.date)
+  }
+  return keys
+}
+
+/** The earliest day visit tracking has data for; days before it are grandfathered (see `dayStatus`). */
+function earliestTrackingDayKey(appVisits: AppVisit[]): string | undefined {
+  if (appVisits.length === 0) return undefined
+  let min = appVisits[0].date
+  for (const visit of appVisits) {
+    if (visit.date < min) min = visit.date
+  }
+  return min
+}
+
+/** Earliest day we have any record for at all (a transaction or a visit), local calendar day. */
+function earliestKnownDay(transactions: Transaction[], appVisits: AppVisit[]): Date | undefined {
+  const times = [
+    ...transactions.map((t) => new Date(t.date).getTime()),
+    ...appVisits.map((v) => new Date(v.date).getTime()),
+  ]
+  if (times.length === 0) return undefined
+  const earliest = new Date(Math.min(...times))
+  return new Date(earliest.getFullYear(), earliest.getMonth(), earliest.getDate())
+}
+
+interface DayEvidence {
+  spendDayKeys: Set<string>
+  activityDayKeys: Set<string>
+  trackingStartKey: string | undefined
+}
+
+function buildDayEvidence(transactions: Transaction[], appVisits: AppVisit[]): DayEvidence {
+  return {
+    spendDayKeys: buildSpendDayKeys(transactions),
+    activityDayKeys: buildActivityDayKeys(transactions, appVisits),
+    trackingStartKey: earliestTrackingDayKey(appVisits),
+  }
+}
+
+/**
+ * A day is:
+ * - 'future' if it hasn't happened yet
+ * - 'spend' if it had a real expense
+ * - 'no-data' if visit tracking covers it (on/after `trackingStartKey`) but there's no evidence
+ *   the app was even opened that day - it shouldn't count as a deliberate no-spend day
+ * - 'no-spend' otherwise (including all days before tracking existed, grandfathered in)
+ */
+function dayStatus(date: Date, evidence: DayEvidence, today: Date): DayStatus {
   if (date > today) return 'future'
-  return spendDayKeys.has(toDateKey(date)) ? 'spend' : 'no-spend'
+
+  const key = formatDateForInput(date)
+  if (evidence.spendDayKeys.has(key)) return 'spend'
+  if (
+    evidence.trackingStartKey !== undefined &&
+    key >= evidence.trackingStartKey &&
+    !evidence.activityDayKeys.has(key)
+  ) {
+    return 'no-data'
+  }
+  return 'no-spend'
 }
 
 function longestNoSpendRun(days: DayCell[]): number {
@@ -90,10 +152,11 @@ function longestNoSpendRun(days: DayCell[]): number {
 /** Per-day breakdown and stats for a single calendar month (days after `today` are 'future'). */
 export function computeMonthNoSpendStats(
   transactions: Transaction[],
+  appVisits: AppVisit[],
   month: Date,
   today: Date = new Date()
 ): MonthNoSpendStats {
-  const spendDayKeys = buildSpendDayKeys(transactions)
+  const evidence = buildDayEvidence(transactions, appVisits)
   const start = getStartOfMonth(month)
   const end = getEndOfMonth(month)
   const daysInMonth = end.getDate()
@@ -101,7 +164,11 @@ export function computeMonthNoSpendStats(
   const days: DayCell[] = []
   for (let dayOfMonth = 1; dayOfMonth <= daysInMonth; dayOfMonth++) {
     const date = new Date(start.getFullYear(), start.getMonth(), dayOfMonth)
-    days.push({ date, dateKey: toDateKey(date), status: dayStatus(date, spendDayKeys, today) })
+    days.push({
+      date,
+      dateKey: formatDateForInput(date),
+      status: dayStatus(date, evidence, today),
+    })
   }
 
   const noSpendCount = days.filter((d) => d.status === 'no-spend').length
@@ -110,48 +177,43 @@ export function computeMonthNoSpendStats(
   return { days, noSpendCount, evaluatedCount, bestStreakInMonth: longestNoSpendRun(days) }
 }
 
-/** Consecutive no-spend days ending today (crosses month boundaries); 0 if today itself had spending. */
+/** Consecutive no-spend days ending today (crosses month boundaries); 0 if today broke the streak. */
 export function computeCurrentStreak(
   transactions: Transaction[],
+  appVisits: AppVisit[],
   today: Date = new Date()
 ): number {
-  const spendDayKeys = buildSpendDayKeys(transactions)
-  if (transactions.length === 0) return 0
-
-  let streak = 0
-  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  const earliest = earliestTransactionDay(transactions)
+  const earliest = earliestKnownDay(transactions, appVisits)
   if (!earliest) return 0
 
+  const evidence = buildDayEvidence(transactions, appVisits)
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+
+  let streak = 0
+  const cursor = new Date(todayStart)
   while (cursor >= earliest) {
-    if (spendDayKeys.has(toDateKey(cursor))) break
+    if (dayStatus(cursor, evidence, todayStart) !== 'no-spend') break
     streak += 1
     cursor.setDate(cursor.getDate() - 1)
   }
   return streak
 }
 
-function earliestTransactionDay(transactions: Transaction[]): Date | undefined {
-  if (transactions.length === 0) return undefined
-  const earliestTime = Math.min(...transactions.map((t) => new Date(t.date).getTime()))
-  const earliest = new Date(earliestTime)
-  return new Date(earliest.getFullYear(), earliest.getMonth(), earliest.getDate())
-}
-
 /**
- * All-time records computed over the full history of transactions:
+ * All-time records computed over the full history of transactions and app visits:
  * - bestStreak: the longest unbroken run of no-spend days ever (may span months)
  * - bestMonth: the calendar month with the most no-spend days
- * History starts at the first transaction ever recorded; days before that aren't evaluated.
+ * History starts at the first transaction or visit ever recorded; days before that aren't evaluated.
  */
 export function computeAllTimeNoSpendRecords(
   transactions: Transaction[],
+  appVisits: AppVisit[],
   today: Date = new Date()
 ): AllTimeNoSpendRecords {
-  const earliest = earliestTransactionDay(transactions)
+  const earliest = earliestKnownDay(transactions, appVisits)
   if (!earliest) return { bestStreak: undefined, bestMonth: undefined }
 
-  const spendDayKeys = buildSpendDayKeys(transactions)
+  const evidence = buildDayEvidence(transactions, appVisits)
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
 
   let bestStreakLength = 0
@@ -162,7 +224,7 @@ export function computeAllTimeNoSpendRecords(
 
   const cursor = new Date(earliest)
   while (cursor <= todayStart) {
-    const isNoSpend = !spendDayKeys.has(toDateKey(cursor))
+    const isNoSpend = dayStatus(cursor, evidence, todayStart) === 'no-spend'
 
     if (isNoSpend) {
       currentStreakLength += 1
@@ -170,11 +232,7 @@ export function computeAllTimeNoSpendRecords(
         bestStreakLength = currentStreakLength
         bestStreakEnd = new Date(cursor)
       }
-    } else {
-      currentStreakLength = 0
-    }
 
-    if (isNoSpend) {
       const monthKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
       const existing = monthCounts.get(monthKey)
       if (existing) {
@@ -185,6 +243,8 @@ export function computeAllTimeNoSpendRecords(
           monthStart: new Date(cursor.getFullYear(), cursor.getMonth(), 1),
         })
       }
+    } else {
+      currentStreakLength = 0
     }
 
     cursor.setDate(cursor.getDate() + 1)
@@ -220,7 +280,7 @@ export function computeMonthSpendHighlights(
     const date = new Date(transaction.date)
     if (date < start || date > end) continue
 
-    const key = toDateKey(date)
+    const key = formatDateForInput(date)
     dateByKey.set(key, new Date(date.getFullYear(), date.getMonth(), date.getDate()))
     amountByDay.set(
       key,

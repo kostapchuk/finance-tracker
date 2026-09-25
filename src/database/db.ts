@@ -8,6 +8,7 @@ import type {
   Loan,
   AppSettings,
   CustomCurrency,
+  AppVisit,
 } from './types'
 
 const db = new Dexie('FinanceTrackerDB') as Dexie & {
@@ -18,6 +19,7 @@ const db = new Dexie('FinanceTrackerDB') as Dexie & {
   loans: EntityTable<Loan, 'id'>
   settings: EntityTable<AppSettings, 'id'>
   customCurrencies: EntityTable<CustomCurrency, 'id'>
+  appVisits: EntityTable<AppVisit, 'id'>
 }
 
 db.version(1).stores({
@@ -62,6 +64,17 @@ db.version(3)
     }
   })
 
+db.version(4).stores({
+  accounts: '++id, name, type, currency, createdAt',
+  incomeSources: '++id, name, createdAt',
+  categories: '++id, name, createdAt',
+  transactions: '++id, type, date, accountId, categoryId, incomeSourceId, loanId, createdAt',
+  loans: '++id, type, status, personName, accountId, createdAt',
+  settings: '++id',
+  customCurrencies: '++id, code, createdAt',
+  appVisits: '++id, &date',
+})
+
 export { db }
 
 /** Bulk-inserts records into a table, skipping the call when there's nothing to insert. */
@@ -80,4 +93,5 @@ export type {
   Loan,
   AppSettings,
   CustomCurrency,
+  AppVisit,
 } from './types'

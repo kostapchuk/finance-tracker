@@ -115,3 +115,10 @@ export interface CustomCurrency {
   createdAt: Date
   updatedAt: Date
 }
+
+/** One row per calendar day the app was opened, used to tell "no spending" apart from "app wasn't opened". */
+export interface AppVisit {
+  id?: number
+  date: string // YYYY-MM-DD, unique
+  createdAt: Date
+}

@@ -88,6 +88,7 @@ export function SettingsPage() {
     transactions,
     loans,
     customCurrencies,
+    appVisits,
     mainCurrency,
     setMainCurrency,
     blurFinancialFigures,
@@ -170,6 +171,7 @@ export function SettingsPage() {
         transactions,
         loans,
         customCurrencies,
+        appVisits,
       })
       const blob = new Blob([JSON.stringify(data, undefined, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -208,6 +210,7 @@ export function SettingsPage() {
           db.transactions,
           db.loans,
           db.customCurrencies,
+          db.appVisits,
         ],
         async () => {
           await db.accounts.clear()
@@ -216,6 +219,7 @@ export function SettingsPage() {
           await db.transactions.clear()
           await db.loans.clear()
           await db.customCurrencies.clear()
+          await db.appVisits.clear()
 
           // IDs from the backup are preserved (not regenerated) so that
           // foreign keys like transaction.accountId / categoryId /
@@ -228,6 +232,7 @@ export function SettingsPage() {
           await restoreTable(db.transactions, data.transactions)
           await restoreTable(db.loans, data.loans)
           await restoreTable(db.customCurrencies, data.customCurrencies)
+          await restoreTable(db.appVisits, data.appVisits)
         }
       )
 

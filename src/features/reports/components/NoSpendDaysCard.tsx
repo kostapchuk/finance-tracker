@@ -2,18 +2,18 @@ import { Flame } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
-import type { Transaction } from '@/database/types'
+import type { AppVisit, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
+import { formatDateForInput } from '@/utils/date'
 import { formatDaysCount, formatOperationsCount } from '@/utils/i18n'
 import {
   computeAllTimeNoSpendRecords,
   computeCurrentStreak,
   computeMonthNoSpendStats,
   computeMonthSpendHighlights,
-  toDateKey,
   type DayCell,
 } from '@/utils/noSpendDays'
 
@@ -21,7 +21,10 @@ const STREAK_ICON_THRESHOLD = 3
 
 interface NoSpendDaysCardProps {
   transactions: Transaction[]
+  appVisits: AppVisit[]
   selectedMonth: Date
+  /** Defaults to the real current date; overridable in tests. */
+  today?: Date
 }
 
 function DayGridCell({ day, isToday }: { day: DayCell; isToday: boolean }) {
@@ -31,6 +34,8 @@ function DayGridCell({ day, isToday }: { day: DayCell; isToday: boolean }) {
         'aspect-square rounded-md flex items-center justify-center text-[11px] font-medium tabular-nums',
         day.status === 'no-spend' && 'bg-success/15 text-success',
         day.status === 'spend' && 'bg-destructive/15 text-destructive',
+        day.status === 'no-data' &&
+          'bg-secondary/50 text-muted-foreground/60 border border-dashed border-muted-foreground/30',
         day.status === 'future' && 'bg-secondary/30 text-muted-foreground/40',
         isToday && 'ring-2 ring-primary'
       )}
@@ -40,25 +45,35 @@ function DayGridCell({ day, isToday }: { day: DayCell; isToday: boolean }) {
   )
 }
 
-export function NoSpendDaysCard({ transactions, selectedMonth }: NoSpendDaysCardProps) {
+export function NoSpendDaysCard({
+  transactions,
+  appVisits,
+  selectedMonth,
+  today: todayProp,
+}: NoSpendDaysCardProps) {
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t, language } = useLanguage()
 
-  const today = useMemo(() => new Date(), [])
+  const today = useMemo(() => todayProp ?? new Date(), [todayProp])
 
   const monthStats = useMemo(
-    () => computeMonthNoSpendStats(transactions, selectedMonth, today),
-    [transactions, selectedMonth, today]
+    () => computeMonthNoSpendStats(transactions, appVisits, selectedMonth, today),
+    [transactions, appVisits, selectedMonth, today]
   )
 
   const currentStreak = useMemo(
-    () => computeCurrentStreak(transactions, today),
-    [transactions, today]
+    () => computeCurrentStreak(transactions, appVisits, today),
+    [transactions, appVisits, today]
   )
 
   const allTimeRecords = useMemo(
-    () => computeAllTimeNoSpendRecords(transactions, today),
-    [transactions, today]
+    () => computeAllTimeNoSpendRecords(transactions, appVisits, today),
+    [transactions, appVisits, today]
+  )
+
+  const hasNoDataDays = useMemo(
+    () => monthStats.days.some((d) => d.status === 'no-data'),
+    [monthStats.days]
   )
 
   const highlights = useMemo(
@@ -145,9 +160,17 @@ export function NoSpendDaysCard({ transactions, selectedMonth }: NoSpendDaysCard
             <div key={`offset-${i}`} />
           ))}
           {monthStats.days.map((day) => (
-            <DayGridCell key={day.dateKey} day={day} isToday={day.dateKey === toDateKey(today)} />
+            <DayGridCell
+              key={day.dateKey}
+              day={day}
+              isToday={day.dateKey === formatDateForInput(today)}
+            />
           ))}
         </div>
+
+        {hasNoDataDays && (
+          <p className="text-xs text-muted-foreground mt-2">{t('noDataDaysHint')}</p>
+        )}
 
         {(highlights.maxAmountDay || highlights.maxCountDay) && (
           <div className="mt-4 pt-3 border-t border-border/50 space-y-2">

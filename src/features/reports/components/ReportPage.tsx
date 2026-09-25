@@ -13,6 +13,7 @@ import { getStartOfMonth, getEndOfMonth, addMonths } from '@/utils/date'
 export function ReportPage() {
   const accounts = useAppStore((state) => state.accounts)
   const transactions = useAppStore((state) => state.transactions)
+  const appVisits = useAppStore((state) => state.appVisits)
   const categories = useAppStore((state) => state.categories)
   const loans = useAppStore((state) => state.loans)
   const selectedMonth = useAppStore((state) => state.selectedMonth)
@@ -222,7 +223,11 @@ export function ReportPage() {
 
       {/* No-Spend Days */}
       <div className="px-4 py-4">
-        <NoSpendDaysCard transactions={transactions} selectedMonth={selectedMonth} />
+        <NoSpendDaysCard
+          transactions={transactions}
+          appVisits={appVisits}
+          selectedMonth={selectedMonth}
+        />
       </div>
 
       {/* Current Loans Status - separate from monthly data */}

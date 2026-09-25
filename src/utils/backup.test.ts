@@ -9,6 +9,7 @@ import type {
   Transaction,
   Loan,
   CustomCurrency,
+  AppVisit,
 } from '@/database/types'
 
 // Simulates what an exported backup looks like after being written to a
@@ -82,6 +83,12 @@ const customCurrency: CustomCurrency = {
   updatedAt: new Date('2026-01-01'),
 }
 
+const appVisit: AppVisit = {
+  id: 1,
+  date: '2026-01-01',
+  createdAt: new Date('2026-01-01'),
+}
+
 const fullBackup = {
   accounts: [account],
   incomeSources: [incomeSource],
@@ -89,6 +96,7 @@ const fullBackup = {
   transactions: [transaction],
   loans: [loan],
   customCurrencies: [customCurrency],
+  appVisits: [appVisit],
 }
 
 describe('backup utilities', () => {
@@ -99,6 +107,7 @@ describe('backup utilities', () => {
       expect(typeof data.exportedAt).toBe('string')
       expect(data.accounts).toEqual([account])
       expect(data.customCurrencies).toEqual([customCurrency])
+      expect(data.appVisits).toEqual([appVisit])
     })
   })
 
@@ -124,6 +133,7 @@ describe('backup utilities', () => {
       expect(parsed.transactions[0].incomeSourceId).toBe(incomeSource.id)
       expect(parsed.loans[0].accountId).toBe(account.id)
       expect(parsed.customCurrencies[0].id).toBe(customCurrency.id)
+      expect(parsed.appVisits[0].date).toBe(appVisit.date)
     })
 
     it('converts date strings back into Date instances', () => {
@@ -136,7 +146,7 @@ describe('backup utilities', () => {
       expect(parsed.transactions[0].date.getTime()).toBe(transaction.date.getTime())
     })
 
-    it('handles an older backup file with no customCurrencies field', () => {
+    it('handles an older backup file with no customCurrencies or appVisits field', () => {
       const legacy = {
         version: 1,
         exportedAt: new Date().toISOString(),
@@ -148,6 +158,7 @@ describe('backup utilities', () => {
       }
       const parsed = parseBackupData(throughJsonFile(legacy))
       expect(parsed.customCurrencies).toEqual([])
+      expect(parsed.appVisits).toEqual([])
     })
 
     it('handles a loan with no dueDate without throwing', () => {

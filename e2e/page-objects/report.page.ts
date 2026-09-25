@@ -150,4 +150,8 @@ export class ReportPage extends BasePage {
   getAllTimeRecordsCard(): Locator {
     return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /all-time.*record|рекорды.*время/i });
   }
+
+  getNoDataDaysHint(): Locator {
+    return this.page.locator('text=/wasn.?t opened|не открывалось/i');
+  }
 }

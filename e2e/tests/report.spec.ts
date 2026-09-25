@@ -375,4 +375,20 @@ test.describe('Reports Page', () => {
       /not enough data|недостаточно данных/i
     );
   });
+
+  test('marks a day as "no data" (not no-spend) when the app was not opened that day', async ({
+    reportPage,
+    dbHelper,
+  }) => {
+    // A visit 3 days ago starts tracking, but yesterday and 2 days ago have
+    // neither a visit nor a transaction - a real gap the app can't vouch for.
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    await dbHelper.seedAppVisit(threeDaysAgo);
+    // refreshStoreData reloads the page, which records today's own visit automatically.
+    await dbHelper.refreshStoreData();
+
+    await reportPage.navigateTo('report');
+
+    await expect(reportPage.getNoDataDaysHint()).toBeVisible();
+  });
 });
