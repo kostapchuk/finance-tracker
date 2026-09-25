@@ -32,6 +32,7 @@ import {
   EyeOff,
   FileSpreadsheet,
   RefreshCw,
+  Code,
 } from 'lucide-react'
 import { useState, useRef, useCallback } from 'react'
 
@@ -79,6 +80,9 @@ import { formatCurrency } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
 
 type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | undefined
+
+// Linked from the footer to satisfy AGPL-3.0 §13 (source offer to network users).
+const SOURCE_CODE_URL = 'https://github.com/kostapchuk/finance-tracker'
 
 export function SettingsPage() {
   const {
@@ -643,6 +647,15 @@ export function SettingsPage() {
       <div className="px-4 py-6 text-center text-sm text-muted-foreground">
         <p>Finance Tracker v{version}</p>
         <p>{t('dataStoredLocally')}</p>
+        <a
+          href={SOURCE_CODE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 mt-2 underline underline-offset-2"
+        >
+          <Code className="h-4 w-4" />
+          {t('sourceCode')} · AGPL-3.0
+        </a>
       </div>
 
       {/* Delete Confirmation Modal */}
