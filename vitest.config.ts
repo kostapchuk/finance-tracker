@@ -19,7 +19,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      // Measure every source file, not only the ones some test happens to import,
+      // so untested modules count against the total instead of being invisible.
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
+        'src/main.tsx',
         'node_modules/',
         'src/test/',
         'e2e/',
@@ -28,10 +32,10 @@ export default defineConfig({
         '**/index.ts',
       ],
       thresholds: {
-        lines: 20,
-        functions: 20,
-        branches: 20,
-        statements: 20,
+        lines: 18,
+        functions: 17,
+        branches: 16,
+        statements: 19,
       },
     },
   },
