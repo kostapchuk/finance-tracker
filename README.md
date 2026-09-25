@@ -10,6 +10,7 @@
 [![Type coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Ftype-coverage.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/kostapchuk/finance-tracker/badge)](https://scorecard.dev/viewer/?uri=github.com/kostapchuk/finance-tracker)
 [![Vulnerabilities](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Fvulnerabilities.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
+[![Known Vulnerabilities (Snyk)](https://snyk.io/test/github/kostapchuk/finance-tracker/badge.svg)](https://snyk.io/test/github/kostapchuk/finance-tracker)
 
 <!-- Lighthouse (mobile) & bundle size -->
 [![Lighthouse performance](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fkostapchuk%2Ffinance-tracker%2Fbadges%2Flighthouse-performance.json)](https://github.com/kostapchuk/finance-tracker/actions/workflows/badges.yml)
@@ -38,6 +39,7 @@
 [![Last commit](https://img.shields.io/github/last-commit/kostapchuk/finance-tracker)](https://github.com/kostapchuk/finance-tracker/commits/main)
 [![Open issues](https://img.shields.io/github/issues/kostapchuk/finance-tracker)](https://github.com/kostapchuk/finance-tracker/issues)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](https://github.com/kostapchuk/finance-tracker/pulls)
+[![License: AGPL-3.0](https://img.shields.io/github/license/kostapchuk/finance-tracker)](LICENSE)
 
 A mobile-first Progressive Web App for personal money management with drag-and-drop transaction entry.
 
@@ -202,4 +204,4 @@ Once installed, the app works offline and launches like a native application.
 
 ## License
 
-MIT
+[GNU Affero General Public License v3.0](LICENSE) or later. If you run a modified version of this app as a network service, you must make its complete source code available to its users.
