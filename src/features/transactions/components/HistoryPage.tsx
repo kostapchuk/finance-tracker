@@ -335,8 +335,8 @@ export function HistoryPage() {
 
   // Period summary for header
   const periodSummary = useMemo(
-    () => calculateFlows(filteredTransactions, loans),
-    [filteredTransactions, loans]
+    () => calculateFlows(filteredTransactions, loans, mainCurrency),
+    [filteredTransactions, loans, mainCurrency]
   )
 
   // Paginated transactions for display
@@ -799,7 +799,11 @@ export function HistoryPage() {
           </div>
         ) : (
           Object.entries(groupedTransactions).map(([group, txs]) => {
-            const { inflows: groupInflows, outflows: groupOutflows } = calculateFlows(txs, loans)
+            const { inflows: groupInflows, outflows: groupOutflows } = calculateFlows(
+              txs,
+              loans,
+              mainCurrency
+            )
 
             return (
               <div key={group} className="mb-6">
