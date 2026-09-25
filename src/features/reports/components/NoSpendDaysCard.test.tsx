@@ -9,11 +9,6 @@ vi.mock('@/hooks/useLanguage', () => ({
   useLanguage: () => ({ language: 'ru', setLanguage: () => {}, t: (key: string) => key }),
 }))
 
-vi.mock('@/store/useAppStore', () => ({
-  useAppStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({ mainCurrency: 'USD' }),
-}))
-
 let nextId = 1
 
 function makeTransaction(overrides: Partial<Transaction>): Transaction {
@@ -38,57 +33,43 @@ function makeVisit(date: Date): AppVisit {
 
 describe('NoSpendDaysCard', () => {
   it('shows the no-spend day count for the selected month', () => {
-    const transactions = [
-      makeTransaction({ date: new Date(2026, 2, 5) }),
-      makeTransaction({ date: new Date(2026, 2, 5) }),
-      makeTransaction({ type: 'loan_payment', amount: 500, date: new Date(2026, 2, 6) }),
-    ]
+    const today = new Date(2026, 2, 31)
+    // A visit every day establishes evidence for the whole month.
+    const appVisits = Array.from({ length: 31 }, (_, i) => makeVisit(new Date(2026, 2, i + 1)))
+    const transactions = [makeTransaction({ date: new Date(2026, 2, 5) })]
 
     render(
       <NoSpendDaysCard
         transactions={transactions}
-        appVisits={[]}
+        appVisits={appVisits}
         selectedMonth={new Date(2026, 2, 15)}
+        today={today}
       />
     )
 
     // Full March has 31 days, only Mar 5 is a real-expense day -> 30 no-spend days.
-    expect(screen.getByText('30 / 31')).toBeInTheDocument()
+    expect(screen.getByText('30 noSpendDaysInMonth')).toBeInTheDocument()
   })
 
-  it('surfaces the biggest spending day and the busiest day for the month', () => {
-    const transactions = [
-      makeTransaction({ amount: 500, date: new Date(2026, 2, 12) }),
-      makeTransaction({ amount: 5, date: new Date(2026, 2, 5) }),
-      makeTransaction({ amount: 5, date: new Date(2026, 2, 5) }),
-      makeTransaction({ amount: 5, date: new Date(2026, 2, 5) }),
-    ]
+  it('does not credit a day as no-spend when there is no visit or transaction evidence for it', () => {
+    const today = new Date(2026, 2, 31)
 
     render(
       <NoSpendDaysCard
-        transactions={transactions}
+        transactions={[]}
         appVisits={[]}
         selectedMonth={new Date(2026, 2, 15)}
+        today={today}
       />
     )
 
-    expect(screen.getByText('biggestSpendingDay')).toBeInTheDocument()
-    expect(screen.getByText('mostTransactionsDay')).toBeInTheDocument()
+    // No visits and no transactions anywhere -> nothing can be credited as no-spend.
+    expect(screen.getByText('0 noSpendDaysInMonth')).toBeInTheDocument()
   })
 
-  it('does not show spending highlights when the month has no expenses', () => {
-    render(
-      <NoSpendDaysCard transactions={[]} appVisits={[]} selectedMonth={new Date(2026, 2, 15)} />
-    )
-
-    expect(screen.queryByText('biggestSpendingDay')).not.toBeInTheDocument()
-    expect(screen.queryByText('mostTransactionsDay')).not.toBeInTheDocument()
-  })
-
-  it('shows the no-data hint when a tracked day has no visit or transaction evidence', () => {
+  it('shows the no-data hint when a day has no visit or transaction evidence', () => {
     const today = new Date(2026, 2, 20)
-    // Tracking starts Mar 1 via a visit; Mar 10 is a gap with no visit/transaction.
-    const appVisits = [makeVisit(new Date(2026, 2, 1)), makeVisit(today)]
+    const appVisits = [makeVisit(new Date(2026, 2, 10)), makeVisit(today)]
 
     render(
       <NoSpendDaysCard

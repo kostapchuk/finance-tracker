@@ -268,7 +268,19 @@ test.describe('Reports Page', () => {
     await expect(reportPage.getTotalBalanceAmount()).toContainText('3,500');
   });
 
-  test('should show the current streak as 0 when today has a real expense', async ({
+  test('shows a no-spend count of 1 right after setup, since only today has been visited', async ({
+    reportPage,
+  }) => {
+    // setupCleanState leaves exactly one recorded visit (today, via the app's own
+    // startup flow) and no transactions - every earlier day in the month has no
+    // evidence at all, so only today counts as no-spend.
+    await reportPage.navigateTo('report');
+
+    await expect(reportPage.getNoSpendDaysCard()).toBeVisible();
+    await expect(reportPage.getNoSpendDaysCountText()).toHaveText(/^1\s/);
+  });
+
+  test('excludes today from the no-spend count once it has a real expense', async ({
     reportPage,
     dbHelper,
   }) => {
@@ -288,15 +300,10 @@ test.describe('Reports Page', () => {
 
     await reportPage.navigateTo('report');
 
-    await expect(reportPage.getNoSpendDaysCard()).toBeVisible();
-    await expect(reportPage.getNoSpendDaysProgressText()).toHaveText(/\d+ \/ \d+/);
-    await expect(reportPage.getCurrentStreakValue()).toContainText('0');
+    await expect(reportPage.getNoSpendDaysCountText()).toHaveText(/^0\s/);
   });
 
-  test('does not break the streak on loan transactions, only on real expenses', async ({
-    reportPage,
-    dbHelper,
-  }) => {
+  test('does not count loan transactions as spending', async ({ reportPage, dbHelper }) => {
     const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
 
     // A loan given today must not count as a "spend" day.
@@ -312,68 +319,8 @@ test.describe('Reports Page', () => {
 
     await reportPage.navigateTo('report');
 
-    // No real expense today -> today is still no-spend, so current streak is at least 1.
-    const streakText = await reportPage.getCurrentStreakValue().textContent();
-    expect(Number(streakText?.match(/\d+/)?.[0])).toBeGreaterThan(0);
-  });
-
-  test('shows the biggest spending day and busiest day for the month', async ({
-    reportPage,
-    dbHelper,
-  }) => {
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    const catId = await dbHelper.seedCategory(testCategories.food());
-
-    await dbHelper.seedTransaction({
-      type: 'expense',
-      amount: 300,
-      currency: 'USD',
-      accountId,
-      categoryId: catId,
-      date: new Date(),
-    });
-    await dbHelper.seedTransaction({
-      type: 'expense',
-      amount: 10,
-      currency: 'USD',
-      accountId,
-      categoryId: catId,
-      date: new Date(),
-    });
-    await dbHelper.refreshStoreData();
-
-    await reportPage.navigateTo('report');
-
-    await expect(reportPage.getBiggestSpendingDayLine()).toBeVisible();
-    await expect(reportPage.getBiggestSpendingDayLine()).toContainText('310');
-    await expect(reportPage.getMostTransactionsDayLine()).toBeVisible();
-  });
-
-  test('shows all-time records once there is transaction history', async ({
-    reportPage,
-    dbHelper,
-  }) => {
-    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
-    const catId = await dbHelper.seedCategory(testCategories.food());
-
-    // Spend yesterday so history starts there, but leave today expense-free -
-    // that gives at least one recorded no-spend day (today) to form a record.
-    await dbHelper.seedTransaction({
-      type: 'expense',
-      amount: 20,
-      currency: 'USD',
-      accountId,
-      categoryId: catId,
-      date: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    });
-    await dbHelper.refreshStoreData();
-
-    await reportPage.navigateTo('report');
-
-    await expect(reportPage.getAllTimeRecordsCard()).toBeVisible();
-    await expect(reportPage.getAllTimeRecordsCard()).not.toContainText(
-      /not enough data|недостаточно данных/i
-    );
+    // No real expense today -> today still counts as no-spend.
+    await expect(reportPage.getNoSpendDaysCountText()).toHaveText(/^1\s/);
   });
 
   test('marks a day as "no data" (not no-spend) when the app was not opened that day', async ({

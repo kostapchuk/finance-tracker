@@ -123,32 +123,8 @@ export class ReportPage extends BasePage {
     return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /no-spend|бесплатн/i });
   }
 
-  getNoSpendDaysProgressText(): Locator {
-    return this.getNoSpendDaysCard().locator('span.text-sm.text-muted-foreground').first();
-  }
-
-  getCurrentStreakValue(): Locator {
-    return this.getNoSpendDaysCard().locator('span.text-lg.font-bold.tabular-nums').nth(0);
-  }
-
-  getBestStreakThisMonthValue(): Locator {
-    return this.getNoSpendDaysCard().locator('span.text-lg.font-bold.tabular-nums').nth(1);
-  }
-
-  getBiggestSpendingDayLine(): Locator {
-    return this.getNoSpendDaysCard()
-      .locator('div.flex.items-center.justify-between.text-sm')
-      .filter({ hasText: /biggest.*spending|максимальными.*тратами/i });
-  }
-
-  getMostTransactionsDayLine(): Locator {
-    return this.getNoSpendDaysCard()
-      .locator('div.flex.items-center.justify-between.text-sm')
-      .filter({ hasText: /busiest|наибольшим.*числом/i });
-  }
-
-  getAllTimeRecordsCard(): Locator {
-    return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /all-time.*record|рекорды.*время/i });
+  getNoSpendDaysCountText(): Locator {
+    return this.getNoSpendDaysCard().locator('p.text-sm.text-muted-foreground');
   }
 
   getNoDataDaysHint(): Locator {
