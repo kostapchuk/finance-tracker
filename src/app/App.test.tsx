@@ -16,8 +16,6 @@ vi.mock('@/contexts/ServiceWorkerContext', () => ({
   useServiceWorker: () => ({ needRefresh: false, updateServiceWorker: vi.fn() }),
 }))
 
-vi.mock('@vercel/analytics/react', () => ({ Analytics: () => <span data-testid="analytics" /> }))
-
 beforeEach(async () => {
   await resetDbAndStore()
   localStorage.setItem('finance-tracker-onboarding-completed', 'true')
