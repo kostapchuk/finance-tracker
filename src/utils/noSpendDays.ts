@@ -27,8 +27,8 @@ export interface BestMonth {
 }
 
 export interface AllTimeNoSpendRecords {
-  bestStreak: StreakPeriod | null
-  bestMonth: BestMonth | null
+  bestStreak: StreakPeriod | undefined
+  bestMonth: BestMonth | undefined
 }
 
 export interface DayAmount {
@@ -42,8 +42,8 @@ export interface DayCount {
 }
 
 export interface MonthSpendHighlights {
-  maxAmountDay: DayAmount | null
-  maxCountDay: DayCount | null
+  maxAmountDay: DayAmount | undefined
+  maxCountDay: DayCount | undefined
 }
 
 export function toDateKey(date: Date): string {
@@ -131,8 +131,8 @@ export function computeCurrentStreak(
   return streak
 }
 
-function earliestTransactionDay(transactions: Transaction[]): Date | null {
-  if (transactions.length === 0) return null
+function earliestTransactionDay(transactions: Transaction[]): Date | undefined {
+  if (transactions.length === 0) return undefined
   const earliestTime = Math.min(...transactions.map((t) => new Date(t.date).getTime()))
   const earliest = new Date(earliestTime)
   return new Date(earliest.getFullYear(), earliest.getMonth(), earliest.getDate())
@@ -149,13 +149,13 @@ export function computeAllTimeNoSpendRecords(
   today: Date = new Date()
 ): AllTimeNoSpendRecords {
   const earliest = earliestTransactionDay(transactions)
-  if (!earliest) return { bestStreak: null, bestMonth: null }
+  if (!earliest) return { bestStreak: undefined, bestMonth: undefined }
 
   const spendDayKeys = buildSpendDayKeys(transactions)
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
 
   let bestStreakLength = 0
-  let bestStreakEnd: Date | null = null
+  let bestStreakEnd: Date | undefined = undefined
   let currentStreakLength = 0
 
   const monthCounts = new Map<string, { count: number; monthStart: Date }>()
@@ -190,7 +190,7 @@ export function computeAllTimeNoSpendRecords(
     cursor.setDate(cursor.getDate() + 1)
   }
 
-  let bestMonth: BestMonth | null = null
+  let bestMonth: BestMonth | undefined = undefined
   for (const { count, monthStart } of monthCounts.values()) {
     if (!bestMonth || count > bestMonth.count) {
       bestMonth = { count, monthStart }
@@ -198,7 +198,7 @@ export function computeAllTimeNoSpendRecords(
   }
 
   return {
-    bestStreak: bestStreakEnd ? { length: bestStreakLength, endDate: bestStreakEnd } : null,
+    bestStreak: bestStreakEnd ? { length: bestStreakLength, endDate: bestStreakEnd } : undefined,
     bestMonth,
   }
 }
@@ -229,14 +229,14 @@ export function computeMonthSpendHighlights(
     countByDay.set(key, (countByDay.get(key) ?? 0) + 1)
   }
 
-  let maxAmountDay: DayAmount | null = null
+  let maxAmountDay: DayAmount | undefined = undefined
   for (const [key, amount] of amountByDay) {
     if (!maxAmountDay || amount > maxAmountDay.amount) {
       maxAmountDay = { date: dateByKey.get(key)!, amount }
     }
   }
 
-  let maxCountDay: DayCount | null = null
+  let maxCountDay: DayCount | undefined = undefined
   for (const [key, count] of countByDay) {
     if (!maxCountDay || count > maxCountDay.count) {
       maxCountDay = { date: dateByKey.get(key)!, count }

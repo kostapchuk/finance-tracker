@@ -143,10 +143,10 @@ describe('computeAllTimeNoSpendRecords', () => {
     expect(records.bestMonth?.monthStart).toEqual(new Date(2026, 3, 1))
   })
 
-  it('returns nulls when there is no transaction history', () => {
+  it('returns undefined when there is no transaction history', () => {
     const records = computeAllTimeNoSpendRecords([], new Date(2026, 2, 1))
-    expect(records.bestStreak).toBeNull()
-    expect(records.bestMonth).toBeNull()
+    expect(records.bestStreak).toBeUndefined()
+    expect(records.bestMonth).toBeUndefined()
   })
 })
 
@@ -197,13 +197,13 @@ describe('computeMonthSpendHighlights', () => {
 
     const highlights = computeMonthSpendHighlights(transactions, new Date(2026, 2, 1))
 
-    expect(highlights.maxAmountDay).toBeNull()
-    expect(highlights.maxCountDay).toBeNull()
+    expect(highlights.maxAmountDay).toBeUndefined()
+    expect(highlights.maxCountDay).toBeUndefined()
   })
 
-  it('returns nulls when there are no expenses in the month', () => {
+  it('returns undefined when there are no expenses in the month', () => {
     const highlights = computeMonthSpendHighlights([], new Date(2026, 2, 1))
-    expect(highlights.maxAmountDay).toBeNull()
-    expect(highlights.maxCountDay).toBeNull()
+    expect(highlights.maxAmountDay).toBeUndefined()
+    expect(highlights.maxCountDay).toBeUndefined()
   })
 })

@@ -659,18 +659,14 @@ function ruPluralForm(count: number, one: string, few: string, many: string): st
 
 /** Localized "N day(s)" label, e.g. "5 days" / "5 дней" / "1 день". */
 export function formatDaysCount(count: number, language: Language): string {
-  const word =
-    language === 'ru' ? ruPluralForm(count, 'день', 'дня', 'дней') : count === 1 ? 'day' : 'days'
-  return `${count} ${word}`
+  if (language === 'ru') return `${count} ${ruPluralForm(count, 'день', 'дня', 'дней')}`
+  return `${count} ${count === 1 ? 'day' : 'days'}`
 }
 
 /** Localized "N transaction(s)" label, e.g. "3 transactions" / "3 операции". */
 export function formatOperationsCount(count: number, language: Language): string {
-  const word =
-    language === 'ru'
-      ? ruPluralForm(count, 'операция', 'операции', 'операций')
-      : count === 1
-        ? 'transaction'
-        : 'transactions'
-  return `${count} ${word}`
+  if (language === 'ru') {
+    return `${count} ${ruPluralForm(count, 'операция', 'операции', 'операций')}`
+  }
+  return `${count} ${count === 1 ? 'transaction' : 'transactions'}`
 }
