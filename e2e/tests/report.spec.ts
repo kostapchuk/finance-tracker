@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/test-base';
-import { testAccounts, testCategories, testIncomeSources } from '../fixtures/test-data';
+import { testAccounts, testCategories, testIncomeSources, testLoans } from '../fixtures/test-data';
 
 test.describe('Reports Page', () => {
   test.beforeEach(async ({ setupCleanState }) => {
@@ -266,5 +266,51 @@ test.describe('Reports Page', () => {
 
     // Total balance should be $3500 ($1000 + $2500)
     await expect(reportPage.getTotalBalanceAmount()).toContainText('3,500');
+  });
+
+  test('should show loan activity for the selected month', async ({
+    reportPage,
+    dbHelper,
+  }) => {
+    // Seed a loan given this month, partially repaid this month
+    const accountId = await dbHelper.seedAccount(testAccounts.usdCash());
+    const loanId = await dbHelper.seedLoan({
+      ...testLoans.givenToJohn(accountId),
+      amount: 500,
+      paidAmount: 200,
+      status: 'partially_paid',
+    });
+    await dbHelper.seedTransaction({
+      type: 'loan_given',
+      amount: 500,
+      currency: 'USD',
+      accountId,
+      loanId,
+      date: new Date(),
+    });
+    await dbHelper.seedTransaction({
+      type: 'loan_payment',
+      amount: 200,
+      currency: 'USD',
+      accountId,
+      loanId,
+      date: new Date(),
+    });
+    await dbHelper.refreshStoreData();
+
+    await reportPage.navigateTo('report');
+
+    await expect(reportPage.getLoanActivitySection()).toBeVisible();
+    await expect(reportPage.getGivenThisMonthAmount()).toContainText('500');
+    await expect(reportPage.getReturnedThisMonthAmount()).toContainText('200');
+    await expect(reportPage.getLoanActivityRemainingAmount()).toContainText('300');
+  });
+
+  test('should not show loan activity section when there is no loan activity this month', async ({
+    reportPage,
+  }) => {
+    await reportPage.navigateTo('report');
+
+    await expect(reportPage.getLoanActivitySection()).toHaveCount(0);
   });
 });
