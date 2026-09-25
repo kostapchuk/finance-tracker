@@ -52,6 +52,8 @@ jobs:
           git init -q -b badges
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # Data-only branch: stop Vercel's Git integration from trying to deploy it.
+          echo '{ "git": { "deploymentEnabled": false } }' > vercel.json
           git add .
           git commit -q -m "Update badges for ${GITHUB_SHA}"
           git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" badges

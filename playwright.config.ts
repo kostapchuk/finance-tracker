@@ -6,7 +6,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['html', { open: 'never' }]],
+  // JUnit output feeds Codecov Test Analytics (flaky/failing test tracking) in CI.
+  reporter: process.env.CI
+    ? [['html', { open: 'never' }], ['junit', { outputFile: 'reports/e2e.junit.xml' }]]
+    : [['html', { open: 'never' }]],
   use: {
     baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173',
     trace: 'on-first-retry',
