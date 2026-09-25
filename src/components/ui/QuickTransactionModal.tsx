@@ -7,6 +7,7 @@ import type { Category, IncomeSource, Account, Transaction } from '@/database/ty
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
+import { trackEvent } from '@/utils/analytics'
 import { cn } from '@/utils/cn'
 import { getCurrencySymbol, formatCurrency } from '@/utils/currency'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
@@ -460,6 +461,7 @@ export function QuickTransactionModal({
           transactionId = editTransaction.id
         } else {
           transactionId = (await transactionRepo.create(transactionData)) as number
+          trackEvent('transaction_created', { type: 'transfer' })
         }
 
         const savedTransaction = await transactionRepo.getById(transactionId)
@@ -515,6 +517,7 @@ export function QuickTransactionModal({
             transactionId = editTransaction.id
           } else {
             transactionId = (await transactionRepo.create(transactionData)) as number
+            trackEvent('transaction_created', { type: 'income' })
           }
 
           const savedTransaction = await transactionRepo.getById(transactionId)
@@ -548,6 +551,7 @@ export function QuickTransactionModal({
             transactionId = editTransaction.id
           } else {
             transactionId = (await transactionRepo.create(transactionData)) as number
+            trackEvent('transaction_created', { type: 'expense' })
           }
 
           const savedTransaction = await transactionRepo.getById(transactionId)

@@ -9,6 +9,7 @@ import { useEntityFormFields } from '@/hooks/useEntityFormFields'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
+import { trackEvent } from '@/utils/analytics'
 
 interface CategoryFormProps {
   category?: Category
@@ -53,6 +54,7 @@ export function CategoryForm({ category, open, onClose }: CategoryFormProps) {
             categoryType: 'expense',
             hiddenFromDashboard,
           }))
+      if (!category?.id) trackEvent('category_created')
       await refreshCategories()
       onClose()
     } catch (error) {

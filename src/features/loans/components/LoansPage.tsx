@@ -11,6 +11,7 @@ import { loanRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
+import { trackEvent } from '@/utils/analytics'
 import { formatCurrency, getAmountColorClass, resolveMainCurrencyAmount } from '@/utils/currency'
 import { applyTransactionBalance } from '@/utils/transactionBalance'
 
@@ -130,6 +131,8 @@ export function LoansPage() {
       if (savedTransaction) {
         await applyTransactionBalance(savedTransaction, loans)
       }
+
+      trackEvent('loan_created', { type: data.type })
 
       await refreshAccounts()
       await refreshTransactions()

@@ -32,11 +32,25 @@ export function isAnalyticsEnabled({
   return Boolean(token) && isProd && !isAutomated
 }
 
+/**
+ * Product events used for PostHog funnels. Properties must never contain
+ * amounts, names or comments — only coarse, non-identifying attributes.
+ */
+export type AnalyticsEvent =
+  | 'view_changed'
+  | 'account_created'
+  | 'income_source_created'
+  | 'category_created'
+  | 'transaction_created'
+  | 'loan_created'
+  | 'loan_payment_recorded'
+  | 'loan_fully_paid'
+
 let client: PostHog | undefined
-let pending: [string, Properties | undefined][] = []
+let pending: [AnalyticsEvent, Properties | undefined][] = []
 
 /** Captures a custom event; events sent before PostHog loads are queued. */
-export function trackEvent(event: string, properties?: Properties): void {
+export function trackEvent(event: AnalyticsEvent, properties?: Properties): void {
   if (client) {
     client.capture(event, properties)
   } else {

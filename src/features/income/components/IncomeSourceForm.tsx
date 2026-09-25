@@ -12,6 +12,7 @@ import { useEntityFormFields } from '@/hooks/useEntityFormFields'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
+import { trackEvent } from '@/utils/analytics'
 
 interface IncomeSourceFormProps {
   source?: IncomeSource
@@ -61,6 +62,7 @@ export function IncomeSourceForm({ source, open, onClose }: IncomeSourceFormProp
             color,
             hiddenFromDashboard,
           }))
+      if (!source?.id) trackEvent('income_source_created')
       await refreshIncomeSources()
       onClose()
     } catch (error) {

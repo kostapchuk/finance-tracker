@@ -58,14 +58,14 @@ describe('initAnalytics', () => {
 
   it('initialises PostHog with privacy options and flushes queued events', async () => {
     const analytics = await import('./analytics')
-    analytics.trackEvent('early_event', { a: 1 })
+    analytics.trackEvent('account_created', { a: 1 })
     await analytics.initAnalytics(true)
 
     expect(posthogMock.init).toHaveBeenCalledWith('phc_test', analytics.posthogOptions)
-    expect(posthogMock.capture).toHaveBeenCalledWith('early_event', { a: 1 })
+    expect(posthogMock.capture).toHaveBeenCalledWith('account_created', { a: 1 })
 
-    analytics.trackEvent('later_event')
-    expect(posthogMock.capture).toHaveBeenCalledWith('later_event', undefined)
+    analytics.trackEvent('category_created')
+    expect(posthogMock.capture).toHaveBeenCalledWith('category_created', undefined)
   })
 
   it('tracks view changes from the store', async () => {

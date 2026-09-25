@@ -13,11 +13,12 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { transactionRepo } from '@/database/repositories'
+import { loanRepo, transactionRepo } from '@/database/repositories'
 import type { Loan, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
+import { trackEvent } from '@/utils/analytics'
 import { formatCurrency, getCurrencySymbol, resolveMainCurrencyAmount } from '@/utils/currency'
 import {
   applyTransactionBalance,
@@ -183,6 +184,12 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
       const savedTransaction = await transactionRepo.getById(transactionId)
       if (savedTransaction) {
         await applyTransactionBalance(savedTransaction, [loan])
+      }
+
+      if (!isEditMode) trackEvent('loan_payment_recorded', { type: loan.type })
+      const updatedLoan = await loanRepo.getById(loan.id)
+      if (loan.status !== 'fully_paid' && updatedLoan?.status === 'fully_paid') {
+        trackEvent('loan_fully_paid', { type: loan.type })
       }
 
       await refreshLoans()
