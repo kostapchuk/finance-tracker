@@ -1,0 +1,4 @@
+[
+  { "name": "JS", "path": "dist/assets/*.js", "gzip": true, "limit": "200 kB" },
+  { "name": "CSS", "path": "dist/assets/*.css", "gzip": true, "limit": "10 kB" }
+]
