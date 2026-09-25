@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { loanRepo } from '@/database/repositories'
-import type { Loan, LoanType } from '@/database/types'
+import type { Loan, LoanType, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
@@ -30,17 +30,23 @@ export interface LoanFormData {
   currency: string
   accountId: number
   accountAmount?: number // set when account currency ≠ loan currency
+  // Set when neither the loan currency nor the account currency is the main
+  // currency, so there's no other way to derive the main-currency equivalent
+  mainCurrencyAmount?: number
   dueDate?: Date
 }
 
 interface LoanFormProps {
   loan?: Loan
+  // The loan's originating loan_given/loan_received transaction, used to
+  // pre-fill the account/main-currency amounts when editing
+  editTransaction?: Transaction
   open: boolean
   onClose: () => void
   onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number) => Promise<void>
 }
 
-export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
+export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanFormProps) {
   const accounts = useAppStore((state) => state.accounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const refreshLoans = useAppStore((state) => state.refreshLoans)
@@ -54,14 +60,20 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   const [currency, setCurrency] = useState(mainCurrency)
   const [accountId, setAccountId] = useState('')
   const [accountAmount, setAccountAmount] = useState('')
+  const [mainCurrencyAmount, setMainCurrencyAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
 
   const selectedAccount = accountId
     ? accounts.find((a) => a.id === Number.parseInt(accountId))
     : undefined
   const isMultiCurrency = selectedAccount && currency !== selectedAccount.currency
+  // Neither the loan currency nor the account currency is the main currency,
+  // so there's no way to derive the main-currency equivalent automatically.
+  const loanIsMain = currency === mainCurrency
+  const accountIsMain = selectedAccount?.currency === mainCurrency
+  const needsMainCurrencyAmount = !!selectedAccount && !loanIsMain && !accountIsMain
 
-  useResetOnChange([loan, open, mainCurrency, accounts], () => {
+  useResetOnChange([loan, editTransaction, open, mainCurrency, accounts], () => {
     if (loan) {
       setType(loan.type)
       setPersonName(loan.personName)
@@ -70,6 +82,14 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
       setCurrency(loan.currency)
       setAccountId(loan.accountId?.toString() || '')
       setDueDate(loan.dueDate ? formatDateForInput(new Date(loan.dueDate)) : '')
+      // The transaction's `amount` is always in the account's own currency
+      // for loan_given/loan_received (there's no separate accountAmount field).
+      setAccountAmount(
+        editTransaction && editTransaction.currency !== loan.currency
+          ? editTransaction.amount.toString()
+          : ''
+      )
+      setMainCurrencyAmount(editTransaction?.mainCurrencyAmount?.toString() || '')
     } else {
       setType('given')
       setPersonName('')
@@ -78,20 +98,30 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
       setCurrency(mainCurrency)
       setAccountId(accounts.length > 0 ? accounts[0].id!.toString() : '')
       setDueDate('')
+      setAccountAmount('')
+      setMainCurrencyAmount('')
     }
-    setAccountAmount('')
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!personName.trim() || !amount || !accountId) return
     if (isMultiCurrency && !accountAmount) return
+    if (needsMainCurrencyAmount && !mainCurrencyAmount) return
 
     const parsedAmount = Number.parseFloat(amount)
     const parsedAccountAmount = isMultiCurrency ? Number.parseFloat(accountAmount) : undefined
+    const parsedMainCurrencyAmount = needsMainCurrencyAmount
+      ? Number.parseFloat(mainCurrencyAmount)
+      : undefined
 
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0) return
     if (isMultiCurrency && (Number.isNaN(parsedAccountAmount!) || parsedAccountAmount! <= 0)) return
+    if (
+      needsMainCurrencyAmount &&
+      (Number.isNaN(parsedMainCurrencyAmount!) || parsedMainCurrencyAmount! <= 0)
+    )
+      return
 
     setIsLoading(true)
     try {
@@ -103,6 +133,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
         currency,
         accountId: Number.parseInt(accountId),
         accountAmount: parsedAccountAmount,
+        mainCurrencyAmount: parsedMainCurrencyAmount,
         dueDate: dueDate ? new Date(dueDate) : undefined,
       }
 
@@ -260,6 +291,23 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             </div>
           )}
 
+          {needsMainCurrencyAmount && (
+            <div className="space-y-2">
+              <Label htmlFor="mainCurrencyAmount">
+                {mainCurrency} ({t('amountInMainCurrency')})
+              </Label>
+              <Input
+                id="mainCurrencyAmount"
+                type="number"
+                step="0.01"
+                value={mainCurrencyAmount}
+                onChange={(e) => setMainCurrencyAmount(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="dueDate">{t('dueDate')}</Label>
             <Input
@@ -286,7 +334,11 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
             isEditing={!!loan}
             isLoading={isLoading}
             onCancel={onClose}
-            submitDisabled={!accountId}
+            submitDisabled={
+              !accountId ||
+              (isMultiCurrency && !accountAmount) ||
+              (needsMainCurrencyAmount && !mainCurrencyAmount)
+            }
           />
         </form>
       </DialogContent>

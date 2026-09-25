@@ -400,4 +400,94 @@ test.describe('Loan Payments', () => {
     const loanStatus = await dbHelper.getLoanStatus(1);
     expect(loanStatus?.paidAmount).toBe(150);
   });
+
+  test('should record payment using the main-currency amount field (loan and account share a non-main currency)', async ({
+    page,
+    loansPage,
+    dbHelper,
+  }) => {
+    // Main currency is USD (set by setupCleanState). Loan and its account are
+    // both EUR, so neither can serve as the main-currency total directly —
+    // the payment dialog must show a manual USD conversion field.
+    const accountId = await dbHelper.seedAccount(testAccounts.eurBank());
+    await dbHelper.seedLoan({
+      type: 'given',
+      personName: 'Main Currency Field Test',
+      description: '',
+      amount: 500,
+      currency: 'EUR',
+      paidAmount: 0,
+      status: 'active',
+      accountId,
+    });
+    await dbHelper.refreshStoreData();
+    await page.reload();
+
+    const initialBalance = await dbHelper.getAccountBalance(accountId);
+    const paymentDialog = new PaymentDialog(page);
+
+    await loansPage.navigateTo('loans');
+    await loansPage.clickLoan('Main Currency Field Test');
+
+    // Single amount field (loan currency === account currency), plus the
+    // separate main-currency field since neither is USD.
+    await paymentDialog.fillAmount('200'); // EUR
+    await paymentDialog.fillMainCurrencyAmount('220'); // USD equivalent
+
+    await paymentDialog.recordPayment();
+
+    // The EUR account balance moves by the EUR payment amount.
+    const balance = await dbHelper.getAccountBalance(accountId);
+    expect(balance).toBe(initialBalance + 200);
+
+    // The loan's paidAmount is tracked in the loan's own currency (EUR), not
+    // the manually-entered USD conversion.
+    const loanStatus = await dbHelper.getLoanStatus(1);
+    expect(loanStatus?.paidAmount).toBe(200);
+    expect(loanStatus?.status).toBe('partially_paid');
+  });
+
+  test('should record payment when loan, account and main currency are all different', async ({
+    page,
+    loansPage,
+    dbHelper,
+  }) => {
+    // Main currency is USD. Loan is BTC, paid from a EUR account — three
+    // distinct currencies, so both the account-amount field (BTC -> EUR)
+    // and the main-currency field (-> USD) must appear together.
+    const accountId = await dbHelper.seedAccount(testAccounts.eurBank());
+    await dbHelper.seedLoan({
+      type: 'given',
+      personName: 'Triple Currency Test',
+      description: '',
+      amount: 0.1,
+      currency: 'BTC',
+      paidAmount: 0,
+      status: 'active',
+      accountId,
+    });
+    await dbHelper.refreshStoreData();
+    await page.reload();
+
+    const initialBalance = await dbHelper.getAccountBalance(accountId);
+    const paymentDialog = new PaymentDialog(page);
+
+    await loansPage.navigateTo('loans');
+    await loansPage.clickLoan('Triple Currency Test');
+
+    await paymentDialog.fillAmount('0.05'); // BTC
+    await paymentDialog.fillAccountAmount('3000'); // EUR
+    await paymentDialog.fillMainCurrencyAmount('3300'); // USD
+
+    await paymentDialog.recordPayment();
+
+    // EUR account balance moves by the EUR amount.
+    const balance = await dbHelper.getAccountBalance(accountId);
+    expect(balance).toBe(initialBalance + 3000);
+
+    // paidAmount is tracked in the loan's own currency (BTC).
+    const loanStatus = await dbHelper.getLoanStatus(1);
+    expect(loanStatus?.paidAmount).toBe(0.05);
+    expect(loanStatus?.status).toBe('partially_paid');
+  });
 });

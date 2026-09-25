@@ -33,13 +33,14 @@ function makeLoan(overrides: Partial<Loan>): Loan {
 
 describe('calculateFlows', () => {
   it('returns zeros for an empty list', () => {
-    expect(calculateFlows([], [])).toEqual({ inflows: 0, outflows: 0, net: 0 })
+    expect(calculateFlows([], [], 'USD')).toEqual({ inflows: 0, outflows: 0, net: 0 })
   })
 
   it('counts income as inflow and expense as outflow', () => {
     const result = calculateFlows(
       [makeTx({ type: 'income', amount: 1000 }), makeTx({ type: 'expense', amount: 300 })],
-      []
+      [],
+      'USD'
     )
 
     expect(result).toEqual({ inflows: 1000, outflows: 300, net: 700 })
@@ -48,7 +49,8 @@ describe('calculateFlows', () => {
   it('counts a received loan as income and a given loan as expense', () => {
     const result = calculateFlows(
       [makeTx({ type: 'loan_received', amount: 500 }), makeTx({ type: 'loan_given', amount: 200 })],
-      []
+      [],
+      'USD'
     )
 
     expect(result).toEqual({ inflows: 500, outflows: 200, net: 300 })
@@ -57,7 +59,11 @@ describe('calculateFlows', () => {
   it('counts repayment of a given loan as income', () => {
     const loans = [makeLoan({ id: 1, type: 'given' })]
 
-    const result = calculateFlows([makeTx({ type: 'loan_payment', amount: 150, loanId: 1 })], loans)
+    const result = calculateFlows(
+      [makeTx({ type: 'loan_payment', amount: 150, loanId: 1 })],
+      loans,
+      'USD'
+    )
 
     expect(result).toEqual({ inflows: 150, outflows: 0, net: 150 })
   })
@@ -65,24 +71,36 @@ describe('calculateFlows', () => {
   it('counts a payment on a received loan as expense', () => {
     const loans = [makeLoan({ id: 2, type: 'received' })]
 
-    const result = calculateFlows([makeTx({ type: 'loan_payment', amount: 80, loanId: 2 })], loans)
+    const result = calculateFlows(
+      [makeTx({ type: 'loan_payment', amount: 80, loanId: 2 })],
+      loans,
+      'USD'
+    )
 
     expect(result).toEqual({ inflows: 0, outflows: 80, net: -80 })
   })
 
   it('ignores a loan payment whose loan is missing', () => {
-    const result = calculateFlows([makeTx({ type: 'loan_payment', amount: 50, loanId: 99 })], [])
+    const result = calculateFlows(
+      [makeTx({ type: 'loan_payment', amount: 50, loanId: 99 })],
+      [],
+      'USD'
+    )
 
     expect(result).toEqual({ inflows: 0, outflows: 0, net: 0 })
   })
 
   it('ignores transfers', () => {
-    const result = calculateFlows([makeTx({ type: 'transfer', amount: 100, toAmount: 100 })], [])
+    const result = calculateFlows(
+      [makeTx({ type: 'transfer', amount: 100, toAmount: 100 })],
+      [],
+      'USD'
+    )
 
     expect(result).toEqual({ inflows: 0, outflows: 0, net: 0 })
   })
 
-  it('prefers mainCurrencyAmount over amount when present', () => {
+  it('uses mainCurrencyAmount when the transaction currency differs from the main currency', () => {
     const loans = [makeLoan({ id: 1, type: 'given' })]
 
     const result = calculateFlows(
@@ -98,16 +116,43 @@ describe('calculateFlows', () => {
           loanId: 1,
         }),
       ],
-      loans
+      loans,
+      'USD'
     )
 
     expect(result).toEqual({ inflows: 155, outflows: 37, net: 118 })
   })
 
+  it('uses the raw amount when the transaction currency is already the main currency', () => {
+    const result = calculateFlows(
+      [makeTx({ type: 'income', amount: 100, currency: 'USD' })],
+      [],
+      'USD'
+    )
+
+    expect(result).toEqual({ inflows: 100, outflows: 0, net: 100 })
+  })
+
+  it('skips a transaction in another currency with no mainCurrencyAmount instead of mixing currencies', () => {
+    const result = calculateFlows(
+      [
+        makeTx({ type: 'income', amount: 100, currency: 'EUR' }),
+        makeTx({ type: 'expense', amount: 30, currency: 'USD' }),
+      ],
+      [],
+      'USD'
+    )
+
+    // The EUR income has no converted amount, so it's skipped entirely —
+    // never added to inflows as if 100 EUR were 100 USD.
+    expect(result).toEqual({ inflows: 0, outflows: 30, net: -30 })
+  })
+
   it('reports a negative net when outflows exceed inflows', () => {
     const result = calculateFlows(
       [makeTx({ type: 'income', amount: 100 }), makeTx({ type: 'loan_given', amount: 400 })],
-      []
+      [],
+      'USD'
     )
 
     expect(result.net).toBe(-300)

@@ -89,3 +89,36 @@ export function formatCurrencyWithSign(amount: number, currency: string): string
   const sign = getAmountSign(amount)
   return sign ? `${sign} ${formatted}` : formatted
 }
+
+/**
+ * Resolve the amount to store as a transaction's `mainCurrencyAmount`, for a
+ * transaction that has both an "entry" amount (e.g. a loan's own currency)
+ * and an "account" amount. Reused wherever a transaction crosses three
+ * potentially different currencies (entry, account, main) so totals can be
+ * summed in the main currency instead of silently mixing currencies.
+ *
+ * - If the account is already in the main currency, `amount` (the applied
+ *   account-currency value) already IS the main-currency value, so no
+ *   separate field is needed (`undefined`).
+ * - Else if the entry currency is the main currency, `entryAmount` already
+ *   IS the main-currency value.
+ * - Otherwise neither field is in the main currency, so the caller must
+ *   supply a manually-entered conversion (`manualAmount`).
+ */
+export function resolveMainCurrencyAmount({
+  entryCurrency,
+  accountCurrency,
+  mainCurrency,
+  entryAmount,
+  manualAmount,
+}: {
+  entryCurrency: string
+  accountCurrency: string | undefined
+  mainCurrency: string
+  entryAmount: number
+  manualAmount: number | undefined
+}): number | undefined {
+  if (accountCurrency === mainCurrency) return undefined
+  if (entryCurrency === mainCurrency) return entryAmount
+  return manualAmount
+}

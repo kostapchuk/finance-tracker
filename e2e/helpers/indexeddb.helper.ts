@@ -306,6 +306,29 @@ export class IndexedDBHelper {
     }, DB_NAME);
   }
 
+  async getTransaction(transactionId: number): Promise<Record<string, unknown> | null> {
+    return this.page.evaluate(async ({ dbName, id }) => {
+      return new Promise<Record<string, unknown> | null>((resolve, reject) => {
+        const request = indexedDB.open(dbName);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('transactions', 'readonly');
+          const store = tx.objectStore('transactions');
+          const getRequest = store.get(id);
+          getRequest.onsuccess = () => {
+            db.close();
+            resolve(getRequest.result ?? null);
+          };
+          getRequest.onerror = () => {
+            db.close();
+            reject(getRequest.error);
+          };
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }, { dbName: DB_NAME, id: transactionId });
+  }
+
   async setMainCurrency(currency: string): Promise<void> {
     await this.page.evaluate(async ({ dbName, curr }) => {
       return new Promise<void>((resolve, reject) => {

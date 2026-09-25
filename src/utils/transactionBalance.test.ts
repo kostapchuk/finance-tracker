@@ -133,13 +133,14 @@ describe('applyTransactionBalance', () => {
     expect(accountRepo.updateBalance).toHaveBeenCalledWith(5, -30)
   })
 
-  it('uses mainCurrencyAmount for loanRepo bookkeeping when set', async () => {
+  it('uses loanCurrencyAmount for loanRepo bookkeeping when set, ignoring mainCurrencyAmount', async () => {
     const loan = makeLoan({ id: 9, type: 'given' })
     const tx = makeTransaction({
       type: 'loan_payment',
       accountId: 5,
       amount: 30,
-      mainCurrencyAmount: 27,
+      loanCurrencyAmount: 27,
+      mainCurrencyAmount: 24, // separate reporting field, must not affect paidAmount tracking
       loanId: 9,
     })
     await applyTransactionBalance(tx, [loan])

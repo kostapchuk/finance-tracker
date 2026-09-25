@@ -24,6 +24,15 @@ export class PaymentDialog {
     await input.fill(amount);
   }
 
+  // Main-currency amount input — shown when neither the loan nor the payment
+  // account is in the app's main currency, so it can't be derived automatically
+  async fillMainCurrencyAmount(amount: string): Promise<void> {
+    const input = this.getDialog()
+      .locator('label:has-text("main currency amount")')
+      .locator('xpath=following-sibling::div[1]//input');
+    await input.fill(amount);
+  }
+
   // Comment
   async fillComment(comment: string): Promise<void> {
     const commentInput = this.getDialog().locator('input').last();

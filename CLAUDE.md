@@ -249,7 +249,8 @@ When loan/transaction currency differs from account currency:
 1. **Always add tests after bug/feature changes**: Add unit and e2e tests if applicable after every bug fix or feature implementation.
 2. **Never disable lint/format rules**: Never use `eslint-disable`, `@ts-ignore`, or similar to bypass eslint, formatter, type checker, or any other linter rules. Fix the underlying issue instead.
 3. **Run all CI checks locally before declaring a task done**: Before saying a task is complete, run the full set of checks listed in [Development Workflow](#development-workflow) locally (same as CI/CD) and make sure they all pass with no warnings or errors.
-4. **Update the base branch before creating a new branch**: Always `git fetch`/`git pull` the base branch (e.g. `main`) from the remote before branching off it, so new branches start from the latest remote state.
+4. **Every PR must be based on the latest `main`**: Always `git fetch`/`git pull` `main` before branching off it, and rebase your branch onto the latest `main` again right before opening or updating a PR — never leave a PR against a stale base.
+5. **Exactly one version bump per PR, relative to `main`**: `package.json`'s `version` in a PR must be exactly one semver increment (patch, minor, or major — whichever fits the change) ahead of `main`'s current version at that time. Never stack multiple bumps in a single PR, and never leave the version equal to or behind `main`'s — check `main`'s current version (e.g. `git show origin/main:package.json`) before bumping, especially after a rebase.
 
 ## Development Workflow
 

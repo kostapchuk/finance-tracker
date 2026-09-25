@@ -26,9 +26,11 @@ export function ReportPage() {
       (t) => new Date(t.date) >= startOfMonth && new Date(t.date) <= endOfMonth
     )
 
-    let totalBalance = 0
+    // Grouped by currency — balances in different currencies can't be summed
+    // into one number without a conversion, so show each currency separately.
+    const balanceByCurrency: Record<string, number> = {}
     for (const a of accounts) {
-      if (a.currency === mainCurrency) totalBalance += a.balance
+      balanceByCurrency[a.currency] = (balanceByCurrency[a.currency] ?? 0) + a.balance
     }
 
     // Exclude transfers (they don't have incomeSourceId/categoryId)
@@ -42,20 +44,26 @@ export function ReportPage() {
 
     const netFlow = monthlyIncome - monthlyExpenses
 
-    return { totalBalance, monthlyIncome, monthlyExpenses, netFlow }
-  }, [accounts, transactions, selectedMonth, mainCurrency])
+    return { balanceByCurrency, monthlyIncome, monthlyExpenses, netFlow }
+  }, [accounts, transactions, selectedMonth])
 
-  // Calculate loan totals
+  // Calculate loan totals, grouped by currency (loans in different currencies
+  // can't be summed into one number without a conversion)
   const loanStats = useMemo(() => {
     const activeLoans = loans.filter((l) => l.status !== 'fully_paid')
-    const givenTotal = activeLoans
-      .filter((l) => l.type === 'given')
-      .reduce((sum, l) => sum + (l.amount - l.paidAmount), 0)
-    const receivedTotal = activeLoans
-      .filter((l) => l.type === 'received')
-      .reduce((sum, l) => sum + (l.amount - l.paidAmount), 0)
-    const netLoan = givenTotal - receivedTotal // Positive means more owed to you
-    return { givenTotal, receivedTotal, netLoan }
+
+    const givenByCurrency: Record<string, number> = {}
+    const receivedByCurrency: Record<string, number> = {}
+    for (const l of activeLoans) {
+      const remaining = l.amount - l.paidAmount
+      if (l.type === 'given') {
+        givenByCurrency[l.currency] = (givenByCurrency[l.currency] ?? 0) + remaining
+      } else {
+        receivedByCurrency[l.currency] = (receivedByCurrency[l.currency] ?? 0) + remaining
+      }
+    }
+
+    return { givenByCurrency, receivedByCurrency }
   }, [loans])
 
   const spendingByCategory = useMemo(() => {
@@ -139,16 +147,25 @@ export function ReportPage() {
             <div className="p-2 rounded-full bg-primary/20">
               <Wallet className="h-5 w-5 text-primary" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 space-y-1">
               <p className="text-sm text-muted-foreground">{t('totalBalance')}</p>
-              <BlurredAmount
-                className={cn(
-                  'tabular-nums text-2xl font-bold block',
-                  getAmountColorClass(stats.totalBalance)
-                )}
-              >
-                {formatCurrency(stats.totalBalance, mainCurrency)}
-              </BlurredAmount>
+              {Object.keys(stats.balanceByCurrency).length === 0 ? (
+                <BlurredAmount className="tabular-nums text-2xl font-bold block">
+                  {formatCurrency(0, mainCurrency)}
+                </BlurredAmount>
+              ) : (
+                Object.entries(stats.balanceByCurrency).map(([currency, balance]) => (
+                  <BlurredAmount
+                    key={currency}
+                    className={cn(
+                      'tabular-nums text-2xl font-bold block',
+                      getAmountColorClass(balance)
+                    )}
+                  >
+                    {formatCurrency(balance, currency)}
+                  </BlurredAmount>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -203,42 +220,61 @@ export function ReportPage() {
       </div>
 
       {/* Current Loans Status - separate from monthly data */}
-      {(loanStats.givenTotal > 0 || loanStats.receivedTotal > 0) && (
+      {(Object.keys(loanStats.givenByCurrency).length > 0 ||
+        Object.keys(loanStats.receivedByCurrency).length > 0) && (
         <div className="px-4 py-4">
           <h3 className="text-section-label mb-4">{t('currentLoansStatus')}</h3>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="p-4 bg-secondary/50 rounded-2xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <ArrowUpRight
-                    className={`h-4 w-4 ${getAmountColorClass(loanStats.givenTotal)}`}
-                  />
+                  <ArrowUpRight className="h-4 w-4 text-success" />
                   <span className="text-sm text-muted-foreground">{t('owedToYou')}</span>
                 </div>
-                <BlurredAmount
-                  className={cn(
-                    'tabular-nums text-xl font-bold block',
-                    getAmountColorClass(loanStats.givenTotal)
+                <div className="space-y-1">
+                  {Object.keys(loanStats.givenByCurrency).length === 0 ? (
+                    <BlurredAmount className="tabular-nums text-xl font-bold block">
+                      {formatCurrency(0, mainCurrency)}
+                    </BlurredAmount>
+                  ) : (
+                    Object.entries(loanStats.givenByCurrency).map(([currency, amount]) => (
+                      <BlurredAmount
+                        key={currency}
+                        className={cn(
+                          'tabular-nums text-xl font-bold block',
+                          getAmountColorClass(amount)
+                        )}
+                      >
+                        {formatCurrency(amount, currency)}
+                      </BlurredAmount>
+                    ))
                   )}
-                >
-                  {formatCurrency(loanStats.givenTotal, mainCurrency)}
-                </BlurredAmount>
+                </div>
               </div>
               <div className="p-4 bg-secondary/50 rounded-2xl">
                 <div className="flex items-center gap-2 mb-2">
-                  <ArrowDownLeft
-                    className={`h-4 w-4 ${loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'}`}
-                  />
+                  <ArrowDownLeft className="h-4 w-4 text-destructive" />
                   <span className="text-sm text-muted-foreground">{t('youOwe')}</span>
                 </div>
-                <BlurredAmount
-                  className={cn(
-                    'tabular-nums text-xl font-bold block',
-                    loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'
+                <div className="space-y-1">
+                  {Object.keys(loanStats.receivedByCurrency).length === 0 ? (
+                    <BlurredAmount className="tabular-nums text-xl font-bold block">
+                      {formatCurrency(0, mainCurrency)}
+                    </BlurredAmount>
+                  ) : (
+                    Object.entries(loanStats.receivedByCurrency).map(([currency, amount]) => (
+                      <BlurredAmount
+                        key={currency}
+                        className={cn(
+                          'tabular-nums text-xl font-bold block',
+                          amount === 0 ? 'text-foreground' : 'text-destructive'
+                        )}
+                      >
+                        {formatCurrency(amount, currency)}
+                      </BlurredAmount>
+                    ))
                   )}
-                >
-                  {formatCurrency(loanStats.receivedTotal, mainCurrency)}
-                </BlurredAmount>
+                </div>
               </div>
             </div>
           </div>
