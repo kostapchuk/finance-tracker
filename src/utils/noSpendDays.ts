@@ -45,21 +45,35 @@ function buildActivityDayKeys(transactions: Transaction[], appVisits: AppVisit[]
   return keys
 }
 
+/** Date key of the first ever recorded app visit; there's no history before it (see `dayStatus`). */
+function earliestVisitDayKey(appVisits: AppVisit[]): string | undefined {
+  if (appVisits.length === 0) return undefined
+  let min = appVisits[0].date
+  for (const visit of appVisits) {
+    if (visit.date < min) min = visit.date
+  }
+  return min
+}
+
 interface DayEvidence {
   spendDayKeys: Set<string>
   activityDayKeys: Set<string>
+  trackingStartKey: string | undefined
 }
 
 function buildDayEvidence(transactions: Transaction[], appVisits: AppVisit[]): DayEvidence {
   return {
     spendDayKeys: buildSpendDayKeys(transactions),
     activityDayKeys: buildActivityDayKeys(transactions, appVisits),
+    trackingStartKey: earliestVisitDayKey(appVisits),
   }
 }
 
 /**
  * A day is:
  * - 'future' if it hasn't happened yet
+ * - 'no-data' if it's before the very first recorded app visit ever - we don't reconstruct
+ *   history from transactions alone, only from the moment visit tracking actually started
  * - 'spend' if it had a real expense
  * - 'no-spend' if there's evidence the app was used that day (a recorded visit or any
  *   transaction) and no real expense
@@ -70,6 +84,7 @@ function dayStatus(date: Date, evidence: DayEvidence, today: Date): DayStatus {
   if (date > today) return 'future'
 
   const key = formatDateForInput(date)
+  if (evidence.trackingStartKey === undefined || key < evidence.trackingStartKey) return 'no-data'
   if (evidence.spendDayKeys.has(key)) return 'spend'
   return evidence.activityDayKeys.has(key) ? 'no-spend' : 'no-data'
 }

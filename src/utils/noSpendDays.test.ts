@@ -82,12 +82,14 @@ describe('computeMonthNoSpendStats', () => {
     expect(stats.days[9].status).toBe('no-spend') // Mar 10, has a recorded visit
   })
 
-  it('treats a day with any transaction (not just an expense) as evidence the app was used', () => {
+  it('treats a day with any transaction (not just an expense) as evidence the app was used, once tracking has started', () => {
     const today = new Date(2026, 2, 20)
-    // An income transaction on Mar 15 proves the app was opened that day, no visit needed.
+    // Tracking starts Mar 1; an income transaction on Mar 15 still proves the app was
+    // opened that day, no visit needed for that specific day.
+    const appVisits = [makeVisit(new Date(2026, 2, 1))]
     const transactions = [makeTransaction({ type: 'income', date: new Date(2026, 2, 15) })]
 
-    const stats = computeMonthNoSpendStats(transactions, [], new Date(2026, 2, 1), today)
+    const stats = computeMonthNoSpendStats(transactions, appVisits, new Date(2026, 2, 1), today)
 
     expect(stats.days[14].status).toBe('no-spend')
   })
@@ -98,5 +100,18 @@ describe('computeMonthNoSpendStats', () => {
     const stats = computeMonthNoSpendStats([], [], new Date(2026, 2, 1), today)
 
     expect(stats.days.slice(0, 20).every((d) => d.status === 'no-data')).toBe(true)
+  })
+
+  it('never colors a day before the first ever recorded visit, even if it has a transaction', () => {
+    const today = new Date(2026, 2, 20)
+    // Tracking only starts Mar 10; Mar 5 has a real expense, but it's before tracking
+    // ever began, so we don't reconstruct history for it - it stays gray.
+    const appVisits = [makeVisit(new Date(2026, 2, 10))]
+    const transactions = [makeTransaction({ type: 'expense', date: new Date(2026, 2, 5) })]
+
+    const stats = computeMonthNoSpendStats(transactions, appVisits, new Date(2026, 2, 1), today)
+
+    expect(stats.days[4].status).toBe('no-data') // Mar 5
+    expect(stats.days[9].status).toBe('no-spend') // Mar 10, tracking starts here
   })
 })
