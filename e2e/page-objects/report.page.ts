@@ -61,19 +61,6 @@ export class ReportPage extends BasePage {
     return this.getTrendSection().locator('.flex.items-center.justify-center.gap-4');
   }
 
-  // Loan status section (only visible if loans exist)
-  getLoanStatusSection(): Locator {
-    return this.page.locator('h3').filter({ hasText: /loan.*status|статус.*долг/i }).locator('..');
-  }
-
-  getOwedToYouAmount(): Locator {
-    return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /owed.*you|вам.*должны/i }).locator('.text-xl.font-bold');
-  }
-
-  getYouOweAmount(): Locator {
-    return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /you.*owe|вы.*должны/i }).locator('.text-xl.font-bold');
-  }
-
   // Month navigation (MonthSelector component)
   getMonthSelector(): Locator {
     return this.page.locator('.flex.items-center.justify-between.px-4').filter({ has: this.page.locator('button') });

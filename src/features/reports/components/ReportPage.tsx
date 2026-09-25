@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { TrendingUp, TrendingDown } from 'lucide-react'
 import { useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
@@ -12,7 +12,6 @@ import { getStartOfMonth, getEndOfMonth, addMonths } from '@/utils/date'
 export function ReportPage() {
   const transactions = useAppStore((state) => state.transactions)
   const categories = useAppStore((state) => state.categories)
-  const loans = useAppStore((state) => state.loans)
   const selectedMonth = useAppStore((state) => state.selectedMonth)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const { t, language } = useLanguage()
@@ -38,19 +37,6 @@ export function ReportPage() {
 
     return { monthlyIncome, monthlyExpenses, netFlow }
   }, [transactions, selectedMonth])
-
-  // Calculate loan totals
-  const loanStats = useMemo(() => {
-    const activeLoans = loans.filter((l) => l.status !== 'fully_paid')
-    const givenTotal = activeLoans
-      .filter((l) => l.type === 'given')
-      .reduce((sum, l) => sum + (l.amount - l.paidAmount), 0)
-    const receivedTotal = activeLoans
-      .filter((l) => l.type === 'received')
-      .reduce((sum, l) => sum + (l.amount - l.paidAmount), 0)
-    const netLoan = givenTotal - receivedTotal // Positive means more owed to you
-    return { givenTotal, receivedTotal, netLoan }
-  }, [loans])
 
   const spendingByCategory = useMemo(() => {
     const startOfMonth = getStartOfMonth(selectedMonth)
@@ -175,49 +161,6 @@ export function ReportPage() {
           </div>
         </div>
       </div>
-
-      {/* Current Loans Status - separate from monthly data */}
-      {(loanStats.givenTotal > 0 || loanStats.receivedTotal > 0) && (
-        <div className="px-4 py-4">
-          <h3 className="text-section-label mb-4">{t('currentLoansStatus')}</h3>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 bg-secondary/50 rounded-2xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowUpRight
-                    className={`h-4 w-4 ${getAmountColorClass(loanStats.givenTotal)}`}
-                  />
-                  <span className="text-sm text-muted-foreground">{t('owedToYou')}</span>
-                </div>
-                <BlurredAmount
-                  className={cn(
-                    'tabular-nums text-xl font-bold block',
-                    getAmountColorClass(loanStats.givenTotal)
-                  )}
-                >
-                  {formatCurrency(loanStats.givenTotal, mainCurrency)}
-                </BlurredAmount>
-              </div>
-              <div className="p-4 bg-secondary/50 rounded-2xl">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowDownLeft
-                    className={`h-4 w-4 ${loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'}`}
-                  />
-                  <span className="text-sm text-muted-foreground">{t('youOwe')}</span>
-                </div>
-                <BlurredAmount
-                  className={cn(
-                    'tabular-nums text-xl font-bold block',
-                    loanStats.receivedTotal === 0 ? 'text-foreground' : 'text-destructive'
-                  )}
-                >
-                  {formatCurrency(loanStats.receivedTotal, mainCurrency)}
-                </BlurredAmount>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Spending by Category */}
       <div className="px-4 py-4">
