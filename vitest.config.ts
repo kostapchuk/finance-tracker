@@ -9,6 +9,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // JUnit output feeds Codecov Test Analytics (flaky/failing test tracking) in CI.
+    reporters: process.env.CI ? ['default', 'junit'] : ['default'],
+    outputFile: { junit: 'reports/unit.junit.xml' },
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'scripts/**/*.{test,spec}.{js,mjs}',
