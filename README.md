@@ -1,8 +1,8 @@
 # Finance Tracker
 
 <!-- CI & quality -->
-[![Test and Deploy](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml)
-[![E2E tests](https://img.shields.io/github/check-runs/kostapchuk/finance-tracker/main?nameFilter=E2E%20Tests&label=e2e&logo=playwright)](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml)
+[![CI](https://github.com/kostapchuk/finance-tracker/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/ci.yml)
+[![E2E tests](https://img.shields.io/github/check-runs/kostapchuk/finance-tracker/main?nameFilter=E2E%20Tests&label=e2e&logo=playwright)](https://github.com/kostapchuk/finance-tracker/actions/workflows/ci.yml)
 [![Security & Quality](https://github.com/kostapchuk/finance-tracker/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/security.yml)
 [![CodeQL](https://github.com/kostapchuk/finance-tracker/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/codeql.yml)
 [![Lint GitHub Actions](https://github.com/kostapchuk/finance-tracker/actions/workflows/actionlint.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/actionlint.yml)
@@ -21,6 +21,7 @@
 
 <!-- Deploy & product -->
 [![Live demo](https://img.shields.io/badge/demo-live-success?logo=vercel)](https://finance-tracker-swart.vercel.app)
+[![Deploy](https://github.com/kostapchuk/finance-tracker/actions/workflows/deploy.yml/badge.svg)](https://github.com/kostapchuk/finance-tracker/actions/workflows/deploy.yml)
 [![Vercel deployment](https://img.shields.io/github/deployments/kostapchuk/finance-tracker/production?label=vercel&logo=vercel)](https://github.com/kostapchuk/finance-tracker/deployments/production)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa)](https://finance-tracker-swart.vercel.app)
 [![iOS Safari](https://img.shields.io/badge/iOS%20Safari-supported-000000?logo=safari&logoColor=white)](https://finance-tracker-swart.vercel.app)
@@ -169,14 +170,16 @@ GitHub Actions automatically runs on every push to `main`:
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `test-and-deploy.yml` | Push/PR to main | Main CI/CD pipeline |
+| `ci.yml` | Push/PR to main | Lint, unit tests, build, bundle size, E2E |
+| `deploy.yml` | CI succeeded on main, manual | Deploy to Vercel production |
+| `badges.yml` | Push to main, Weekly, manual | Publish README badge data to the `badges` branch |
 | `security.yml` | PR to main, Weekly | Security audits and Lighthouse |
 | `codeql.yml` | Push/PR to main, Weekly | Advanced security analysis |
 | `scorecard.yml` | Push to main, Weekly | OpenSSF security scorecard |
 | `actionlint.yml` | Workflow file changes | Lint GitHub Actions |
 | `dependabot.yml` | Weekly | Dependency updates |
 
-Pull requests run all checks except deployment. Only main branch merges trigger deployment.
+Pull requests run all checks but never deploy. After a merge to `main`, the Deploy workflow runs only once CI has passed for that commit.
 
 ### Manual Deployment
 
