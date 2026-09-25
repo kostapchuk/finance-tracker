@@ -61,30 +61,32 @@ export function NoSpendDaysCard({
   }, [monthStats.days, selectedMonth])
 
   return (
-    <div className="p-4 bg-secondary/50 rounded-2xl">
-      <h3 className="text-section-label mb-3">{t('spendingCalendarTitle')}</h3>
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {weekdayLabels.map((label) => (
-          <div
-            key={label}
-            className="text-center text-[10px] text-muted-foreground uppercase tracking-wide"
-          >
-            {label}
-          </div>
-        ))}
+    <>
+      <h3 className="text-section-label mb-4">{t('spendingCalendarTitle')}</h3>
+      <div className="p-4 bg-secondary/50 rounded-2xl">
+        <div className="grid grid-cols-7 gap-1 mb-1">
+          {weekdayLabels.map((label) => (
+            <div
+              key={label}
+              className="text-center text-[10px] text-muted-foreground uppercase tracking-wide"
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: leadingOffset }, (_, i) => (
+            <div key={`offset-${i}`} />
+          ))}
+          {monthStats.days.map((day) => (
+            <DayGridCell
+              key={day.dateKey}
+              day={day}
+              isToday={day.dateKey === formatDateForInput(today)}
+            />
+          ))}
+        </div>
       </div>
-      <div className="grid grid-cols-7 gap-1">
-        {Array.from({ length: leadingOffset }, (_, i) => (
-          <div key={`offset-${i}`} />
-        ))}
-        {monthStats.days.map((day) => (
-          <DayGridCell
-            key={day.dateKey}
-            day={day}
-            isToday={day.dateKey === formatDateForInput(today)}
-          />
-        ))}
-      </div>
-    </div>
+    </>
   )
 }
