@@ -117,4 +117,19 @@ export class ReportPage extends BasePage {
   getNoTransactionDataMessage(): Locator {
     return this.page.locator('text=/no.*transaction.*data|нет.*данных.*транзакц/i');
   }
+
+  // No-Spend Days calendar (identified structurally - it has no text of its own)
+  getNoSpendDaysGrid(): Locator {
+    return this.page.locator('.grid-cols-7').filter({ has: this.page.locator('.aspect-square') });
+  }
+
+  getTodayCell(): Locator {
+    return this.getNoSpendDaysGrid().locator('.ring-2');
+  }
+
+  getDayCell(dayNumber: number): Locator {
+    return this.getNoSpendDaysGrid()
+      .locator('.aspect-square')
+      .filter({ hasText: new RegExp(`^${dayNumber}$`) });
+  }
 }

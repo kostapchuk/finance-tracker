@@ -8,6 +8,7 @@ import {
   loanRepo,
   customCurrencyRepo,
   settingsRepo,
+  appVisitRepo,
 } from '@/database/repositories'
 import type {
   Account,
@@ -16,6 +17,7 @@ import type {
   Transaction,
   Loan,
   CustomCurrency,
+  AppVisit,
 } from '@/database/types'
 
 // Guard to prevent duplicate data initialization (React StrictMode calls effects twice)
@@ -29,6 +31,7 @@ interface AppState {
   transactions: Transaction[]
   loans: Loan[]
   customCurrencies: CustomCurrency[]
+  appVisits: AppVisit[]
 
   // Settings
   mainCurrency: string
@@ -64,6 +67,7 @@ interface AppState {
   refreshTransactions: () => Promise<void>
   refreshLoans: () => Promise<void>
   refreshCustomCurrencies: () => Promise<void>
+  refreshAppVisits: () => Promise<void>
   setOnboardingStep: (step: number) => void
   completeOnboarding: () => void
   skipOnboarding: () => void
@@ -76,6 +80,7 @@ export const useAppStore = create<AppState>((set) => ({
   transactions: [],
   loans: [],
   customCurrencies: [],
+  appVisits: [],
   mainCurrency: 'BYN',
   blurFinancialFigures: false,
   isLoading: true,
@@ -109,16 +114,28 @@ export const useAppStore = create<AppState>((set) => ({
 
     set({ isLoading: true })
     try {
-      const [accounts, incomeSources, categories, transactions, loans, customCurrencies, settings] =
-        await Promise.all([
-          accountRepo.getAll(),
-          incomeSourceRepo.getAll(),
-          categoryRepo.getAll(),
-          transactionRepo.getAll(),
-          loanRepo.getAll(),
-          customCurrencyRepo.getAll(),
-          settingsRepo.get(),
-        ])
+      // Record today's visit first so it's reflected in the appVisits fetched below.
+      await appVisitRepo.recordToday()
+
+      const [
+        accounts,
+        incomeSources,
+        categories,
+        transactions,
+        loans,
+        customCurrencies,
+        appVisits,
+        settings,
+      ] = await Promise.all([
+        accountRepo.getAll(),
+        incomeSourceRepo.getAll(),
+        categoryRepo.getAll(),
+        transactionRepo.getAll(),
+        loanRepo.getAll(),
+        customCurrencyRepo.getAll(),
+        appVisitRepo.getAll(),
+        settingsRepo.get(),
+      ])
 
       const mainCurrency = settings?.defaultCurrency || 'BYN'
       const blurFinancialFigures = settings?.blurFinancialFigures || false
@@ -168,6 +185,7 @@ export const useAppStore = create<AppState>((set) => ({
           transactions,
           loans,
           customCurrencies,
+          appVisits,
           mainCurrency,
           blurFinancialFigures,
           isLoading: false,
@@ -182,6 +200,7 @@ export const useAppStore = create<AppState>((set) => ({
           transactions,
           loans,
           customCurrencies,
+          appVisits,
           mainCurrency,
           blurFinancialFigures,
           isLoading: false,
@@ -224,6 +243,11 @@ export const useAppStore = create<AppState>((set) => ({
   refreshCustomCurrencies: async () => {
     const customCurrencies = await customCurrencyRepo.getAll()
     set({ customCurrencies })
+  },
+
+  refreshAppVisits: async () => {
+    const appVisits = await appVisitRepo.getAll()
+    set({ appVisits })
   },
 
   setOnboardingStep: (step) => set({ onboardingStep: step }),

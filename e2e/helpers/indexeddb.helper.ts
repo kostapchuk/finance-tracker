@@ -192,6 +192,30 @@ export class IndexedDBHelper {
     }, { dbName: DB_NAME, tx: txData });
   }
 
+  async seedAppVisit(date: Date): Promise<number> {
+    const dateKey = date.toISOString().slice(0, 10);
+    return this.page.evaluate(async ({ dbName, dateKey }) => {
+      return new Promise<number>((resolve, reject) => {
+        const request = indexedDB.open(dbName);
+        request.onsuccess = () => {
+          const db = request.result;
+          const tx = db.transaction('appVisits', 'readwrite');
+          const store = tx.objectStore('appVisits');
+          const addRequest = store.add({ date: dateKey, createdAt: new Date() });
+          addRequest.onsuccess = () => {
+            db.close();
+            resolve(addRequest.result as number);
+          };
+          addRequest.onerror = () => {
+            db.close();
+            reject(addRequest.error);
+          };
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }, { dbName: DB_NAME, dateKey });
+  }
+
   async updateAccountBalance(accountId: number, newBalance: number): Promise<void> {
     await this.page.evaluate(async ({ dbName, id, balance }) => {
       return new Promise<void>((resolve, reject) => {

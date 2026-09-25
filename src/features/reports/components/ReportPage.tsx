@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 
 import { BlurredAmount } from '@/components/ui/BlurredAmount'
 import { MonthSelector } from '@/components/ui/MonthSelector'
+import { NoSpendDaysCard } from '@/features/reports/components/NoSpendDaysCard'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
@@ -12,6 +13,7 @@ import { getStartOfMonth, getEndOfMonth, addMonths } from '@/utils/date'
 export function ReportPage() {
   const accounts = useAppStore((state) => state.accounts)
   const transactions = useAppStore((state) => state.transactions)
+  const appVisits = useAppStore((state) => state.appVisits)
   const categories = useAppStore((state) => state.categories)
   const loans = useAppStore((state) => state.loans)
   const selectedMonth = useAppStore((state) => state.selectedMonth)
@@ -217,6 +219,15 @@ export function ReportPage() {
             </BlurredAmount>
           </div>
         </div>
+      </div>
+
+      {/* No-Spend Days */}
+      <div className="px-4 py-4">
+        <NoSpendDaysCard
+          transactions={transactions}
+          appVisits={appVisits}
+          selectedMonth={selectedMonth}
+        />
       </div>
 
       {/* Current Loans Status - separate from monthly data */}

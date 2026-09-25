@@ -79,6 +79,7 @@ describe('ReportPage currency handling', () => {
     mockState = {
       accounts,
       transactions: [] as Transaction[],
+      appVisits: [],
       categories: [],
       loans: [],
       selectedMonth: new Date('2026-01-15'),
@@ -99,6 +100,7 @@ describe('ReportPage currency handling', () => {
     mockState = {
       accounts: [],
       transactions: [] as Transaction[],
+      appVisits: [],
       categories: [],
       loans: [loans[0], loans[1]], // both "given" loans, no "received" loan
       selectedMonth: new Date('2026-01-15'),
@@ -122,6 +124,7 @@ describe('ReportPage currency handling', () => {
     mockState = {
       accounts: [],
       transactions: [] as Transaction[],
+      appVisits: [],
       categories: [],
       loans: [loans[2]], // only the received GBP loan
       selectedMonth: new Date('2026-01-15'),

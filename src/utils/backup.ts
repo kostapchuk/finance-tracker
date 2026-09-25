@@ -5,6 +5,7 @@ import type {
   Transaction,
   Loan,
   CustomCurrency,
+  AppVisit,
 } from '@/database/types'
 
 export interface BackupData {
@@ -16,6 +17,7 @@ export interface BackupData {
   transactions: Transaction[]
   loans: Loan[]
   customCurrencies: CustomCurrency[]
+  appVisits: AppVisit[]
 }
 
 export interface ParsedBackupData {
@@ -25,6 +27,7 @@ export interface ParsedBackupData {
   transactions: Transaction[]
   loans: Loan[]
   customCurrencies: CustomCurrency[]
+  appVisits: AppVisit[]
 }
 
 export function buildBackupData(data: {
@@ -34,6 +37,7 @@ export function buildBackupData(data: {
   transactions: Transaction[]
   loans: Loan[]
   customCurrencies: CustomCurrency[]
+  appVisits: AppVisit[]
 }): BackupData {
   return {
     version: 1,
@@ -74,5 +78,6 @@ export function parseBackupData(raw?: unknown): ParsedBackupData {
     transactions: withDates<Transaction>(data.transactions, ['date', 'createdAt', 'updatedAt']),
     loans: withDates<Loan>(data.loans, ['dueDate', 'createdAt', 'updatedAt']),
     customCurrencies: withDates<CustomCurrency>(data.customCurrencies, ['createdAt', 'updatedAt']),
+    appVisits: withDates<AppVisit>(data.appVisits, ['createdAt']),
   }
 }
