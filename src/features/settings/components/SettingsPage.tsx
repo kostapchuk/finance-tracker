@@ -57,7 +57,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useServiceWorker } from '@/contexts/ServiceWorkerContext'
-import { db } from '@/database/db'
+import { db, restoreTable } from '@/database/db'
 import {
   accountRepo,
   categoryRepo,
@@ -222,14 +222,12 @@ export function SettingsPage() {
           // incomeSourceId / loanId and loan.accountId keep pointing at the
           // right records. Tables are cleared above, so reusing the
           // original IDs is safe.
-          if (data.accounts.length > 0) await db.accounts.bulkAdd(data.accounts)
-          if (data.incomeSources.length > 0) await db.incomeSources.bulkAdd(data.incomeSources)
-          if (data.categories.length > 0) await db.categories.bulkAdd(data.categories)
-          if (data.transactions.length > 0) await db.transactions.bulkAdd(data.transactions)
-          if (data.loans.length > 0) await db.loans.bulkAdd(data.loans)
-          if (data.customCurrencies.length > 0) {
-            await db.customCurrencies.bulkAdd(data.customCurrencies)
-          }
+          await restoreTable(db.accounts, data.accounts)
+          await restoreTable(db.incomeSources, data.incomeSources)
+          await restoreTable(db.categories, data.categories)
+          await restoreTable(db.transactions, data.transactions)
+          await restoreTable(db.loans, data.loans)
+          await restoreTable(db.customCurrencies, data.customCurrencies)
         }
       )
 
