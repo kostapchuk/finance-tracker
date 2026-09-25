@@ -22,6 +22,7 @@ import { useAppStore } from '@/store/useAppStore'
 import { formatCurrency } from '@/utils/currency'
 import { getStartOfMonth, getEndOfMonth } from '@/utils/date'
 import { getIcon } from '@/utils/icons'
+import { getAccountBalancesAt } from '@/utils/transactionBalance'
 
 const QuickTransactionModal = lazy(() =>
   import('@/components/ui/QuickTransactionModal').then((m) => ({
@@ -59,6 +60,7 @@ export function Dashboard() {
   const transactions = useAppStore((state) => state.transactions)
   const categories = useAppStore((state) => state.categories)
   const incomeSources = useAppStore((state) => state.incomeSources)
+  const loans = useAppStore((state) => state.loans)
   const selectedMonth = useAppStore((state) => state.selectedMonth)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const onboardingStep = useAppStore((state) => state.onboardingStep)
@@ -97,6 +99,13 @@ export function Dashboard() {
   const visibleAccounts = useMemo(() => {
     return accounts.filter((a) => !a.hiddenFromDashboard)
   }, [accounts])
+
+  // Balances as of the last moment of the selected month (current balances for the current month,
+  // unless there are future-dated transactions)
+  const accountBalances = useMemo(
+    () => getAccountBalancesAt(accounts, transactions, loans, getEndOfMonth(selectedMonth)),
+    [accounts, transactions, loans, selectedMonth]
+  )
 
   const expenseCategories = useMemo(() => {
     return categories.filter((cat) => cat.categoryType !== 'loan' && !cat.hiddenFromDashboard)
@@ -295,7 +304,7 @@ export function Dashboard() {
                       <AccountCard
                         name={account.name}
                         type={account.type}
-                        balance={account.balance}
+                        balance={accountBalances.get(account.id!) ?? account.balance}
                         currency={account.currency}
                         color={account.color}
                         icon={account.icon}

@@ -4,10 +4,12 @@ import {
   applyTransactionBalance,
   reverseTransactionBalance,
   deleteLoanWithTransactions,
+  getAccountBalancesAt,
+  getTransactionBalanceDeltas,
 } from './transactionBalance'
 
 import { accountRepo, loanRepo, transactionRepo } from '@/database/repositories'
-import type { Transaction, Loan } from '@/database/types'
+import type { Account, Transaction, Loan } from '@/database/types'
 
 vi.mock('@/database/repositories', () => ({
   accountRepo: {
@@ -231,5 +233,99 @@ describe('deleteLoanWithTransactions', () => {
     const loan = makeLoan({ id: undefined })
     await deleteLoanWithTransactions(loan)
     expect(transactionRepo.getByLoan).not.toHaveBeenCalled()
+  })
+})
+
+function makeAccount(overrides: Partial<Account>): Account {
+  return {
+    id: 1,
+    name: 'Wallet',
+    type: 'cash',
+    currency: 'USD',
+    balance: 0,
+    color: '#000000',
+    sortOrder: 0,
+    createdAt: new Date('2026-01-01'),
+    updatedAt: new Date('2026-01-01'),
+    ...overrides,
+  }
+}
+
+describe('getTransactionBalanceDeltas', () => {
+  it('returns both sides of a multi-currency transfer', () => {
+    const tx = makeTransaction({
+      type: 'transfer',
+      accountId: 1,
+      toAccountId: 2,
+      amount: 100,
+      toAmount: 90,
+    })
+    expect(getTransactionBalanceDeltas(tx, [])).toEqual([
+      { accountId: 1, delta: -100 },
+      { accountId: 2, delta: 90 },
+    ])
+  })
+
+  it('returns no deltas for a loan payment whose loan is unknown', () => {
+    const tx = makeTransaction({ type: 'loan_payment', accountId: 1, loanId: 99 })
+    expect(getTransactionBalanceDeltas(tx, [])).toEqual([])
+  })
+
+  it('decreases the account for a payment on a received loan', () => {
+    const tx = makeTransaction({ type: 'loan_payment', accountId: 1, loanId: 7, amount: 30 })
+    const loans = [makeLoan({ id: 7, type: 'received' })]
+    expect(getTransactionBalanceDeltas(tx, loans)).toEqual([{ accountId: 1, delta: -30 }])
+  })
+})
+
+describe('getAccountBalancesAt', () => {
+  const endOfJan = new Date(2026, 0, 31, 23, 59, 59, 999)
+
+  it('keeps current balances when there are no later transactions', () => {
+    const accounts = [makeAccount({ id: 1, balance: 500 })]
+    const txs = [
+      makeTransaction({ type: 'expense', accountId: 1, amount: 50, date: new Date(2026, 0, 10) }),
+    ]
+    expect(getAccountBalancesAt(accounts, txs, [], endOfJan).get(1)).toBe(500)
+  })
+
+  it('undoes transactions dated after the cutoff', () => {
+    const accounts = [
+      makeAccount({ id: 1, balance: 500 }),
+      makeAccount({ id: 2, balance: 200, currency: 'EUR' }),
+    ]
+    const feb = new Date(2026, 1, 5)
+    const txs = [
+      makeTransaction({ type: 'income', accountId: 1, amount: 300, date: feb }),
+      makeTransaction({ type: 'expense', accountId: 1, amount: 40, date: feb }),
+      makeTransaction({
+        type: 'transfer',
+        accountId: 1,
+        toAccountId: 2,
+        amount: 100,
+        toAmount: 90,
+        date: feb,
+      }),
+      // Before the cutoff: must not be undone
+      makeTransaction({
+        type: 'income',
+        accountId: 1,
+        amount: 1000,
+        date: new Date(2026, 0, 31, 12),
+      }),
+    ]
+    const balances = getAccountBalancesAt(accounts, txs, [], endOfJan)
+    expect(balances.get(1)).toBe(500 - 300 + 40 + 100)
+    expect(balances.get(2)).toBe(200 - 90)
+  })
+
+  it('ignores transactions referencing unknown accounts', () => {
+    const accounts = [makeAccount({ id: 1, balance: 10 })]
+    const txs = [
+      makeTransaction({ type: 'income', accountId: 42, amount: 5, date: new Date(2026, 2, 1) }),
+    ]
+    const balances = getAccountBalancesAt(accounts, txs, [], endOfJan)
+    expect(balances.get(1)).toBe(10)
+    expect(balances.has(42)).toBe(false)
   })
 })
