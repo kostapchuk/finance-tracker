@@ -234,3 +234,95 @@ describe('deleteLoanWithTransactions', () => {
     expect(transactionRepo.getByLoan).not.toHaveBeenCalled()
   })
 })
+
+describe('apply and reverse are mirror images for every transaction type', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const loans = [makeLoan({ id: 1, type: 'given' }), makeLoan({ id: 2, type: 'received' })]
+
+  it.each([
+    ['income', { type: 'income', accountId: 5 }, [[5, 100]]],
+    ['expense', { type: 'expense', accountId: 5 }, [[5, -100]]],
+    ['multi-currency expense', { type: 'expense', accountId: 5, accountAmount: 90 }, [[5, -90]]],
+    [
+      'transfer without toAmount',
+      { type: 'transfer', accountId: 5, toAccountId: 6 },
+      [
+        [5, -100],
+        [6, 100],
+      ],
+    ],
+    [
+      'transfer with toAmount',
+      { type: 'transfer', accountId: 5, toAccountId: 6, toAmount: 300 },
+      [
+        [5, -100],
+        [6, 300],
+      ],
+    ],
+    ['loan given', { type: 'loan_given', accountId: 5 }, [[5, -100]]],
+    ['loan received', { type: 'loan_received', accountId: 5 }, [[5, 100]]],
+    ['payment on a given loan', { type: 'loan_payment', accountId: 5, loanId: 1 }, [[5, 100]]],
+    [
+      'payment on a received loan',
+      { type: 'loan_payment', accountId: 5, loanId: 2, accountAmount: 80 },
+      [[5, -80]],
+    ],
+    ['payment on an unknown loan', { type: 'loan_payment', accountId: 5, loanId: 99 }, []],
+    ['payment without an account', { type: 'loan_payment', loanId: 1 }, []],
+    ['payment without a loan', { type: 'loan_payment', accountId: 5 }, []],
+  ] as [string, Partial<Transaction>, [number, number][]][])(
+    '%s',
+    async (_name, overrides, expected) => {
+      const tx = makeTransaction(overrides)
+
+      await applyTransactionBalance(tx, loans)
+      expect(vi.mocked(accountRepo.updateBalance).mock.calls).toEqual(expected)
+
+      vi.mocked(accountRepo.updateBalance).mockClear()
+      await reverseTransactionBalance(tx, loans)
+      expect(vi.mocked(accountRepo.updateBalance).mock.calls).toEqual(
+        expected.map(([id, delta]) => [id, -delta])
+      )
+    }
+  )
+
+  it.each(['income', 'expense', 'transfer', 'loan_given', 'loan_received'] as const)(
+    'leaves balances alone for %s without accounts',
+    async (type) => {
+      const tx = makeTransaction({ type })
+
+      await applyTransactionBalance(tx, loans)
+      await reverseTransactionBalance(tx, loans)
+
+      expect(accountRepo.updateBalance).not.toHaveBeenCalled()
+    }
+  )
+
+  it('tracks loan payments in the loan currency when provided', async () => {
+    const tx = makeTransaction({ type: 'loan_payment', loanId: 2, loanCurrencyAmount: 25 })
+
+    await applyTransactionBalance(tx, loans)
+    await reverseTransactionBalance(tx, loans)
+
+    expect(loanRepo.recordPayment).toHaveBeenCalledWith(2, 25)
+    expect(loanRepo.reversePayment).toHaveBeenCalledWith(2, 25)
+  })
+})
+
+describe('deleteLoanWithTransactions without transaction ids', () => {
+  it('reverses but cannot delete transactions that have no id', async () => {
+    vi.clearAllMocks()
+    vi.mocked(transactionRepo.getByLoan).mockResolvedValue([
+      makeTransaction({ id: undefined, type: 'loan_given', accountId: 5, loanId: 9 }),
+    ])
+
+    await deleteLoanWithTransactions(makeLoan({ id: 9 }))
+
+    expect(accountRepo.updateBalance).toHaveBeenCalledWith(5, 100)
+    expect(transactionRepo.delete).not.toHaveBeenCalled()
+    expect(loanRepo.delete).toHaveBeenCalledWith(9)
+  })
+})
