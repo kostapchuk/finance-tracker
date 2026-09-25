@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-import { APP_URL, detectLanguage, translations } from './i18n.mjs'
+import { APP_URL, DEFAULT_LANGUAGE, detectLanguage, translations } from './i18n.mjs'
 
 const html = readFileSync(path.join(import.meta.dirname, 'index.html'), 'utf8')
 const usedKeys = new Set([...html.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]))
@@ -27,19 +27,27 @@ describe('landing translations', () => {
   })
 })
 
+describe('static page language', () => {
+  it('ships Russian markup so there is no English flash before JS runs', () => {
+    expect(html).toMatch(/<html lang="ru">/)
+    expect(html).toMatch(/data-lang="ru" aria-pressed="true"/)
+    expect(html).toMatch(/data-lang="en" aria-pressed="false"/)
+    expect(html).toContain(`<title>${translations.ru.metaTitle}</title>`)
+    for (const m of html.matchAll(/data-i18n="([^"]+)"[^>]*>([^<]*)</g)) {
+      expect(m[2].replaceAll(/\s+/g, ' ').trim(), m[1]).toBe(translations.ru[m[1]])
+    }
+  })
+})
+
 describe('detectLanguage', () => {
   it('prefers a stored choice', () => {
-    expect(detectLanguage('ru', ['en-US'])).toBe('ru')
-    expect(detectLanguage('en', ['ru-RU'])).toBe('en')
+    expect(detectLanguage('ru')).toBe('ru')
+    expect(detectLanguage('en')).toBe('en')
   })
 
-  it('picks Russian for Russian-speaking browser locales', () => {
-    expect(detectLanguage(null, ['ru-RU', 'en'])).toBe('ru')
-    expect(detectLanguage(null, ['be'])).toBe('ru')
-  })
-
-  it('falls back to English', () => {
-    expect(detectLanguage(null, ['de-DE'])).toBe('en')
-    expect(detectLanguage('fr', undefined)).toBe('en')
+  it('defaults to Russian when nothing valid is stored', () => {
+    expect(DEFAULT_LANGUAGE).toBe('ru')
+    expect(detectLanguage(null)).toBe('ru')
+    expect(detectLanguage('fr')).toBe('ru')
   })
 })
