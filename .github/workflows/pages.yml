@@ -1,0 +1,40 @@
+name: Landing page
+
+# Publishes the static marketing page in landing/ to GitHub Pages.
+# Requires Settings → Pages → Source: "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+    paths: ['landing/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy landing to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Collect site files
+        run: |
+          mkdir -p _site
+          cp landing/*.html landing/*.css landing/*.svg _site/
+          find landing -maxdepth 1 -name '*.mjs' ! -name '*.test.mjs' -exec cp {} _site/ \;
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+      - id: deployment
+        uses: actions/deploy-pages@v4
