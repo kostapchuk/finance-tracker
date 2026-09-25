@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom'
+// In-memory IndexedDB so Dexie-backed code can run for real under jsdom.
+import 'fake-indexeddb/auto'
 
 // Recent Node versions ship an experimental global `localStorage` that needs
 // --localstorage-file to actually work; without it, it's present but non-functional

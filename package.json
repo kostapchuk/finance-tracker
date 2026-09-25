@@ -2,7 +2,7 @@
   "name": "finance-tracker",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -54,6 +54,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "eslint-plugin-unicorn": "^63.0.0",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^16.5.0",
     "jsdom": "^28.1.0",
     "postcss": "^8.5.28",
