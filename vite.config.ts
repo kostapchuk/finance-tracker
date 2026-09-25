@@ -22,6 +22,9 @@ function manualChunks(id: string): string | undefined {
     if (id.includes('lucide-react')) {
       return 'vendor-icons'
     }
+    if (id.includes('posthog-js')) {
+      return 'vendor-analytics'
+    }
     if (id.includes('zustand')) {
       return 'vendor-state'
     }
