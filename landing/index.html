@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Finance Tracker — money in one swipe</title>
+    <meta
+      name="description"
+      content="Free local-first personal finance app. Drag & drop transactions, unlimited accounts and categories, works offline. No install, no sign-up, no subscriptions."
+    />
+    <meta name="theme-color" content="#05060a" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Finance Tracker — money in one swipe" />
+    <meta
+      property="og:description"
+      content="Drag & drop personal finance. Local-first, unlimited, free forever. Add it to your home screen."
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      document.documentElement.classList.add('js')
+    </script>
+    <script type="module" src="./main.mjs"></script>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-wallet" viewBox="0 0 24 24">
+          <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+          <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+          <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+          <path d="M5 12h14" />
+          <path d="m12 5 7 7-7 7" />
+        </symbol>
+        <symbol id="i-move" viewBox="0 0 24 24">
+          <path d="M12 2v20" />
+          <path d="m15 19-3 3-3-3" />
+          <path d="m19 9 3 3-3 3" />
+          <path d="M2 12h20" />
+          <path d="m5 9-3 3 3 3" />
+          <path d="m9 5 3-3 3 3" />
+        </symbol>
+        <symbol id="i-infinity" viewBox="0 0 24 24">
+          <path
+            d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"
+          />
+        </symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </symbol>
+        <symbol id="i-phone" viewBox="0 0 24 24">
+          <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+          <path d="M12 18h.01" />
+        </symbol>
+        <symbol id="i-coins" viewBox="0 0 24 24">
+          <circle cx="8" cy="8" r="6" />
+          <path d="M18.09 10.37A6 6 0 1 1 10.34 18" />
+          <path d="M7 6h1v4" />
+          <path d="m16.71 13.88.7.71-2.82 2.82" />
+        </symbol>
+        <symbol id="i-users" viewBox="0 0 24 24">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </symbol>
+        <symbol id="i-chart" viewBox="0 0 24 24">
+          <path d="M3 3v18h18" />
+          <path d="M18 17V9" />
+          <path d="M13 17V5" />
+          <path d="M8 17v-3" />
+        </symbol>
+        <symbol id="i-wifi-off" viewBox="0 0 24 24">
+          <path d="M12 20h.01" />
+          <path d="M8.5 16.429a5 5 0 0 1 7 0" />
+          <path d="M5 12.859a10 10 0 0 1 5.17-2.69" />
+          <path d="M19 12.859a10 10 0 0 0-2.007-1.523" />
+          <path d="M2 8.82a15 15 0 0 1 4.177-2.643" />
+          <path d="M22 8.82a15 15 0 0 0-11.288-3.764" />
+          <path d="m2 2 20 20" />
+        </symbol>
+        <symbol id="i-share" viewBox="0 0 24 24">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+          <path d="m16 6-4-4-4 4" />
+          <path d="M12 2v13" />
+        </symbol>
+        <symbol id="i-plus-square" viewBox="0 0 24 24">
+          <rect width="18" height="18" x="3" y="3" rx="2" />
+          <path d="M8 12h8" />
+          <path d="M12 8v8" />
+        </symbol>
+        <symbol id="i-dots" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="1" />
+          <circle cx="12" cy="5" r="1" />
+          <circle cx="12" cy="19" r="1" />
+        </symbol>
+        <symbol id="i-compass" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z" />
+        </symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+          <path d="M2 12h20" />
+        </symbol>
+        <symbol id="i-download" viewBox="0 0 24 24">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="m7 10 5 5 5-5" />
+          <path d="M12 15V3" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <path d="M20 6 9 17l-5-5" />
+        </symbol>
+        <symbol id="i-food" viewBox="0 0 24 24">
+          <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+          <path d="M7 2v20" />
+          <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 3 2h3Zm0 0v7" />
+        </symbol>
+        <symbol id="i-home" viewBox="0 0 24 24">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <path d="M9 22V12h6v10" />
+        </symbol>
+        <symbol id="i-music" viewBox="0 0 24 24">
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </symbol>
+        <symbol id="i-car" viewBox="0 0 24 24">
+          <path
+            d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"
+          />
+          <circle cx="7" cy="17" r="2" />
+          <path d="M9 17h6" />
+          <circle cx="17" cy="17" r="2" />
+        </symbol>
+        <symbol id="i-card" viewBox="0 0 24 24">
+          <rect width="20" height="14" x="2" y="5" rx="2" />
+          <path d="M2 10h20" />
+        </symbol>
+        <symbol id="i-cash" viewBox="0 0 24 24">
+          <rect width="20" height="12" x="2" y="6" rx="2" />
+          <circle cx="12" cy="12" r="2" />
+          <path d="M6 12h.01M18 12h.01" />
+        </symbol>
+        <symbol id="i-briefcase" viewBox="0 0 24 24">
+          <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24">
+          <path d="M5 12h14" />
+          <path d="M12 5v14" />
+        </symbol>
+        <symbol id="i-github" viewBox="0 0 24 24">
+          <path
+            d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"
+          />
+          <path d="M9 18c-4.51 2-5-2-7-2" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div class="bg" aria-hidden="true">
+      <div class="bg-glow bg-glow--blue"></div>
+      <div class="bg-glow bg-glow--violet"></div>
+      <div class="bg-grid"></div>
+    </div>
+
+    <header class="nav">
+      <div class="container nav-inner">
+        <a class="logo" href="#top">
+          <span class="logo-mark"
+            ><svg class="icon"><use href="#i-wallet" /></svg
+          ></span>
+          <span>Finance Tracker</span>
+        </a>
+        <nav class="nav-links" aria-label="Sections">
+          <a href="#features" data-i18n="navFeatures">Features</a>
+          <a href="#install" data-i18n="navInstall">Install</a>
+          <a href="#faq" data-i18n="navFaq">FAQ</a>
+        </nav>
+        <div class="nav-actions">
+          <div class="lang" role="group" aria-label="Language">
+            <button type="button" data-lang="en" aria-pressed="true">EN</button>
+            <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+          </div>
+          <a
+            class="btn btn-sm btn-primary nav-cta"
+            data-app-link
+            href="https://finance-tracker-swart.vercel.app"
+          >
+            <span data-i18n="navOpen">Open app</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero container">
+        <div class="hero-copy">
+          <p class="pill">
+            <span class="pill-dot"></span
+            ><span data-i18n="heroBadge">Free forever · No sign-up · Works offline</span>
+          </p>
+          <h1 class="hero-title">
+            <span data-i18n="heroTitle1">Track money</span><br />
+            <span class="gradient-text" data-i18n="heroTitle2">with one drag.</span>
+          </h1>
+          <p class="hero-subtitle" data-i18n="heroSubtitle">
+            Drag your salary onto a card, drag the card onto “Food” — done. A personal finance app
+            that lives on your home screen, keeps data on your phone and never asks for a
+            subscription.
+          </p>
+          <div class="hero-ctas">
+            <a
+              class="btn btn-lg btn-primary"
+              data-app-link
+              href="https://finance-tracker-swart.vercel.app"
+            >
+              <span data-i18n="ctaPrimary">Open the app</span>
+              <svg class="icon"><use href="#i-arrow" /></svg>
+            </a>
+            <a class="btn btn-lg btn-ghost" href="#install">
+              <svg class="icon"><use href="#i-download" /></svg>
+              <span data-i18n="ctaSecondary">How to install</span>
+            </a>
+          </div>
+          <p class="hero-note" data-i18n="heroNote">
+            Works in Safari and Chrome. Nothing to download from the App Store.
+          </p>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="phone">
+            <div class="phone-notch"></div>
+            <div class="screen">
+              <div class="scr-status"><span>9:41</span><span class="scr-bars"></span></div>
+              <div class="scr-balance">
+                <small>Σ</small>
+                <strong>$12,840</strong>
+              </div>
+
+              <p class="scr-label scr-label--income" data-i18n="mockIncome">Income</p>
+              <div class="scr-chip scr-chip--salary">
+                <span class="scr-ico ico-green"
+                  ><svg class="icon"><use href="#i-briefcase" /></svg
+                ></span>
+                <span data-i18n="mockSalary">Salary</span>
+              </div>
+              <div class="scr-chip scr-chip--add">
+                <svg class="icon"><use href="#i-plus" /></svg>
+              </div>
+
+              <p class="scr-label scr-label--accounts" data-i18n="mockAccounts">Accounts</p>
+              <div class="scr-acc scr-acc--card">
+                <span class="scr-ico ico-blue"
+                  ><svg class="icon"><use href="#i-card" /></svg
+                ></span>
+                <span class="scr-acc-name" data-i18n="mockCard">Card</span>
+                <span class="scr-amounts">
+                  <b class="amt amt-1">$3,200</b>
+                  <b class="amt amt-2">$5,700</b>
+                  <b class="amt amt-3">$5,655</b>
+                </span>
+              </div>
+              <div class="scr-acc scr-acc--cash">
+                <span class="scr-ico ico-amber"
+                  ><svg class="icon"><use href="#i-cash" /></svg
+                ></span>
+                <span class="scr-acc-name" data-i18n="mockCash">Cash</span>
+                <span class="scr-amounts"><b>$640</b></span>
+              </div>
+
+              <p class="scr-label scr-label--expenses" data-i18n="mockExpenses">Expenses</p>
+              <div class="scr-tile scr-tile--1">
+                <span class="scr-ico ico-rose"
+                  ><svg class="icon"><use href="#i-food" /></svg
+                ></span>
+                <span data-i18n="mockFood">Food</span>
+                <span class="scr-amounts scr-amounts--sm"
+                  ><b class="amt-f1">$320</b><b class="amt-f2">$365</b></span
+                >
+              </div>
+              <div class="scr-tile scr-tile--2">
+                <span class="scr-ico ico-violet"
+                  ><svg class="icon"><use href="#i-home" /></svg
+                ></span>
+                <span data-i18n="mockHome">Home</span>
+                <span class="scr-amounts scr-amounts--sm"><b>$900</b></span>
+              </div>
+              <div class="scr-tile scr-tile--3">
+                <span class="scr-ico ico-cyan"
+                  ><svg class="icon"><use href="#i-music" /></svg
+                ></span>
+                <span data-i18n="mockFun">Fun</span>
+                <span class="scr-amounts scr-amounts--sm"><b>$120</b></span>
+              </div>
+              <div class="scr-tile scr-tile--4">
+                <span class="scr-ico ico-orange"
+                  ><svg class="icon"><use href="#i-car" /></svg
+                ></span>
+                <span data-i18n="mockTaxi">Taxi</span>
+                <span class="scr-amounts scr-amounts--sm"><b>$64</b></span>
+              </div>
+
+              <div class="scr-chart">
+                <i style="--h: 40%"></i><i style="--h: 65%"></i><i style="--h: 30%"></i
+                ><i style="--h: 80%"></i><i style="--h: 55%"></i><i style="--h: 95%"></i
+                ><i style="--h: 70%"></i>
+              </div>
+
+              <div class="scr-nav"><i></i><i></i><i></i><i></i><i></i></div>
+
+              <div class="ghost ghost--income">
+                <span class="scr-ico ico-green"
+                  ><svg class="icon"><use href="#i-briefcase" /></svg
+                ></span>
+                <span>+$2,500</span>
+                <span class="finger"></span>
+              </div>
+              <div class="ghost ghost--expense">
+                <span class="scr-ico ico-blue"
+                  ><svg class="icon"><use href="#i-card" /></svg
+                ></span>
+                <span>−$45</span>
+                <span class="finger"></span>
+              </div>
+              <span class="toast toast--income">+$2,500</span>
+              <span class="toast toast--expense">−$45</span>
+            </div>
+          </div>
+          <div class="float-card float-card--a">
+            <svg class="icon"><use href="#i-lock" /></svg
+            ><span data-i18n="strip3">Local-first</span>
+          </div>
+          <div class="float-card float-card--b">
+            <svg class="icon"><use href="#i-infinity" /></svg
+            ><span data-i18n="strip2">Unlimited</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track">
+          <span data-i18n="strip1">Drag &amp; drop</span><span data-i18n="strip2">Unlimited</span
+          ><span data-i18n="strip3">Local-first</span><span data-i18n="strip4">Offline</span
+          ><span data-i18n="strip5">Multi-currency</span><span data-i18n="strip6">No ads</span
+          ><span data-i18n="strip7">Open source</span>
+          <span data-i18n="strip1">Drag &amp; drop</span><span data-i18n="strip2">Unlimited</span
+          ><span data-i18n="strip3">Local-first</span><span data-i18n="strip4">Offline</span
+          ><span data-i18n="strip5">Multi-currency</span><span data-i18n="strip6">No ads</span
+          ><span data-i18n="strip7">Open source</span>
+        </div>
+      </div>
+
+      <section class="section container" id="features">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="featuresEyebrow">Why it feels different</p>
+          <h2 data-i18n="featuresTitle">Everything you need. Nothing you pay for.</h2>
+        </div>
+        <div class="bento">
+          <article class="card card--wide card--drag reveal">
+            <span class="card-ico ico-blue"
+              ><svg class="icon"><use href="#i-move" /></svg
+            ></span>
+            <h3 data-i18n="fDragTitle">Drag &amp; drop instead of forms</h3>
+            <p data-i18n="fDragText">
+              Income → account → category. A transaction takes one gesture, not five screens and a
+              keyboard.
+            </p>
+            <div class="flow" aria-hidden="true">
+              <span class="flow-node ico-green"
+                ><svg class="icon"><use href="#i-briefcase" /></svg
+              ></span>
+              <span class="flow-line"></span>
+              <span class="flow-node ico-blue"
+                ><svg class="icon"><use href="#i-card" /></svg
+              ></span>
+              <span class="flow-line"></span>
+              <span class="flow-node ico-rose"
+                ><svg class="icon"><use href="#i-food" /></svg
+              ></span>
+            </div>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico ico-violet"
+              ><svg class="icon"><use href="#i-infinity" /></svg
+            ></span>
+            <h3 data-i18n="fLimitTitle">No limits. Anywhere.</h3>
+            <p data-i18n="fLimitText">
+              Create as many accounts, cards, wallets and categories as you want. No “upgrade to
+              Pro” walls.
+            </p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico ico-green"
+              ><svg class="icon"><use href="#i-lock" /></svg
+            ></span>
+            <h3 data-i18n="fLocalTitle">Local-first</h3>
+            <p data-i18n="fLocalText">
+              Your data stays on your device. No servers, no accounts, no one reading your spending.
+            </p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico ico-amber"
+              ><svg class="icon"><use href="#i-phone" /></svg
+            ></span>
+            <h3 data-i18n="fInstallTitle">No installation</h3>
+            <p data-i18n="fInstallText">
+              Open the link, add it to the home screen — and it launches full-screen like a native
+              app.
+            </p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico ico-cyan"
+              ><svg class="icon"><use href="#i-coins" /></svg
+            ></span>
+            <h3 data-i18n="fCurrencyTitle">Multi-currency</h3>
+            <p data-i18n="fCurrencyText">
+              Dollars, euros, rubles, crypto. Transfers between currencies just work.
+            </p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico ico-orange"
+              ><svg class="icon"><use href="#i-users" /></svg
+            ></span>
+            <h3 data-i18n="fLoansTitle">Loans &amp; debts</h3>
+            <p data-i18n="fLoansText">
+              Who owes you and whom you owe — with partial payments and history.
+            </p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico ico-rose"
+              ><svg class="icon"><use href="#i-chart" /></svg
+            ></span>
+            <h3 data-i18n="fReportsTitle">Clear reports</h3>
+            <p data-i18n="fReportsText">
+              Monthly spending by category and a 6-month trend at a glance.
+            </p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico ico-blue"
+              ><svg class="icon"><use href="#i-wifi-off" /></svg
+            ></span>
+            <h3 data-i18n="fOfflineTitle">Works offline</h3>
+            <p data-i18n="fOfflineText">
+              On a plane, in the subway, in the mountains. Internet is optional.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section container pricing" id="pricing">
+        <div class="pricing-copy reveal">
+          <p class="eyebrow" data-i18n="freeEyebrow">Pricing</p>
+          <h2 data-i18n="freeTitle">There are no plans.</h2>
+          <p class="lead" data-i18n="freeText">
+            No trial, no subscription, no “premium”. Every feature is available to everyone from the
+            first second.
+          </p>
+          <div class="tiers" aria-hidden="true">
+            <span>Basic</span><span>Pro</span><span>Premium</span><span>Family</span>
+          </div>
+        </div>
+        <div class="price-card reveal">
+          <p class="price-name" data-i18n="freePlanName">Everything</p>
+          <p class="price">
+            <span class="price-value">0</span
+            ><span class="price-period">/ <span data-i18n="freePeriod">forever</span></span>
+          </p>
+          <ul class="price-list">
+            <li>
+              <svg class="icon"><use href="#i-check" /></svg
+              ><span data-i18n="freeItem1">Unlimited accounts &amp; categories</span>
+            </li>
+            <li>
+              <svg class="icon"><use href="#i-check" /></svg
+              ><span data-i18n="freeItem2">Multi-currency &amp; loans</span>
+            </li>
+            <li>
+              <svg class="icon"><use href="#i-check" /></svg
+              ><span data-i18n="freeItem3">Reports &amp; history</span>
+            </li>
+            <li>
+              <svg class="icon"><use href="#i-check" /></svg
+              ><span data-i18n="freeItem4">Backup export / import</span>
+            </li>
+          </ul>
+          <a
+            class="btn btn-lg btn-primary btn-block"
+            data-app-link
+            href="https://finance-tracker-swart.vercel.app"
+          >
+            <span data-i18n="freeCta">Start now</span>
+            <svg class="icon"><use href="#i-arrow" /></svg>
+          </a>
+        </div>
+      </section>
+
+      <section class="section container" id="install">
+        <div class="section-head reveal">
+          <p class="eyebrow" data-i18n="installEyebrow">Installation</p>
+          <h2 data-i18n="installTitle">Like a native app in 15 seconds</h2>
+          <p class="lead" data-i18n="installText">
+            It is a PWA: add it to your home screen once, and it opens full-screen with its own
+            icon.
+          </p>
+        </div>
+        <div class="tabs reveal" role="tablist" aria-label="Platform">
+          <button
+            type="button"
+            role="tab"
+            id="tab-ios"
+            data-tab="ios"
+            aria-controls="panel-ios"
+            aria-selected="true"
+            data-i18n="tabIos"
+          >
+            iPhone
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-android"
+            data-tab="android"
+            aria-controls="panel-android"
+            aria-selected="false"
+            tabindex="-1"
+            data-i18n="tabAndroid"
+          >
+            Android
+          </button>
+        </div>
+        <div
+          class="steps"
+          role="tabpanel"
+          id="panel-ios"
+          data-panel="ios"
+          aria-labelledby="tab-ios"
+        >
+          <div class="step reveal">
+            <span class="step-num">1</span>
+            <span class="step-ico"
+              ><svg class="icon"><use href="#i-compass" /></svg
+            ></span>
+            <h3 data-i18n="iosStep1Title">Open in Safari</h3>
+            <p data-i18n="iosStep1Text">Tap “Open the app” on this page.</p>
+          </div>
+          <div class="step reveal">
+            <span class="step-num">2</span>
+            <span class="step-ico"
+              ><svg class="icon"><use href="#i-share" /></svg
+            ></span>
+            <h3 data-i18n="iosStep2Title">Tap “Share”</h3>
+            <p data-i18n="iosStep2Text">The square with an arrow at the bottom of the screen.</p>
+          </div>
+          <div class="step reveal">
+            <span class="step-num">3</span>
+            <span class="step-ico"
+              ><svg class="icon"><use href="#i-plus-square" /></svg
+            ></span>
+            <h3 data-i18n="iosStep3Title">“Add to Home Screen”</h3>
+            <p data-i18n="iosStep3Text">Scroll down the menu and confirm. Done!</p>
+          </div>
+        </div>
+        <div
+          class="steps"
+          role="tabpanel"
+          id="panel-android"
+          data-panel="android"
+          aria-labelledby="tab-android"
+          hidden
+        >
+          <div class="step">
+            <span class="step-num">1</span>
+            <span class="step-ico"
+              ><svg class="icon"><use href="#i-globe" /></svg
+            ></span>
+            <h3 data-i18n="androidStep1Title">Open in Chrome</h3>
+            <p data-i18n="androidStep1Text">Tap “Open the app” on this page.</p>
+          </div>
+          <div class="step">
+            <span class="step-num">2</span>
+            <span class="step-ico"
+              ><svg class="icon"><use href="#i-dots" /></svg
+            ></span>
+            <h3 data-i18n="androidStep2Title">Tap the ⋮ menu</h3>
+            <p data-i18n="androidStep2Text">Three dots in the top-right corner.</p>
+          </div>
+          <div class="step">
+            <span class="step-num">3</span>
+            <span class="step-ico"
+              ><svg class="icon"><use href="#i-download" /></svg
+            ></span>
+            <h3 data-i18n="androidStep3Title">“Install app”</h3>
+            <p data-i18n="androidStep3Text">Or “Add to Home screen”. Confirm — done!</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section container faq" id="faq">
+        <div class="section-head reveal">
+          <h2 data-i18n="faqTitle">Questions</h2>
+        </div>
+        <div class="faq-list reveal">
+          <details>
+            <summary data-i18n="faq1Q">Where is my data stored?</summary>
+            <p data-i18n="faq1A">
+              Only in your browser storage (IndexedDB) on your device. Nothing is sent to any
+              server.
+            </p>
+          </details>
+          <details>
+            <summary data-i18n="faq2Q">What if I change my phone?</summary>
+            <p data-i18n="faq2A">
+              Export a backup file in Settings and import it on the new device. It takes a couple of
+              taps.
+            </p>
+          </details>
+          <details>
+            <summary data-i18n="faq3Q">Is it really free?</summary>
+            <p data-i18n="faq3A">
+              Yes. No plans, no ads, no in-app purchases. The code is open source.
+            </p>
+          </details>
+          <details>
+            <summary data-i18n="faq4Q">Does it work without internet?</summary>
+            <p data-i18n="faq4A">Yes. After the first launch the app works fully offline.</p>
+          </details>
+          <details>
+            <summary data-i18n="faq5Q">Which languages are supported?</summary>
+            <p data-i18n="faq5A">English and Russian — switch any time in Settings.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="container final">
+        <div class="final-card reveal">
+          <h2 data-i18n="finalTitle">Your money. Your phone. One gesture.</h2>
+          <p class="lead" data-i18n="finalText">
+            Open the app and log your first transaction in under a minute.
+          </p>
+          <a
+            class="btn btn-lg btn-light"
+            data-app-link
+            href="https://finance-tracker-swart.vercel.app"
+          >
+            <span data-i18n="ctaPrimary">Open the app</span>
+            <svg class="icon"><use href="#i-arrow" /></svg>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="logo" href="#top">
+          <span class="logo-mark"
+            ><svg class="icon"><use href="#i-wallet" /></svg
+          ></span>
+          <span>Finance Tracker</span>
+        </a>
+        <div class="footer-links">
+          <a href="https://github.com/kostapchuk/finance-tracker">
+            <svg class="icon"><use href="#i-github" /></svg
+            ><span data-i18n="footerOss">Open source on GitHub</span>
+          </a>
+          <span data-i18n="footerLicense">AGPL-3.0 license</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
