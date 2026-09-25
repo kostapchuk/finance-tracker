@@ -75,8 +75,23 @@ import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { buildBackupData, parseBackupData } from '@/utils/backup'
+import { buildTransactionsCsv, CSV_FORMATS } from '@/utils/csvExport'
 import { formatCurrency } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
+
+const todayIso = () => new Date().toISOString().split('T')[0]
+
+function downloadFile(content: string, type: string, fileName: string) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.append(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
 
 type ManagementSection = 'accounts' | 'categories' | 'income' | 'currencies' | undefined
 
@@ -173,17 +188,54 @@ export function SettingsPage() {
         customCurrencies,
         appVisits,
       })
-      const blob = new Blob([JSON.stringify(data, undefined, 2)], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `finance-tracker-backup-${new Date().toISOString().split('T')[0]}.json`
-      document.body.append(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(url)
+      downloadFile(
+        JSON.stringify(data, undefined, 2),
+        'application/json',
+        `finance-tracker-backup-${todayIso()}.json`
+      )
     } catch (error) {
       console.error('Export failed:', error)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleExportCSV = () => {
+    setIsExporting(true)
+    try {
+      const csv = buildTransactionsCsv(
+        { transactions, accounts, categories, incomeSources, loans, mainCurrency },
+        {
+          columns: {
+            date: t('csvDate'),
+            type: t('csvType'),
+            amount: t('csvAmount'),
+            currency: t('csvCurrency'),
+            account: t('csvAccount'),
+            accountAmount: t('csvAccountAmount'),
+            accountCurrency: t('csvAccountCurrency'),
+            categoryOrSource: t('csvCategoryOrSource'),
+            toAccount: t('csvToAccount'),
+            toAmount: t('csvToAmount'),
+            toAccountCurrency: t('csvToAccountCurrency'),
+            mainCurrencyAmount: t('csvMainCurrencyAmount'),
+            loanPerson: t('csvLoanPerson'),
+            comment: t('csvComment'),
+          },
+          types: {
+            income: t('csvTypeIncome'),
+            expense: t('csvTypeExpense'),
+            transfer: t('csvTypeTransfer'),
+            loan_given: t('csvTypeLoanGiven'),
+            loan_received: t('csvTypeLoanReceived'),
+            loan_payment: t('csvTypeLoanPayment'),
+          },
+        },
+        CSV_FORMATS[language]
+      )
+      downloadFile(csv, 'text/csv;charset=utf-8', `finance-tracker-transactions-${todayIso()}.csv`)
+    } catch (error) {
+      console.error('CSV export failed:', error)
     } finally {
       setIsExporting(false)
     }
@@ -593,6 +645,18 @@ export function SettingsPage() {
             <div className="flex items-center gap-3">
               <Download className="h-5 w-5 text-muted-foreground" />
               <span>{t('exportBackup')}</span>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            disabled={isExporting}
+            className="w-full flex items-center justify-between p-4 bg-secondary/50 rounded-xl disabled:opacity-50"
+          >
+            <div className="flex items-center gap-3">
+              <FileSpreadsheet className="h-5 w-5 text-muted-foreground" />
+              <span>{t('exportCsv')}</span>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
