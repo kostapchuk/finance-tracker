@@ -37,7 +37,7 @@ export function NoSpendDaysCard({
   selectedMonth,
   today: todayProp,
 }: NoSpendDaysCardProps) {
-  const { language } = useLanguage()
+  const { t, language } = useLanguage()
 
   const today = useMemo(() => todayProp ?? new Date(), [todayProp])
 
@@ -62,6 +62,7 @@ export function NoSpendDaysCard({
 
   return (
     <div className="p-4 bg-secondary/50 rounded-2xl">
+      <h3 className="text-section-label mb-3">{t('spendingCalendarTitle')}</h3>
       <div className="grid grid-cols-7 gap-1 mb-1">
         {weekdayLabels.map((label) => (
           <div

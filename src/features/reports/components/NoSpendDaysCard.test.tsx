@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { NoSpendDaysCard } from './NoSpendDaysCard'
@@ -39,6 +39,19 @@ function getDayCell(container: HTMLElement, dayNumber: number): Element {
 }
 
 describe('NoSpendDaysCard', () => {
+  it('shows the calendar title', () => {
+    render(
+      <NoSpendDaysCard
+        transactions={[]}
+        appVisits={[]}
+        selectedMonth={new Date(2026, 2, 15)}
+        today={new Date(2026, 2, 15)}
+      />
+    )
+
+    expect(screen.getByText('spendingCalendarTitle')).toBeInTheDocument()
+  })
+
   it('colors a visited day with no expense green', () => {
     const today = new Date(2026, 2, 31)
     const appVisits = Array.from({ length: 31 }, (_, i) => makeVisit(new Date(2026, 2, i + 1)))
