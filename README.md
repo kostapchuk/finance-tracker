@@ -1,5 +1,14 @@
 # Finance Tracker
 
+[![Test and Deploy](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/test-and-deploy.yml)
+[![Security & Quality](https://github.com/kostapchuk/finance-tracker/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/security.yml)
+[![CodeQL](https://github.com/kostapchuk/finance-tracker/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/codeql.yml)
+[![Lint GitHub Actions](https://github.com/kostapchuk/finance-tracker/actions/workflows/actionlint.yml/badge.svg?branch=main)](https://github.com/kostapchuk/finance-tracker/actions/workflows/actionlint.yml)
+[![Version](https://img.shields.io/github/package-json/v/kostapchuk/finance-tracker)](package.json)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+
 A mobile-first Progressive Web App for personal money management with drag-and-drop transaction entry.
 
 ## Features
