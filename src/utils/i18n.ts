@@ -162,6 +162,16 @@ const lazyTranslations = {
     noExpenseDataThisMonth: 'No expense data this month',
     sixMonthTrend: '6-Month Trend',
     noTransactionDataYet: 'No transaction data yet',
+    noSpendDaysTitle: 'No-Spend Days',
+    noSpendDaysInMonth: 'No-spend days this month',
+    currentStreak: 'Current Streak',
+    bestStreakThisMonth: 'Best This Month',
+    allTimeRecords: 'All-Time Records',
+    bestStreakEver: 'Best Streak Ever',
+    bestMonthEver: 'Best Month',
+    biggestSpendingDay: 'Biggest Spending Day',
+    mostTransactionsDay: 'Busiest Day',
+    notEnoughDataYet: 'Not enough data yet',
     inflows: 'Inflows',
     outflows: 'Outflows',
     net: 'Net',
@@ -386,6 +396,16 @@ const lazyTranslations = {
     noExpenseDataThisMonth: 'Нет данных о расходах за этот месяц',
     sixMonthTrend: 'Тренд за 6 месяцев',
     noTransactionDataYet: 'Пока нет данных о транзакциях',
+    noSpendDaysTitle: 'Бесплатные дни',
+    noSpendDaysInMonth: 'Бесплатных дней в этом месяце',
+    currentStreak: 'Текущий стрик',
+    bestStreakThisMonth: 'Лучший в этом месяце',
+    allTimeRecords: 'Рекорды за всё время',
+    bestStreakEver: 'Лучший стрик за всё время',
+    bestMonthEver: 'Лучший месяц',
+    biggestSpendingDay: 'День с максимальными тратами',
+    mostTransactionsDay: 'День с наибольшим числом трат',
+    notEnoughDataYet: 'Пока недостаточно данных',
     inflows: 'Поступления',
     outflows: 'Расходы',
     net: 'Чистый',
@@ -627,4 +647,30 @@ export function tc(key: CriticalTranslationKey): string {
 
 if (globalThis.window !== undefined) {
   currentLanguage = getStoredLanguage()
+}
+
+function ruPluralForm(count: number, one: string, few: string, many: string): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod10 === 1 && mod100 !== 11) return one
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few
+  return many
+}
+
+/** Localized "N day(s)" label, e.g. "5 days" / "5 дней" / "1 день". */
+export function formatDaysCount(count: number, language: Language): string {
+  const word =
+    language === 'ru' ? ruPluralForm(count, 'день', 'дня', 'дней') : count === 1 ? 'day' : 'days'
+  return `${count} ${word}`
+}
+
+/** Localized "N transaction(s)" label, e.g. "3 transactions" / "3 операции". */
+export function formatOperationsCount(count: number, language: Language): string {
+  const word =
+    language === 'ru'
+      ? ruPluralForm(count, 'операция', 'операции', 'операций')
+      : count === 1
+        ? 'transaction'
+        : 'transactions'
+  return `${count} ${word}`
 }
