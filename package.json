@@ -2,7 +2,7 @@
   "name": "finance-tracker",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,8 +16,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"scripts/**/*.mjs\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\" \"scripts/**/*.mjs\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"scripts/**/*.mjs\" \"landing/**/*.{html,css,mjs}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\" \"scripts/**/*.mjs\" \"landing/**/*.{html,css,mjs}\"",
     "size": "size-limit",
     "type-coverage": "type-coverage -p tsconfig.app.json --at-least 90 --strict --detail"
   },
