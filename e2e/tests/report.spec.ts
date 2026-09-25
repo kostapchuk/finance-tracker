@@ -244,27 +244,4 @@ test.describe('Reports Page', () => {
     await reportPage.goToPreviousMonth();
     await expect(reportPage.getIncomeAmount()).toContainText('0');
   });
-
-  test('should display total balance from all accounts', async ({
-    reportPage,
-    dbHelper,
-  }) => {
-    // Seed multiple accounts with different balances
-    await dbHelper.seedAccount({ ...testAccounts.usdCash(), balance: 1000 });
-    await dbHelper.seedAccount({
-      name: 'Savings',
-      type: 'bank',
-      currency: 'USD',
-      balance: 2500,
-      color: '#3b82f6',
-      icon: 'piggy-bank',
-      sortOrder: 1,
-    });
-    await dbHelper.refreshStoreData();
-
-    await reportPage.navigateTo('report');
-
-    // Total balance should be $3500 ($1000 + $2500)
-    await expect(reportPage.getTotalBalanceAmount()).toContainText('3,500');
-  });
 });

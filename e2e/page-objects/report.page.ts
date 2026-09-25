@@ -7,14 +7,6 @@ export class ReportPage extends BasePage {
   }
 
   // Summary cards
-  getTotalBalanceCard(): Locator {
-    return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /total.*balance|общий.*баланс/i });
-  }
-
-  getTotalBalanceAmount(): Locator {
-    return this.getTotalBalanceCard().locator('.text-2xl.font-bold');
-  }
-
   getIncomeCard(): Locator {
     return this.page.locator('.bg-secondary\\/50.rounded-2xl').filter({ hasText: /^(?=.*income|.*доход)(?!.*expense|.*расход)/i }).first();
   }
