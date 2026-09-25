@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { addMonths } from './date'
+import {
+  addMonths,
+  formatDate,
+  formatDateForInput,
+  formatDateTime,
+  getEndOfMonth,
+  getEndOfYear,
+  getStartOfMonth,
+  getStartOfWeek,
+  getStartOfYear,
+} from './date'
 
 describe('addMonths', () => {
   it('steps forward and back within a year', () => {
@@ -41,5 +51,59 @@ describe('addMonths', () => {
   it('handles the February leap-year edge', () => {
     expect(addMonths(new Date(2024, 0, 31), 1)).toEqual(new Date(2024, 1, 1))
     expect(addMonths(new Date(2026, 0, 31), 1)).toEqual(new Date(2026, 1, 1))
+  })
+})
+
+describe('formatDateForInput', () => {
+  it('zero-pads month and day', () => {
+    expect(formatDateForInput(new Date(2026, 0, 5))).toBe('2026-01-05')
+    expect(formatDateForInput(new Date(2026, 11, 25))).toBe('2026-12-25')
+  })
+})
+
+describe('formatDate / formatDateTime', () => {
+  it('include the year and day of the date', () => {
+    const date = new Date(2026, 2, 7, 14, 30)
+
+    expect(formatDate(date)).toContain('2026')
+    expect(formatDate(date)).toContain('7')
+    expect(formatDateTime(date)).toContain('2026')
+    expect(formatDateTime(date)).toContain('30')
+  })
+})
+
+describe('month and year boundaries', () => {
+  const date = new Date(2024, 1, 15, 10)
+
+  it('returns the first and last moment of the month', () => {
+    expect(getStartOfMonth(date)).toEqual(new Date(2024, 1, 1))
+    expect(getEndOfMonth(date)).toEqual(new Date(2024, 1, 29, 23, 59, 59, 999))
+  })
+
+  it('returns the first and last moment of the year', () => {
+    expect(getStartOfYear(date)).toEqual(new Date(2024, 0, 1))
+    expect(getEndOfYear(date)).toEqual(new Date(2024, 11, 31, 23, 59, 59, 999))
+  })
+
+  it('defaults to the current date', () => {
+    const now = new Date()
+
+    expect(getStartOfMonth().getMonth()).toBe(now.getMonth())
+    expect(getEndOfMonth().getMonth()).toBe(now.getMonth())
+    expect(getStartOfYear().getFullYear()).toBe(now.getFullYear())
+    expect(getEndOfYear().getFullYear()).toBe(now.getFullYear())
+    expect(getStartOfWeek().getDay()).toBe(1)
+  })
+})
+
+describe('getStartOfWeek', () => {
+  it('returns the Monday of the week', () => {
+    // Wednesday 2026-09-23
+    expect(getStartOfWeek(new Date(2026, 8, 23, 18))).toEqual(new Date(2026, 8, 21))
+  })
+
+  it('treats Sunday as the end of the week', () => {
+    // Sunday 2026-09-27
+    expect(getStartOfWeek(new Date(2026, 8, 27))).toEqual(new Date(2026, 8, 21))
   })
 })
