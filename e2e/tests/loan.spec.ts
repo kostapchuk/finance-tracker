@@ -115,6 +115,42 @@ test.describe('Loan Management', () => {
     expect(newBalance).toBe(initialBalance - 220);
   });
 
+  test('should create a loan using the main-currency amount field (loan and account share a non-main currency)', async ({
+    page,
+    loansPage,
+    dbHelper,
+  }) => {
+    // Main currency is USD (set by setupCleanState). Both the loan and its
+    // account are EUR, so neither amount is in USD — the form must show a
+    // manual USD conversion field.
+    const accountId = await dbHelper.seedAccount(testAccounts.eurBank());
+    await dbHelper.refreshStoreData();
+    await page.reload();
+
+    const initialBalance = await dbHelper.getAccountBalance(accountId);
+    const loanForm = new LoanForm(page);
+
+    await loansPage.navigateTo('loans');
+    await loansPage.clickAdd();
+
+    await loanForm.selectType('given');
+    await loanForm.fillPersonName('Main Currency Create Test');
+    await loanForm.fillAmount('300');
+    await loanForm.selectCurrency('EUR');
+    await loanForm.selectAccount('EUR Bank');
+
+    // Loan currency and account currency match (not the dual-input
+    // multi-currency case), but the main-currency field must still appear
+    // since neither is USD.
+    await loanForm.fillMainCurrencyAmount('330'); // USD equivalent
+    await loanForm.save();
+
+    // The loan must actually be created (balance moves, loan appears).
+    const newBalance = await dbHelper.getAccountBalance(accountId);
+    expect(newBalance).toBe(initialBalance - 300);
+    await expect(loansPage.getLoanByPersonName('Main Currency Create Test')).toBeVisible();
+  });
+
   test('should set due date for loan', async ({ page, loansPage, dbHelper }) => {
     // Seed account
     await dbHelper.seedAccount(testAccounts.usdCash());

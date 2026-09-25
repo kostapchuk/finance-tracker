@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { loanRepo } from '@/database/repositories'
-import type { Loan, LoanType } from '@/database/types'
+import type { Loan, LoanType, Transaction } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
@@ -38,12 +38,15 @@ export interface LoanFormData {
 
 interface LoanFormProps {
   loan?: Loan
+  // The loan's originating loan_given/loan_received transaction, used to
+  // pre-fill the account/main-currency amounts when editing
+  editTransaction?: Transaction
   open: boolean
   onClose: () => void
   onSave?: (data: LoanFormData, isEdit: boolean, loanId?: number) => Promise<void>
 }
 
-export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
+export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanFormProps) {
   const accounts = useAppStore((state) => state.accounts)
   const mainCurrency = useAppStore((state) => state.mainCurrency)
   const refreshLoans = useAppStore((state) => state.refreshLoans)
@@ -70,7 +73,7 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
   const accountIsMain = selectedAccount?.currency === mainCurrency
   const needsMainCurrencyAmount = !!selectedAccount && !loanIsMain && !accountIsMain
 
-  useResetOnChange([loan, open, mainCurrency, accounts], () => {
+  useResetOnChange([loan, editTransaction, open, mainCurrency, accounts], () => {
     if (loan) {
       setType(loan.type)
       setPersonName(loan.personName)
@@ -79,6 +82,14 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
       setCurrency(loan.currency)
       setAccountId(loan.accountId?.toString() || '')
       setDueDate(loan.dueDate ? formatDateForInput(new Date(loan.dueDate)) : '')
+      // The transaction's `amount` is always in the account's own currency
+      // for loan_given/loan_received (there's no separate accountAmount field).
+      setAccountAmount(
+        editTransaction && editTransaction.currency !== loan.currency
+          ? editTransaction.amount.toString()
+          : ''
+      )
+      setMainCurrencyAmount(editTransaction?.mainCurrencyAmount?.toString() || '')
     } else {
       setType('given')
       setPersonName('')
@@ -87,9 +98,9 @@ export function LoanForm({ loan, open, onClose, onSave }: LoanFormProps) {
       setCurrency(mainCurrency)
       setAccountId(accounts.length > 0 ? accounts[0].id!.toString() : '')
       setDueDate('')
+      setAccountAmount('')
+      setMainCurrencyAmount('')
     }
-    setAccountAmount('')
-    setMainCurrencyAmount('')
   })
 
   const handleSubmit = async (e: React.FormEvent) => {

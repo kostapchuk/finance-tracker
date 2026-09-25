@@ -32,7 +32,7 @@ import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/utils/cn'
-import { formatCurrency } from '@/utils/currency'
+import { formatCurrency, resolveMainCurrencyAmount } from '@/utils/currency'
 import { getStartOfMonth, getStartOfWeek } from '@/utils/date'
 import { applyTransactionBalance, reverseTransactionBalance } from '@/utils/transactionBalance'
 
@@ -512,13 +512,21 @@ export function HistoryPage() {
     const newBalanceAmount = data.accountAmount ?? data.amount
     const account = accounts.find((a) => a.id === data.accountId)
 
+    const storedMainCurrencyAmount = resolveMainCurrencyAmount({
+      entryCurrency: data.currency,
+      accountCurrency: account?.currency,
+      mainCurrency,
+      entryAmount: data.amount,
+      manualAmount: data.mainCurrencyAmount,
+    })
+
     // 4. Update the transaction record (type may have changed between given/received)
     await transactionRepo.update(oldTransaction.id!, {
       type: data.type === 'given' ? 'loan_given' : 'loan_received',
       amount: newBalanceAmount,
       currency: account?.currency || data.currency,
       accountId: data.accountId,
-      mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
+      mainCurrencyAmount: storedMainCurrencyAmount,
       comment: oldTransaction.comment,
     })
 
@@ -982,6 +990,7 @@ export function HistoryPage() {
       {editModalType === 'loan' && editingLoan && (
         <LoanForm
           loan={editingLoan}
+          editTransaction={editingTransaction}
           open={true}
           onClose={handleCloseEditModal}
           onSave={handleSaveLoan}
