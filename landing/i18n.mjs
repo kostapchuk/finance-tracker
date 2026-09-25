@@ -201,8 +201,9 @@ export const translations = {
   },
 }
 
-export function detectLanguage(stored, browserLanguages) {
-  if (stored === 'en' || stored === 'ru') return stored
-  const first = (browserLanguages ?? []).find(Boolean) ?? ''
-  return /^(ru|be|uk|kk)\b/i.test(first) ? 'ru' : 'en'
+export const DEFAULT_LANGUAGE = 'ru'
+
+// Russian is the default; English is shown only after the visitor picks it.
+export function detectLanguage(stored) {
+  return stored === 'en' || stored === 'ru' ? stored : DEFAULT_LANGUAGE
 }

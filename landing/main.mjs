@@ -42,7 +42,7 @@ for (const link of document.querySelectorAll('[data-app-link]')) {
   link.href = APP_URL
 }
 
-applyLanguage(detectLanguage(readStoredLanguage(), navigator.languages))
+applyLanguage(detectLanguage(readStoredLanguage()))
 for (const btn of document.querySelectorAll('[data-lang]')) {
   btn.addEventListener('click', () => applyLanguage(btn.dataset.lang))
 }
