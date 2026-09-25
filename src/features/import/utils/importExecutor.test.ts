@@ -1,4 +1,3 @@
-import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BudgetOkRow } from '../types'
