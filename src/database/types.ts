@@ -73,6 +73,9 @@ export interface Transaction {
 
   // For loan transactions
   loanId?: number
+  // For loan_payment: amount in the loan's own currency, used to track loan.paidAmount
+  // (which is always denominated in the loan's currency, not the account's)
+  loanCurrencyAmount?: number
 
   // Amount in mainCurrency when account currency differs (for reporting/budgets)
   mainCurrencyAmount?: number

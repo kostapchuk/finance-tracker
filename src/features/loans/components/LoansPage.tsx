@@ -11,7 +11,7 @@ import { loanRepo, transactionRepo } from '@/database/repositories'
 import type { Loan } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
-import { formatCurrency, getAmountColorClass } from '@/utils/currency'
+import { formatCurrency, getAmountColorClass, resolveMainCurrencyAmount } from '@/utils/currency'
 import { applyTransactionBalance } from '@/utils/transactionBalance'
 
 export function LoansPage() {
@@ -101,6 +101,14 @@ export function LoansPage() {
       // Amount to use for account balance update
       const balanceAmount = data.accountAmount ?? data.amount
 
+      const storedMainCurrencyAmount = resolveMainCurrencyAmount({
+        entryCurrency: data.currency,
+        accountCurrency: account?.currency,
+        mainCurrency,
+        entryAmount: data.amount,
+        manualAmount: data.mainCurrencyAmount,
+      })
+
       // Create transaction record
       const transactionType =
         data.type === 'given' ? ('loan_given' as const) : ('loan_received' as const)
@@ -111,7 +119,7 @@ export function LoansPage() {
         date: new Date(),
         loanId: newLoanId as number,
         accountId: data.accountId,
-        mainCurrencyAmount: data.currency === mainCurrency ? data.amount : undefined,
+        mainCurrencyAmount: storedMainCurrencyAmount,
         comment: `${data.type === 'given' ? t('loanTo') : t('loanFrom')} ${data.personName}`,
       })) as number
 

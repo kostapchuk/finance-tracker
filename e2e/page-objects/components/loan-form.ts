@@ -48,6 +48,13 @@ export class LoanForm {
     await input.fill(amount);
   }
 
+  // Main-currency amount — shown when neither the loan currency nor the
+  // account currency is the app's main currency
+  async fillMainCurrencyAmount(amount: string): Promise<void> {
+    const input = this.getDialog().locator('#mainCurrencyAmount');
+    await input.fill(amount);
+  }
+
   // Account selector (second select, after Type)
   async selectAccount(accountName: string): Promise<void> {
     const select = this.getDialog().locator('button.w-full.border').nth(1);
