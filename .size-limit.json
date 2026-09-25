@@ -1,4 +1,15 @@
 [
-  { "name": "JS", "path": "dist/assets/*.js", "gzip": true, "limit": "200 kB" },
+  {
+    "name": "JS",
+    "path": ["dist/assets/*.js", "!dist/assets/vendor-analytics-*.js"],
+    "gzip": true,
+    "limit": "200 kB"
+  },
+  {
+    "name": "Analytics (lazy-loaded)",
+    "path": "dist/assets/vendor-analytics-*.js",
+    "gzip": true,
+    "limit": "110 kB"
+  },
   { "name": "CSS", "path": "dist/assets/*.css", "gzip": true, "limit": "10 kB" }
 ]

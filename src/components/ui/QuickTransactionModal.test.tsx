@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { QuickTransactionModal, type TransactionMode } from './QuickTransactionModal'
 
-import type { Account } from '@/database/types'
+import type { Account, Category, IncomeSource } from '@/database/types'
 
 const createMock = vi.fn()
 const getByIdMock = vi.fn()
@@ -14,6 +14,11 @@ vi.mock('@/database/repositories', () => ({
     update: vi.fn(),
     getById: (...args: unknown[]) => getByIdMock(...args),
   },
+}))
+
+const trackEventMock = vi.fn()
+vi.mock('@/utils/analytics', () => ({
+  trackEvent: (...args: unknown[]) => trackEventMock(...args),
 }))
 
 vi.mock('@/utils/transactionBalance', () => ({
@@ -161,5 +166,48 @@ describe('QuickTransactionModal transfer account pickers', () => {
     expect(createMock).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'transfer', accountId: 3, toAccountId: 1 })
     )
+  })
+})
+
+describe('QuickTransactionModal analytics', () => {
+  beforeEach(() => {
+    createMock.mockReset().mockResolvedValue(99)
+    getByIdMock.mockReset().mockImplementation(() => Promise.resolve())
+    trackEventMock.mockReset()
+  })
+
+  const source: IncomeSource = {
+    id: 1,
+    name: 'Salary',
+    currency: 'USD',
+    color: '#0f0',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+  const category: Category = {
+    id: 1,
+    name: 'Food',
+    color: '#f00',
+    categoryType: 'expense',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+
+  it.each<[string, TransactionMode]>([
+    ['income', { type: 'income', source, preselectedAccountId: 1 }],
+    ['expense', { type: 'expense', category, preselectedAccountId: 1 }],
+    ['transfer', { type: 'transfer', fromAccount: accounts[0], toAccount: accounts[1] }],
+  ])('tracks transaction_created for a new %s', async (type, mode) => {
+    render(<QuickTransactionModal mode={mode} accounts={accounts} onClose={vi.fn()} />)
+
+    fireEvent.change(screen.getByPlaceholderText('0'), { target: { value: '50' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'save' }))
+    })
+
+    await vi.waitFor(() =>
+      expect(trackEventMock).toHaveBeenCalledWith('transaction_created', { type })
+    )
+    expect(trackEventMock).toHaveBeenCalledTimes(1)
   })
 })

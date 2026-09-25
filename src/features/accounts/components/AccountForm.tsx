@@ -19,6 +19,7 @@ import { useEntityFormFields } from '@/hooks/useEntityFormFields'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useResetOnChange } from '@/hooks/useResetOnChange'
 import { useAppStore } from '@/store/useAppStore'
+import { trackEvent } from '@/utils/analytics'
 
 interface AccountFormProps {
   account?: Account
@@ -89,6 +90,7 @@ export function AccountForm({ account, open, onClose }: AccountFormProps) {
             color,
             hiddenFromDashboard,
           }))
+      if (!account?.id) trackEvent('account_created')
       await refreshAccounts()
       onClose()
     } catch (error) {

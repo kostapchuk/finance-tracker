@@ -2,7 +2,7 @@
   "name": "finance-tracker",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -30,6 +30,7 @@
     "clsx": "^2.1.1",
     "dexie": "^4.4.5",
     "lucide-react": "^0.577.0",
+    "posthog-js": "^1.434.13",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.6.0",
