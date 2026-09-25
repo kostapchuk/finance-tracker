@@ -11,20 +11,13 @@ export interface TransactionFlows {
  * Income and received loans count as inflows; expenses and given loans
  * count as outflows. A loan payment follows its loan: repayment of a given
  * loan is an inflow, a payment on a received loan is an outflow. Payments
- * whose loan can't be found and transfers are not counted. Transactions in
- * a different currency with no converted `mainCurrencyAmount` are skipped
- * rather than summed in their own currency's units.
+ * whose loan can't be found and transfers are not counted.
  */
-export function calculateFlows(
-  transactions: Transaction[],
-  loans: Loan[],
-  mainCurrency: string
-): TransactionFlows {
+export function calculateFlows(transactions: Transaction[], loans: Loan[]): TransactionFlows {
   let inflows = 0
   let outflows = 0
 
   for (const tx of transactions) {
-    if (tx.currency !== mainCurrency && tx.mainCurrencyAmount == undefined) continue
     const amount = tx.mainCurrencyAmount ?? tx.amount
 
     switch (tx.type) {
