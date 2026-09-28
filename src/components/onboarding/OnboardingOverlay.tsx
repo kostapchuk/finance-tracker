@@ -17,7 +17,7 @@ export function OnboardingOverlay() {
   // Step 1: Welcome
   if (onboardingStep === 1) {
     return (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70">
+      <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/70">
         <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full text-center animate-in fade-in zoom-in duration-300">
           <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">💰</span>
@@ -47,7 +47,7 @@ export function OnboardingOverlay() {
   // Step 2: Income tutorial
   if (onboardingStep === 2) {
     return (
-      <div className="fixed inset-0 z-[200] pointer-events-none">
+      <div className="fixed inset-0 z-200 pointer-events-none">
         {/* Semi-transparent overlay */}
         <div className="absolute inset-0 bg-black/50" />
 
@@ -86,7 +86,7 @@ export function OnboardingOverlay() {
   // Step 3: Expense tutorial
   if (onboardingStep === 3) {
     return (
-      <div className="fixed inset-0 z-[200] pointer-events-none">
+      <div className="fixed inset-0 z-200 pointer-events-none">
         <div className="absolute inset-0 bg-black/50" />
 
         <div className="absolute top-20 left-4 right-4 pointer-events-auto">
@@ -125,7 +125,7 @@ export function OnboardingOverlay() {
   // Step 4: Settings
   if (onboardingStep === 4) {
     return (
-      <div className="fixed inset-0 z-[200] pointer-events-none">
+      <div className="fixed inset-0 z-200 pointer-events-none">
         <div className="absolute inset-0 bg-black/50" />
 
         <div className="absolute top-20 left-4 right-4 pointer-events-auto">
@@ -156,7 +156,7 @@ export function OnboardingOverlay() {
   // Step 5: Completion
   if (onboardingStep === 5) {
     return (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70">
+      <div className="fixed inset-0 z-200 flex items-center justify-center bg-black/70">
         <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full text-center animate-in fade-in zoom-in duration-300">
           <div className="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="h-10 w-10 text-success" />

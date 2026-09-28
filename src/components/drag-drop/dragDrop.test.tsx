@@ -9,8 +9,8 @@ describe('drag and drop wrappers', () => {
   it('makes the whole element draggable in legacy mode', () => {
     render(
       <DndContext>
-        <DroppableZone id="zone" data={{}} className="zone">
-          <DraggableItem id="item" data={{ type: 'account' }} className="extra">
+        <DroppableZone id="zone" data={{}} className="mt-2">
+          <DraggableItem id="item" data={{ type: 'account' }} className="mt-1">
             <span>Wallet</span>
           </DraggableItem>
         </DroppableZone>
@@ -19,8 +19,8 @@ describe('drag and drop wrappers', () => {
 
     const draggable = screen.getByRole('button')
     expect(draggable).toHaveTextContent('Wallet')
-    expect(draggable).toHaveClass('touch-none', 'extra')
-    expect(draggable.parentElement).toHaveClass('zone')
+    expect(draggable).toHaveClass('touch-none', 'mt-1')
+    expect(draggable.parentElement).toHaveClass('mt-2')
   })
 
   it('passes drag handle props to a render function', () => {

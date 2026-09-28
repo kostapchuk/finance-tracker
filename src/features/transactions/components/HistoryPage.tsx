@@ -594,7 +594,7 @@ export function HistoryPage() {
           </div>
         ) : (
           <>
-            <h1 className="text-page-title">{t('history')}</h1>
+            <h1 className="page-title">{t('history')}</h1>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => dispatch({ type: 'SET_SHOW_FILTERS', payload: !showFilters })}
@@ -849,7 +849,7 @@ export function HistoryPage() {
                           <p className="text-xs text-muted-foreground truncate">
                             <span>{getAccountNameWithCurrency(transaction.accountId)}</span>
                             {transaction.comment && (
-                              <span className="truncate max-w-[100px] inline-block align-bottom">
+                              <span className="truncate max-w-25 inline-block align-bottom">
                                 {' '}
                                 • {transaction.comment}
                               </span>

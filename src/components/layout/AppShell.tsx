@@ -35,7 +35,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [loadAllData])
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
+    <div className="flex flex-col h-dvh overflow-hidden bg-background">
       <main className="flex-1 overflow-auto pb-20 pt-safe">{children}</main>
       <BottomNav />
       {onboardingStep > 0 && (

@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 /* Hide number input spinners/arrows */
 input[type='number']::-webkit-inner-spin-button,
@@ -55,9 +56,16 @@ input[type='number'] {
   --color-warning: hsl(38 92% 50%);
   --color-warning-foreground: hsl(48 96% 89%);
 
+  /* Transfers and accounts without a color (indigo) */
+  --color-transfer: hsl(238.7 83.5% 66.7%);
+
   /* Loan (orange - debt) */
   --color-loan: hsl(24.6 95% 53.1%);
   --color-loan-foreground: hsl(60 9.1% 97.8%);
+
+  /* Compact labels below text-xs (12px), e.g. the spending calendar */
+  --text-2xs: 0.6875rem;
+  --text-3xs: 0.625rem;
 
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
@@ -126,23 +134,30 @@ input[type='number'] {
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0);
   }
+}
 
-  /* Typography scale - use these instead of ad-hoc text-xl/text-lg/font-* combos.
-     Pass these as plain className strings, not through cn()/twMerge: their
-     "text-" prefix makes twMerge mistake them for a text-color/font-size
-     utility and silently drop them when merged next to one (e.g. text-foreground). */
+/* Typography scale - use these instead of ad-hoc text-xl/text-lg/font-* combos. */
 
-  /* Screen-level <h1> title */
-  .text-page-title {
-    @apply text-xl font-bold;
-  }
+/* Screen-level <h1> title */
+@utility page-title {
+  @apply text-xl font-bold;
+}
 
-  /* Uppercase section label above a card/list group */
-  .text-section-label {
-    @apply text-sm font-semibold text-muted-foreground uppercase tracking-wide;
-  }
+/* Uppercase section label above a card/list group */
+@utility section-label {
+  @apply text-sm font-semibold text-muted-foreground uppercase tracking-wide;
+}
+
+/* Sortable rows: dnd-kit's animated transition, fed through a custom property */
+@utility drag-transition {
+  transition: var(--drag-transition);
+}
+
+/* Punches the center out of a conic-gradient pie to make a donut chart */
+@utility donut-hole {
+  -webkit-mask: radial-gradient(circle 40px at center, transparent 100%, black 100%);
+  mask: radial-gradient(circle 40px at center, transparent 100%, black 100%);
 }
 
 /* Money amounts: use Tailwind's built-in tabular-nums so digits don't shift
-   width as they change - it merges safely with cn()/twMerge, unlike a custom
-   "text-*" utility (see note above). */
+   width as they change. */

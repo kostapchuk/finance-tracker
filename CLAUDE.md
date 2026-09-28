@@ -244,6 +244,13 @@ When loan/transaction currency differs from account currency:
 - Mobile-first: test on small screens, use responsive classes (sm:, etc.)
 - Path aliases: `@/` maps to `src/`
 
+### Design-system lint (`@shadcn/lint`, runs in `npm run lint`)
+
+- Style through theme tokens and Tailwind scale values (`src/index.css` `@theme`): no palette colors (`bg-pink-500`) and no arbitrary values (`p-[13px]`); add a token if one is missing.
+- Components in `src/components/ui/` own their appearance. Callers may pass only layout classes (margin, width, flex placement); add a variant/prop in the component instead of restyling it. `BlurredAmount` also accepts typography and color.
+- No inline style properties. Pass dynamic values (user-picked colors, percentages, dnd-kit transforms) as CSS custom properties consumed by a class, e.g. `className="bg-(--item-color)/12.5" style={{ '--item-color': color }}`. Declare new custom properties in `src/types/react-css.d.ts`.
+- Custom utilities are declared with `@utility` in `src/index.css` (e.g. `page-title`, `section-label`); every class must be one Tailwind can generate.
+
 ## Development Rules
 
 1. **Always add tests after bug/feature changes**: Add unit and e2e tests if applicable after every bug fix or feature implementation.

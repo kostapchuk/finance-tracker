@@ -94,7 +94,7 @@ export function ImportAccountMapping({
                     )
                   }
                 >
-                  <SelectTrigger className={isMapped ? '' : 'border-destructive/50'}>
+                  <SelectTrigger aria-invalid={!isMapped}>
                     <SelectValue placeholder={t('selectAccount')}>
                       {mappedId ? accounts.find((a) => a.id === mappedId)?.name : undefined}
                     </SelectValue>

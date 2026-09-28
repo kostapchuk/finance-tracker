@@ -273,13 +273,13 @@ export function BudgetOkImportWizard({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="max-w-lg h-[85vh] flex flex-col p-0">
+      <DialogContent variant="sheet" className="max-w-lg">
         {/* Header */}
         <div className="px-4 py-3 border-b">
           <div className="flex items-center gap-3">
             {step > 1 && step < 6 && !isImporting && (
-              <Button variant="outline" size="sm" onClick={handlePause} className="gap-1">
-                <Pause className="h-3 w-3" />
+              <Button variant="outline" size="sm" onClick={handlePause}>
+                <Pause className="h-3 w-3 mr-1" />
                 {t('importPause')}
               </Button>
             )}

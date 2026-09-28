@@ -19,9 +19,10 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
           aria-pressed={value === color}
           className={cn(
             'w-10 h-10 sm:w-6 sm:h-6 rounded-full transition-transform hover:scale-110',
+            'bg-(--item-color)',
             value === color && 'ring-2 ring-offset-2 ring-primary'
           )}
-          style={{ backgroundColor: color }}
+          style={{ '--item-color': color }}
         />
       ))}
     </div>

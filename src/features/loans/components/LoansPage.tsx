@@ -12,7 +12,7 @@ import type { Loan } from '@/database/types'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { trackEvent } from '@/utils/analytics'
-import { formatCurrency, getAmountColorClass, resolveMainCurrencyAmount } from '@/utils/currency'
+import { formatCurrency, resolveMainCurrencyAmount } from '@/utils/currency'
 import { applyTransactionBalance } from '@/utils/transactionBalance'
 
 export function LoansPage() {
@@ -154,7 +154,7 @@ export function LoansPage() {
     <div className="flex flex-col min-h-full pb-4">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
-        <h1 className="text-page-title">{t('loansAndDebts')}</h1>
+        <h1 className="page-title">{t('loansAndDebts')}</h1>
         <Button size="sm" onClick={handleAddNew}>
           <Plus className="h-4 w-4 mr-1" />
           {t('add')}
@@ -177,7 +177,8 @@ export function LoansPage() {
               Object.entries(totals.givenByCurrency).map(([currency, amount]) => (
                 <BlurredAmount
                   key={currency}
-                  className={`text-xl font-bold block ${getAmountColorClass(amount)}`}
+                  className="text-xl font-bold block"
+                  colorBySign={amount}
                 >
                   {formatCurrency(amount, currency)}
                 </BlurredAmount>
@@ -217,7 +218,7 @@ export function LoansPage() {
         >
           <div className="flex items-center gap-2">
             <ArrowUpRight className="h-4 w-4 text-success" />
-            <h3 className="text-section-label">{t('moneyGiven')}</h3>
+            <h3 className="section-label">{t('moneyGiven')}</h3>
             <span className="text-xs text-muted-foreground">({activeGiven.length})</span>
             {givenExpanded ? (
               <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -250,7 +251,7 @@ export function LoansPage() {
         >
           <div className="flex items-center gap-2">
             <ArrowDownLeft className="h-4 w-4 text-destructive" />
-            <h3 className="text-section-label">{t('moneyReceived')}</h3>
+            <h3 className="section-label">{t('moneyReceived')}</h3>
             <span className="text-xs text-muted-foreground">({activeReceived.length})</span>
             {receivedExpanded ? (
               <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -276,7 +277,7 @@ export function LoansPage() {
       {/* Paid Off Section */}
       {(paidGiven.length > 0 || paidReceived.length > 0) && (
         <section className="px-4 py-4">
-          <h3 className="text-section-label mb-3">{t('completed')}</h3>
+          <h3 className="section-label mb-3">{t('completed')}</h3>
           <div className="space-y-2">
             {[...paidGiven, ...paidReceived].map((loan) => (
               <div
@@ -328,7 +329,7 @@ function LoanCard({ loan, onClick }: { loan: Loan; onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-4 bg-secondary/50 rounded-xl active:scale-[0.98] transition-all"
+      className="w-full text-left p-4 bg-secondary/50 rounded-xl active:scale-98 transition-all"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="min-w-0 flex-1">
@@ -348,8 +349,8 @@ function LoanCard({ loan, onClick }: { loan: Loan; onClick?: () => void }) {
       {/* Progress bar */}
       <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
         <div
-          className={`h-full transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
-          style={{ width: `${progress}%` }}
+          className={`h-full w-(--progress) transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
+          style={{ '--progress': `${progress}%` }}
         />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground mt-1.5">

@@ -18,7 +18,7 @@ function DayGridCell({ day, isToday }: { day: DayCell; isToday: boolean }) {
   return (
     <div
       className={cn(
-        'aspect-square rounded-md flex items-center justify-center text-[11px] font-medium tabular-nums',
+        'aspect-square rounded-md flex items-center justify-center text-2xs font-medium tabular-nums',
         day.status === 'no-spend' && 'bg-success/15 text-success',
         day.status === 'spend' && 'bg-destructive/15 text-destructive',
         (day.status === 'no-data' || day.status === 'future') &&
@@ -62,13 +62,13 @@ export function NoSpendDaysCard({
 
   return (
     <>
-      <h3 className="text-section-label mb-4">{t('spendingCalendarTitle')}</h3>
+      <h3 className="section-label mb-4">{t('spendingCalendarTitle')}</h3>
       <div className="p-4 bg-secondary/50 rounded-2xl">
         <div className="grid grid-cols-7 gap-1 mb-1">
           {weekdayLabels.map((label) => (
             <div
               key={label}
-              className="text-center text-[10px] text-muted-foreground uppercase tracking-wide"
+              className="text-center text-3xs text-muted-foreground uppercase tracking-wide"
             >
               {label}
             </div>

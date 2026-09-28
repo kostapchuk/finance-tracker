@@ -109,7 +109,7 @@ export function ImportCategoryMapping({
                     onMappingChange(budgetOkName, value ? Number.parseInt(value, 10) : undefined)
                   }
                 >
-                  <SelectTrigger className={isMapped ? '' : 'border-destructive/50'}>
+                  <SelectTrigger aria-invalid={!isMapped}>
                     <SelectValue placeholder={t('importSelectCategory')}>
                       {mappedId ? categories.find((c) => c.id === mappedId)?.name : undefined}
                     </SelectValue>
@@ -119,8 +119,8 @@ export function ImportCategoryMapping({
                       <SelectItem key={category.id} value={category.id!.toString()}>
                         <div className="flex items-center gap-2">
                           <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: category.color }}
+                            className="w-3 h-3 rounded-full bg-(--item-color)"
+                            style={{ '--item-color': category.color }}
                           />
                           {category.name}
                         </div>

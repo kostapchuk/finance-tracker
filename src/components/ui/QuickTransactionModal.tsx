@@ -582,18 +582,13 @@ export function QuickTransactionModal({
             className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-(--item-color)/12.5"
               style={{
-                backgroundColor:
-                  ((selectedFromAccount ?? mode.fromAccount).color || '#6366f1') + '20',
+                '--item-color':
+                  (selectedFromAccount ?? mode.fromAccount).color || 'var(--color-transfer)',
               }}
             >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{
-                  backgroundColor: (selectedFromAccount ?? mode.fromAccount).color || '#6366f1',
-                }}
-              />
+              <div className="w-3 h-3 rounded-full bg-(--item-color)" />
             </div>
             <div className="min-w-0 text-left">
               <p className="font-semibold truncate">
@@ -613,17 +608,13 @@ export function QuickTransactionModal({
             className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-(--item-color)/12.5"
               style={{
-                backgroundColor: ((selectedToAccount ?? mode.toAccount).color || '#6366f1') + '20',
+                '--item-color':
+                  (selectedToAccount ?? mode.toAccount).color || 'var(--color-transfer)',
               }}
             >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{
-                  backgroundColor: (selectedToAccount ?? mode.toAccount).color || '#6366f1',
-                }}
-              />
+              <div className="w-3 h-3 rounded-full bg-(--item-color)" />
             </div>
             <div className="min-w-0 text-left">
               <p className="font-semibold truncate">{(selectedToAccount ?? mode.toAccount).name}</p>
@@ -647,13 +638,10 @@ export function QuickTransactionModal({
             className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: (selectedSource?.color || color) + '20' }}
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-(--item-color)/12.5"
+              style={{ '--item-color': selectedSource?.color || color }}
             >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: selectedSource?.color || color }}
-              />
+              <div className="w-3 h-3 rounded-full bg-(--item-color)" />
             </div>
             <div className="min-w-0 text-left">
               <p className="font-semibold truncate">{selectedSource?.name}</p>
@@ -668,13 +656,10 @@ export function QuickTransactionModal({
             className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-(--item-color)/12.5"
+              style={{ '--item-color': selectedAccount?.color || 'var(--color-transfer)' }}
             >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
-              />
+              <div className="w-3 h-3 rounded-full bg-(--item-color)" />
             </div>
             <div className="min-w-0 text-left">
               <p className="font-semibold truncate">{selectedAccount?.name}</p>
@@ -695,13 +680,10 @@ export function QuickTransactionModal({
             className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: (selectedAccount?.color || '#6366f1') + '20' }}
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-(--item-color)/12.5"
+              style={{ '--item-color': selectedAccount?.color || 'var(--color-transfer)' }}
             >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: selectedAccount?.color || '#6366f1' }}
-              />
+              <div className="w-3 h-3 rounded-full bg-(--item-color)" />
             </div>
             <div className="min-w-0 text-left">
               <p className="font-semibold truncate">{selectedAccount?.name}</p>
@@ -716,13 +698,10 @@ export function QuickTransactionModal({
             className="flex items-center gap-2 p-1.5 -m-1.5 rounded-xl hover:bg-secondary/50 transition-colors min-w-0 max-w-[45%]"
           >
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: (selectedCategory?.color || color) + '20' }}
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-(--item-color)/12.5"
+              style={{ '--item-color': selectedCategory?.color || color }}
             >
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: selectedCategory?.color || color }}
-              />
+              <div className="w-3 h-3 rounded-full bg-(--item-color)" />
             </div>
             <div className="min-w-0 text-left">
               <p className="font-semibold truncate">{selectedCategory?.name}</p>
@@ -1049,7 +1028,10 @@ export function QuickTransactionModal({
 
       {/* Submit Button - fixed above keyboard when covered */}
       {buttonCovered && (
-        <div className="absolute left-0 right-0 px-4 pb-2" style={{ bottom: keyboardHeight + 8 }}>
+        <div
+          className="absolute left-0 right-0 bottom-(--keyboard-offset) px-4 pb-2"
+          style={{ '--keyboard-offset': `${keyboardHeight + 8}px` }}
+        >
           <div className="max-w-lg mx-auto">
             <button
               onClick={handleSubmit}
@@ -1099,13 +1081,10 @@ export function QuickTransactionModal({
                 )}
               >
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: account.color + '20' }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-(--item-color)/12.5"
+                  style={{ '--item-color': account.color }}
                 >
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: account.color }}
-                  />
+                  <div className="w-4 h-4 rounded-full bg-(--item-color)" />
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <p className="font-medium truncate">{account.name}</p>
@@ -1146,10 +1125,10 @@ export function QuickTransactionModal({
                 )}
               >
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: source.color + '20' }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-(--item-color)/12.5"
+                  style={{ '--item-color': source.color }}
                 >
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: source.color }} />
+                  <div className="w-4 h-4 rounded-full bg-(--item-color)" />
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <p className="font-medium truncate">{source.name}</p>
@@ -1188,13 +1167,10 @@ export function QuickTransactionModal({
                 )}
               >
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: category.color + '20' }}
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-(--item-color)/12.5"
+                  style={{ '--item-color': category.color }}
                 >
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
+                  <div className="w-4 h-4 rounded-full bg-(--item-color)" />
                 </div>
                 <div className="flex-1 text-left min-w-0">
                   <p className="font-medium truncate">{category.name}</p>
@@ -1234,13 +1210,10 @@ export function QuickTransactionModal({
                   )}
                 >
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: account.color + '20' }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-(--item-color)/12.5"
+                    style={{ '--item-color': account.color }}
                   >
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: account.color }}
-                    />
+                    <div className="w-4 h-4 rounded-full bg-(--item-color)" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <p className="font-medium truncate">{account.name}</p>
@@ -1283,13 +1256,10 @@ export function QuickTransactionModal({
                   )}
                 >
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: account.color + '20' }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-(--item-color)/12.5"
+                    style={{ '--item-color': account.color }}
                   >
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: account.color }}
-                    />
+                    <div className="w-4 h-4 rounded-full bg-(--item-color)" />
                   </div>
                   <div className="flex-1 text-left min-w-0">
                     <p className="font-medium truncate">{account.name}</p>
