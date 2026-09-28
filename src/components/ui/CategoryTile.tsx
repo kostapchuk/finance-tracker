@@ -39,17 +39,17 @@ export function CategoryTile({
     >
       <div
         className={cn(
-          'w-12 h-12 rounded-full flex items-center justify-center',
+          'w-12 h-12 rounded-full flex items-center justify-center bg-(--item-color)/12.5',
           dragHandleProps && 'touch-none cursor-grab'
         )}
-        style={{ backgroundColor: color + '20' }}
+        style={{ '--item-color': color }}
         {...dragHandleProps}
         // dnd-kit applies role="button" here, but the handle holds only an icon.
         // Name it after the tile so it is not an anonymous control. Must follow
         // the spread so it is not overwritten by the drag attributes.
         aria-label={dragHandleProps ? name : undefined}
       >
-        {IconComponent && <IconComponent className="h-6 w-6" style={{ color }} />}
+        {IconComponent && <IconComponent className="h-6 w-6 text-(--item-color)" />}
       </div>
       <div className="text-center w-full min-w-0 overflow-hidden">
         <p className="text-sm text-muted-foreground truncate">{name}</p>

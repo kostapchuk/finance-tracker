@@ -22,13 +22,13 @@ describe('Button', () => {
   it('renders variants and forwards clicks', () => {
     const onClick = vi.fn()
     render(
-      <Button variant="destructive" size="sm" className="extra" onClick={onClick}>
+      <Button variant="destructive" size="sm" className="mt-1" onClick={onClick}>
         Delete
       </Button>
     )
 
     const button = screen.getByRole('button', { name: 'Delete' })
-    expect(button).toHaveClass('bg-destructive', 'extra')
+    expect(button).toHaveClass('bg-destructive', 'mt-1')
     fireEvent.click(button)
     expect(onClick).toHaveBeenCalled()
   })

@@ -74,12 +74,19 @@ function DialogTrigger({ children, asChild }: DialogTriggerProps) {
   )
 }
 
+const contentVariantClasses = {
+  default: 'grid p-6',
+  // Tall, edge-to-edge panel whose sections manage their own padding
+  sheet: 'flex flex-col h-[85vh] p-0',
+} as const
+
 interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
+  variant?: keyof typeof contentVariantClasses
 }
 
 const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
-  ({ className, children, ...props }, ref) => {
+  ({ className, children, variant = 'default', ...props }, ref) => {
     const { open, onOpenChange, titleId } = useDialog()
     const dialogRef = React.useRef<HTMLDivElement>(null)
     const previousActiveElement = React.useRef<Element | null>(null)
@@ -161,7 +168,8 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
             tabIndex={-1}
             onKeyDown={handleTabTrap}
             className={cn(
-              'grid w-full gap-4 border bg-background p-6 shadow-lg duration-200 rounded-lg',
+              'w-full gap-4 border bg-background shadow-lg duration-200 rounded-lg',
+              contentVariantClasses[variant],
               className
             )}
             {...props}

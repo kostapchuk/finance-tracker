@@ -109,7 +109,7 @@ export function ImportIncomeSourceMapping({
                     onMappingChange(budgetOkName, value ? Number.parseInt(value, 10) : undefined)
                   }
                 >
-                  <SelectTrigger className={isMapped ? '' : 'border-destructive/50'}>
+                  <SelectTrigger aria-invalid={!isMapped}>
                     <SelectValue placeholder={t('importSelectIncomeSource')}>
                       {mappedId ? incomeSources.find((s) => s.id === mappedId)?.name : undefined}
                     </SelectValue>
@@ -119,8 +119,8 @@ export function ImportIncomeSourceMapping({
                       <SelectItem key={source.id} value={source.id!.toString()}>
                         <div className="flex items-center gap-2">
                           <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: source.color }}
+                            className="w-3 h-3 rounded-full bg-(--item-color)"
+                            style={{ '--item-color': source.color }}
                           />
                           {source.name}
                         </div>

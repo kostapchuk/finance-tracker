@@ -6,6 +6,7 @@ import { MonthSelector } from '@/components/ui/MonthSelector'
 import { NoSpendDaysCard } from '@/features/reports/components/NoSpendDaysCard'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
+import { buildDonutGradient } from '@/utils/chart'
 import { cn } from '@/utils/cn'
 import { formatCurrency, formatCurrencyWithSign, getAmountColorClass } from '@/utils/currency'
 import { getStartOfMonth, getEndOfMonth, addMonths } from '@/utils/date'
@@ -135,7 +136,7 @@ export function ReportPage() {
     <div className="flex flex-col min-h-full pb-4">
       {/* Header */}
       <div className="px-4 py-3">
-        <h1 className="text-page-title">{t('report')}</h1>
+        <h1 className="page-title">{t('report')}</h1>
       </div>
 
       {/* Month Selector */}
@@ -159,10 +160,8 @@ export function ReportPage() {
                 Object.entries(stats.balanceByCurrency).map(([currency, balance]) => (
                   <BlurredAmount
                     key={currency}
-                    className={cn(
-                      'tabular-nums text-2xl font-bold block',
-                      getAmountColorClass(balance)
-                    )}
+                    className="tabular-nums text-2xl font-bold block"
+                    colorBySign={balance}
                   >
                     {formatCurrency(balance, currency)}
                   </BlurredAmount>
@@ -180,10 +179,8 @@ export function ReportPage() {
               <span className="text-sm text-muted-foreground">{t('income')}</span>
             </div>
             <BlurredAmount
-              className={cn(
-                'tabular-nums text-xl font-bold block',
-                getAmountColorClass(stats.monthlyIncome)
-              )}
+              className="tabular-nums text-xl font-bold block"
+              colorBySign={stats.monthlyIncome}
             >
               {formatCurrencyWithSign(stats.monthlyIncome, mainCurrency)}
             </BlurredAmount>
@@ -212,9 +209,7 @@ export function ReportPage() {
         <div className="p-4 bg-secondary/50 rounded-2xl">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">{t('netFlow')}</span>
-            <BlurredAmount
-              className={cn('tabular-nums text-xl font-bold', getAmountColorClass(stats.netFlow))}
-            >
+            <BlurredAmount className="tabular-nums text-xl font-bold" colorBySign={stats.netFlow}>
               {formatCurrencyWithSign(stats.netFlow, mainCurrency)}
             </BlurredAmount>
           </div>
@@ -234,7 +229,7 @@ export function ReportPage() {
       {(Object.keys(loanStats.givenByCurrency).length > 0 ||
         Object.keys(loanStats.receivedByCurrency).length > 0) && (
         <div className="px-4 py-4">
-          <h3 className="text-section-label mb-4">{t('currentLoansStatus')}</h3>
+          <h3 className="section-label mb-4">{t('currentLoansStatus')}</h3>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="p-4 bg-secondary/50 rounded-2xl">
@@ -251,10 +246,8 @@ export function ReportPage() {
                     Object.entries(loanStats.givenByCurrency).map(([currency, amount]) => (
                       <BlurredAmount
                         key={currency}
-                        className={cn(
-                          'tabular-nums text-xl font-bold block',
-                          getAmountColorClass(amount)
-                        )}
+                        className="tabular-nums text-xl font-bold block"
+                        colorBySign={amount}
                       >
                         {formatCurrency(amount, currency)}
                       </BlurredAmount>
@@ -294,31 +287,17 @@ export function ReportPage() {
 
       {/* Spending by Category */}
       <div className="px-4 py-4">
-        <h3 className="text-section-label mb-4">{t('spendingByCategory')}</h3>
+        <h3 className="section-label mb-4">{t('spendingByCategory')}</h3>
         {spendingByCategory.length === 0 ? (
-          <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-secondary/30 rounded-2xl">
+          <div className="h-50 flex items-center justify-center text-muted-foreground bg-secondary/30 rounded-2xl">
             {t('noExpenseDataThisMonth')}
           </div>
         ) : (
           <>
-            <div className="h-[200px] flex items-center justify-center">
+            <div className="h-50 flex items-center justify-center">
               <div
-                className="w-[160px] h-[160px] rounded-full"
-                style={{
-                  background: (() => {
-                    const total = spendingByCategory.reduce((s, c) => s + c.value, 0)
-                    let angle = 0
-                    const stops = spendingByCategory.map((c) => {
-                      const start = angle
-                      angle += (c.value / total) * 360
-                      return `${c.color} ${start}deg ${angle}deg`
-                    })
-                    return `conic-gradient(${stops.join(', ')})`
-                  })(),
-                  WebkitMask:
-                    'radial-gradient(circle 40px at center, transparent 100%, black 100%)',
-                  mask: 'radial-gradient(circle 40px at center, transparent 100%, black 100%)',
-                }}
+                className="w-40 h-40 rounded-full bg-(image:--donut-gradient) donut-hole"
+                style={{ '--donut-gradient': buildDonutGradient(spendingByCategory) }}
               />
             </div>
             <div className="space-y-2 mt-4">
@@ -326,8 +305,8 @@ export function ReportPage() {
                 <div key={category.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: category.color }}
+                      className="w-3 h-3 rounded-full bg-(--item-color)"
+                      style={{ '--item-color': category.color }}
                     />
                     <span className="text-sm">{category.name}</span>
                   </div>
@@ -343,14 +322,14 @@ export function ReportPage() {
 
       {/* Income vs Expenses Trend */}
       <div className="px-4 py-4">
-        <h3 className="text-section-label mb-4">{t('sixMonthTrend')}</h3>
+        <h3 className="section-label mb-4">{t('sixMonthTrend')}</h3>
         {monthlyTrend.every((m) => m.income === 0 && m.expenses === 0) ? (
-          <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-secondary/30 rounded-2xl">
+          <div className="h-50 flex items-center justify-center text-muted-foreground bg-secondary/30 rounded-2xl">
             {t('noTransactionDataYet')}
           </div>
         ) : (
           <div>
-            <div className="h-[170px] flex items-end gap-1 justify-between">
+            <div className="h-42.5 flex items-end gap-1 justify-between">
               {(() => {
                 const maxVal = Math.max(
                   ...monthlyTrend.map((m) => Math.max(m.income, m.expenses)),
@@ -358,14 +337,14 @@ export function ReportPage() {
                 )
                 return monthlyTrend.map((m) => (
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-0.5">
-                    <div className="flex items-end gap-0.5 w-full h-[145px]">
+                    <div className="flex items-end gap-0.5 w-full h-36.25">
                       <div
-                        className="flex-1 rounded-t bg-success min-h-[2px]"
-                        style={{ height: `${(m.income / maxVal) * 100}%` }}
+                        className="flex-1 rounded-t bg-success min-h-0.5 h-(--bar-height)"
+                        style={{ '--bar-height': `${(m.income / maxVal) * 100}%` }}
                       />
                       <div
-                        className="flex-1 rounded-t bg-destructive min-h-[2px]"
-                        style={{ height: `${(m.expenses / maxVal) * 100}%` }}
+                        className="flex-1 rounded-t bg-destructive min-h-0.5 h-(--bar-height)"
+                        style={{ '--bar-height': `${(m.expenses / maxVal) * 100}%` }}
                       />
                     </div>
                     <span className="text-xs text-muted-foreground">{m.month}</span>

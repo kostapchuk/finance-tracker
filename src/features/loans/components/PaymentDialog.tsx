@@ -2,6 +2,7 @@ import { ArrowRight, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { AccountSelect } from '@/components/ui/AccountSelect'
+import { AmountInput } from '@/components/ui/amount-input'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -265,8 +266,8 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </div>
             <div className="h-2 bg-secondary rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
-                style={{ width: `${(loan.paidAmount / loan.amount) * 100}%` }}
+                className={`h-full w-(--progress) transition-all ${loan.type === 'given' ? 'bg-success' : 'bg-destructive'}`}
+                style={{ '--progress': `${(loan.paidAmount / loan.amount) * 100}%` }}
               />
             </div>
             <div className="flex justify-between text-sm text-muted-foreground">
@@ -284,62 +285,42 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
               <div className="flex items-center gap-2">
                 <div className="flex-1 space-y-1">
                   <label className="text-xs text-muted-foreground">{loan.currency}</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {getCurrencySymbol(loan.currency)}
-                    </span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={amount}
-                      onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                      className="pl-8 text-lg"
-                      placeholder="0.00"
-                      autoFocus
-                      required
-                    />
-                  </div>
+                  <AmountInput
+                    currencySymbol={getCurrencySymbol(loan.currency)}
+                    value={amount}
+                    onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                    placeholder="0.00"
+                    autoFocus
+                    required
+                  />
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-5" />
                 <div className="flex-1 space-y-1">
                   <label className="text-xs text-muted-foreground">
                     {selectedAccount?.currency}
                   </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {getCurrencySymbol(selectedAccount?.currency || 'USD')}
-                    </span>
-                    <Input
-                      type="text"
-                      inputMode="decimal"
-                      value={accountAmount}
-                      onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
-                      className="pl-8 text-lg"
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
+                  <AmountInput
+                    currencySymbol={getCurrencySymbol(selectedAccount?.currency || 'USD')}
+                    value={accountAmount}
+                    onChange={(e) => setAccountAmount(sanitizeAmount(e.target.value))}
+                    placeholder="0.00"
+                    required
+                  />
                 </div>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-lg">
-                  {getCurrencySymbol(loan.currency)}
-                </span>
-                <Input
-                  id="amount"
-                  type="text"
-                  inputMode="decimal"
-                  value={amount}
-                  onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
-                  className="pl-8 text-lg h-12"
-                  placeholder="0.00"
-                  autoFocus
-                  required
-                />
-              </div>
+              <AmountInput
+                id="amount"
+                size="lg"
+                currencySymbol={getCurrencySymbol(loan.currency)}
+                value={amount}
+                onChange={(e) => setAmount(sanitizeAmount(e.target.value))}
+                placeholder="0.00"
+                autoFocus
+                required
+              />
             </div>
           )}
 
@@ -348,20 +329,13 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
               <label className="text-xs text-muted-foreground">
                 {mainCurrency} ({t('amountInMainCurrency')})
               </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {getCurrencySymbol(mainCurrency)}
-                </span>
-                <Input
-                  type="text"
-                  inputMode="decimal"
-                  value={mainCurrencyAmount}
-                  onChange={(e) => setMainCurrencyAmount(sanitizeAmount(e.target.value))}
-                  className="pl-8 text-lg"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
+              <AmountInput
+                currencySymbol={getCurrencySymbol(mainCurrency)}
+                value={mainCurrencyAmount}
+                onChange={(e) => setMainCurrencyAmount(sanitizeAmount(e.target.value))}
+                placeholder="0.00"
+                required
+              />
             </div>
           )}
 
@@ -398,7 +372,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
             </div>
           )}
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"

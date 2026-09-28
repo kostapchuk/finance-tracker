@@ -284,6 +284,30 @@ describe('mapping steps with nothing to map', () => {
   })
 })
 
+describe('mapping steps with unmapped items', () => {
+  it('marks only the unmapped selects as invalid', () => {
+    const now = new Date()
+    const { container } = render(
+      <ImportCategoryMapping
+        uniqueCategories={['Food', 'Rent']}
+        categories={[
+          { id: 1, name: 'Groceries', color: '#22c55e', createdAt: now, updatedAt: now },
+        ]}
+        mapping={new Map([['Food', 1]])}
+        onMappingChange={vi.fn()}
+        onNext={vi.fn()}
+        onBack={vi.fn()}
+      />
+    )
+
+    const triggers = container.querySelectorAll('[aria-invalid]')
+    expect(triggers).toHaveLength(2)
+    expect(triggers[0]).toHaveAttribute('aria-invalid', 'false')
+    expect(triggers[1]).toHaveAttribute('aria-invalid', 'true')
+    expect(triggers[1]).toHaveClass('aria-invalid:border-destructive/50')
+  })
+})
+
 describe('ImportConfirmation', () => {
   const data: ParsedImportData = parseBudgetOkCSV(CSV)
   const handlers = { onImport: vi.fn(), onBack: vi.fn(), onClose: vi.fn() }

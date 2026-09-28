@@ -75,6 +75,7 @@ import { IncomeSourceForm } from '@/features/income/components/IncomeSourceForm'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAppStore } from '@/store/useAppStore'
 import { buildBackupData, parseBackupData } from '@/utils/backup'
+import { cn } from '@/utils/cn'
 import { formatCurrency } from '@/utils/currency'
 import type { Language } from '@/utils/i18n'
 
@@ -450,7 +451,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col min-h-full pb-4">
       <div className="px-4 py-3">
-        <h1 className="text-page-title">{t('settings')}</h1>
+        <h1 className="page-title">{t('settings')}</h1>
       </div>
 
       {/* Update Card */}
@@ -471,7 +472,7 @@ export function SettingsPage() {
 
       {/* Management Sections */}
       <div className="px-4 py-2">
-        <h3 className="text-section-label mb-3">{t('manage')}</h3>
+        <h3 className="section-label mb-3">{t('manage')}</h3>
         <div className="space-y-2">
           <SettingsRow
             icon={DollarSign}
@@ -502,7 +503,7 @@ export function SettingsPage() {
 
       {/* Language & Currency Section */}
       <div className="px-4 py-4">
-        <h3 className="text-section-label mb-3">{t('language')}</h3>
+        <h3 className="section-label mb-3">{t('language')}</h3>
         <div className="space-y-2">
           <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl">
             <div className="flex items-center gap-3">
@@ -510,7 +511,7 @@ export function SettingsPage() {
               <span>{t('language')}</span>
             </div>
             <Select value={language} onValueChange={(v) => setLanguage(v as Language)}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-35">
                 <SelectValue>{language === 'en' ? t('english') : t('russian')}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -530,7 +531,7 @@ export function SettingsPage() {
             <CurrencySelect
               value={mainCurrency}
               onValueChange={setMainCurrency}
-              triggerClassName="w-[100px]"
+              triggerClassName="w-25"
             />
           </div>
           <div className="flex items-center justify-between p-4 bg-secondary/50 rounded-xl">
@@ -559,7 +560,7 @@ export function SettingsPage() {
 
       {/* Data Section */}
       <div className="px-4 py-4">
-        <h3 className="text-section-label mb-3">{t('data')}</h3>
+        <h3 className="section-label mb-3">{t('data')}</h3>
         <div className="space-y-2">
           <button
             onClick={() => setImportWizardOpen(true)}
@@ -654,9 +655,11 @@ export function SettingsPage() {
       <Dialog open={deleteModalOpen} onOpenChange={(open) => !open && setDeleteModalOpen(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-destructive flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              {t('deleteAllData')}
+            <DialogTitle>
+              <span className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                {t('deleteAllData')}
+              </span>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -733,7 +736,7 @@ function ManagementView({
         <button onClick={onBack} className="text-primary font-medium" aria-label="Back">
           {backLabel}
         </button>
-        <h1 className="text-page-title">{title}</h1>
+        <h1 className="page-title">{title}</h1>
         <button
           onClick={onAdd}
           className="p-2 rounded-full bg-primary text-primary-foreground"
@@ -758,7 +761,8 @@ interface ManagementItemProps {
     listeners: DraggableSyntheticListeners
   }
   containerRef?: (node: HTMLElement | null) => void
-  containerStyle?: React.CSSProperties
+  /** dnd-kit sortable state for the row container */
+  sortable?: { transform?: string; transition?: string; isDragging: boolean }
 }
 
 function ManagementItem({
@@ -769,13 +773,19 @@ function ManagementItem({
   onDelete,
   dragHandle,
   containerRef,
-  containerStyle,
+  sortable,
 }: ManagementItemProps) {
   return (
     <div
       ref={containerRef}
-      style={containerStyle}
-      className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl"
+      style={{
+        '--drag-transform': sortable?.transform,
+        '--drag-transition': sortable?.transition,
+      }}
+      className={cn(
+        'flex items-center gap-3 p-3 bg-secondary/50 rounded-xl transform-(--drag-transform) drag-transition',
+        sortable?.isDragging && 'opacity-50'
+      )}
     >
       {dragHandle && (
         <button
@@ -788,14 +798,11 @@ function ManagementItem({
         </button>
       )}
       <div
-        className="w-10 h-10 rounded-full flex-shrink-0"
-        style={{ backgroundColor: color + '30' }}
+        className="w-10 h-10 rounded-full flex-shrink-0 bg-(--item-color)/19"
+        style={{ '--item-color': color }}
       >
-        <div
-          className="w-full h-full rounded-full flex items-center justify-center"
-          style={{ backgroundColor: color + '40' }}
-        >
-          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: color }} />
+        <div className="w-full h-full rounded-full flex items-center justify-center bg-(--item-color)/25">
+          <div className="w-4 h-4 rounded-full bg-(--item-color)" />
         </div>
       </div>
       <div className="flex-1 min-w-0">
@@ -825,23 +832,17 @@ function ManagementItem({
 function SortableManagementItem({
   id,
   ...itemProps
-}: { id: number } & Omit<ManagementItemProps, 'dragHandle' | 'containerRef' | 'containerStyle'>) {
+}: { id: number } & Omit<ManagementItemProps, 'dragHandle' | 'containerRef' | 'sortable'>) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   })
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
 
   return (
     <ManagementItem
       {...itemProps}
       dragHandle={{ attributes, listeners }}
       containerRef={setNodeRef}
-      containerStyle={style}
+      sortable={{ transform: CSS.Transform.toString(transform), transition, isDragging }}
     />
   )
 }

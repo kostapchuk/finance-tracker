@@ -151,6 +151,28 @@ describe('Dialog', () => {
     expect(callbackRef).toHaveBeenCalledWith(screen.getByRole('dialog'))
   })
 
+  it('uses a padded grid by default and a tall flush column for the sheet variant', () => {
+    const { rerender } = render(
+      <Dialog open onOpenChange={vi.fn()}>
+        <DialogContent>
+          <DialogTitle>Default</DialogTitle>
+        </DialogContent>
+      </Dialog>
+    )
+    expect(screen.getByRole('dialog')).toHaveClass('grid', 'p-6')
+
+    rerender(
+      <Dialog open onOpenChange={vi.fn()}>
+        <DialogContent variant="sheet">
+          <DialogTitle>Sheet</DialogTitle>
+        </DialogContent>
+      </Dialog>
+    )
+    const sheet = screen.getByRole('dialog')
+    expect(sheet).toHaveClass('flex', 'flex-col', 'p-0')
+    expect(sheet).not.toHaveClass('grid', 'p-6')
+  })
+
   it('throws when parts are used outside a Dialog', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
 

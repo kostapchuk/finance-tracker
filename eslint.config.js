@@ -6,6 +6,7 @@ import tseslint from 'typescript-eslint'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import importPlugin from 'eslint-plugin-import'
 import unicorn from 'eslint-plugin-unicorn'
+import { plugin as shadcn } from '@shadcn/lint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -27,6 +28,12 @@ export default defineConfig([
     },
     plugins: {
       import: importPlugin,
+      shadcn,
+    },
+    settings: {
+      shadcn: {
+        ui: '@/components/ui',
+      },
     },
     rules: {
       'jsx-a11y/no-autofocus': 'off',
@@ -42,6 +49,22 @@ export default defineConfig([
         },
       ],
       'import/no-duplicates': 'error',
+      'shadcn/no-restyle': [
+        'error',
+        {
+          allow: ['layout'],
+          contracts: [
+            // A bare inline <span> around a money figure: it takes the
+            // surrounding text's typography and color from its caller.
+            { pattern: '^BlurredAmount$', allow: ['layout', 'typography', 'color'] },
+          ],
+        },
+      ],
+      'shadcn/no-raw-colors': 'error',
+      'shadcn/no-arbitrary-values': 'error',
+      'shadcn/no-inline-styles': 'error',
+      'shadcn/no-unknown-classes': 'error',
+      'shadcn/require-static-classes': 'error',
       'unicorn/filename-case': 'off',
       'unicorn/prevent-abbreviations': 'off',
       '@typescript-eslint/no-empty-function': 'off',
@@ -99,6 +122,15 @@ export default defineConfig([
     files: ['**/database/repositories.ts'],
     rules: {
       'unicorn/no-array-reverse': 'off',
+    },
+  },
+  {
+    // UI primitives own their appearance, so they may style themselves.
+    files: ['**/components/ui/**'],
+    rules: {
+      'shadcn/no-restyle': 'off',
+      'shadcn/no-arbitrary-values': 'off',
+      'shadcn/require-static-classes': 'off',
     },
   },
 ])
