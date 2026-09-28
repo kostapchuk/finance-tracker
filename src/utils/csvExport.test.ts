@@ -267,6 +267,19 @@ describe('buildTransactionsCsv', () => {
     ])
   })
 
+  it('falls back to the source amount for same-currency transfers', () => {
+    const usdSavings: Account = { ...usd, id: 3, name: 'Savings' }
+    const csv = buildTransactionsCsv(
+      {
+        ...data([tx({ type: 'transfer', amount: 20, accountId: 1, toAccountId: 3 })]),
+        accounts: [usd, usdSavings, { ...usd, id: undefined, name: 'Unsaved' }],
+      },
+      labels,
+      CSV_FORMATS.en
+    )
+    expect(parseRows(csv)[1].slice(8, 11)).toEqual(['Savings', '20', 'USD'])
+  })
+
   it('includes the loan person for loan transactions', () => {
     const csv = buildTransactionsCsv(
       data([tx({ type: 'loan_payment', accountId: 1, loanId: 9 })]),
