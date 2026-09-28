@@ -157,6 +157,47 @@ describe('SettingsPage main view', () => {
     vi.unstubAllGlobals()
   })
 
+  it('exports transactions as CSV', async () => {
+    const createObjectURL = vi.fn((_blob: Blob) => 'blob:csv')
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL })
+    let downloadName = ''
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement
+    ) {
+      downloadName = this.download
+    })
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByText('exportCsv'))
+
+    expect(downloadName).toMatch(/^finance-tracker-transactions-\d{4}-\d{2}-\d{2}\.csv$/)
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:csv')
+    const blob = createObjectURL.mock.calls[0][0]
+    expect(blob.type).toBe('text/csv;charset=utf-8')
+    const text = await blob.text()
+    const lines = text.trimEnd().split('\r\n')
+    expect(lines[0]).toContain('csvDate,csvType,csvAmount')
+    // Main currency is BYN, so the USD expense has no main-currency amount
+    expect(lines[1]).toBe('2026-01-01 00:00,csvTypeExpense,5,USD,Wallet,5,USD,,,,,,,')
+    vi.unstubAllGlobals()
+  })
+
+  it('logs when the CSV export fails', () => {
+    vi.stubGlobal('URL', {
+      createObjectURL: () => {
+        throw new Error('no blobs')
+      },
+    })
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByText('exportCsv'))
+
+    expect(log).toHaveBeenCalledWith('CSV export failed:', expect.any(Error))
+    vi.unstubAllGlobals()
+  })
+
   it('restores a JSON backup, replacing existing data', async () => {
     const backup = {
       version: 1,
