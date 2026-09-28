@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { QuickTransactionModal, type TransactionMode } from './QuickTransactionModal'
 
@@ -209,5 +209,37 @@ describe('QuickTransactionModal analytics', () => {
       expect(trackEventMock).toHaveBeenCalledWith('transaction_created', { type })
     )
     expect(trackEventMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('QuickTransactionModal keyboard handling', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    Reflect.deleteProperty(globalThis, 'visualViewport')
+  })
+
+  it('floats the submit button above the keyboard when the keyboard covers it', () => {
+    // The on-screen keyboard shrinks the visual viewport to 400px of the 768px window.
+    const viewport = Object.assign(new EventTarget(), { height: 400 })
+    Object.defineProperty(globalThis, 'visualViewport', { value: viewport, configurable: true })
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      bottom: 700,
+    } as DOMRect)
+
+    const mode: TransactionMode = {
+      type: 'transfer',
+      fromAccount: accounts[0],
+      toAccount: accounts[1],
+    }
+    render(<QuickTransactionModal mode={mode} accounts={accounts} onClose={vi.fn()} />)
+    expect(screen.getAllByRole('button', { name: 'save' })).toHaveLength(1)
+
+    act(() => {
+      viewport.dispatchEvent(new Event('resize'))
+    })
+
+    const floating = screen.getAllByRole('button', { name: 'save' }).at(-1)!
+    const container = floating.closest<HTMLElement>(String.raw`.bottom-\(--keyboard-offset\)`)!
+    expect(container.style.getPropertyValue('--keyboard-offset')).toBe(`${768 - 400 + 8}px`)
   })
 })
