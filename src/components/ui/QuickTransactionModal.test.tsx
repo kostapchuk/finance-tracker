@@ -169,6 +169,55 @@ describe('QuickTransactionModal transfer account pickers', () => {
   })
 })
 
+describe('QuickTransactionModal picker scrolling', () => {
+  beforeEach(() => {
+    createMock.mockReset().mockResolvedValue(99)
+    getByIdMock.mockReset().mockImplementation(() => Promise.resolve())
+  })
+
+  it('does not cancel touchmove inside the account list, so a long list can scroll', () => {
+    const mode: TransactionMode = {
+      type: 'transfer',
+      fromAccount: accounts[0],
+      toAccount: accounts[1],
+    }
+    const { container } = render(
+      <QuickTransactionModal mode={mode} accounts={accounts} onClose={vi.fn()} />
+    )
+
+    fireEvent.click(screen.getByText('Wallet'))
+    const list = container.querySelector('.z-10 [data-scrollable]')!
+    expect(list).not.toBeNull()
+
+    // fireEvent returns false when preventDefault() was called
+    expect(fireEvent.touchMove(within(list as HTMLElement).getByText('Savings'))).toBe(true)
+    // Outside the list the page scroll lock still applies
+    expect(fireEvent.touchMove(container.querySelector('.z-10 h3')!)).toBe(false)
+  })
+
+  it('does not start the swipe-to-close gesture while scrolling the account list', () => {
+    const mode: TransactionMode = {
+      type: 'transfer',
+      fromAccount: accounts[0],
+      toAccount: accounts[1],
+    }
+    const { container } = render(
+      <QuickTransactionModal mode={mode} accounts={accounts} onClose={vi.fn()} />
+    )
+
+    fireEvent.click(screen.getByText('Wallet'))
+    const item = within(
+      container.querySelector('.z-10 [data-scrollable]') as HTMLElement
+    ).getByText('Savings')
+    const modal = container.querySelector('.rounded-3xl') as HTMLElement
+
+    fireEvent.touchStart(item, { touches: [{ clientY: 100 }] })
+    fireEvent.touchMove(item, { touches: [{ clientY: 300 }] })
+
+    expect(modal.style.transform).toBe('')
+  })
+})
+
 describe('QuickTransactionModal analytics', () => {
   beforeEach(() => {
     createMock.mockReset().mockResolvedValue(99)

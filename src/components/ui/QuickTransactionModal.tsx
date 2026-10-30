@@ -125,6 +125,8 @@ export function QuickTransactionModal({
     `
 
     const preventTouch = (e: TouchEvent) => {
+      // Let picker lists scroll; everything else must not move the page
+      if ((e.target as HTMLElement).closest('[data-scrollable]')) return
       e.preventDefault()
     }
     document.addEventListener('touchmove', preventTouch, { passive: false })
@@ -142,6 +144,8 @@ export function QuickTransactionModal({
       (e.target as HTMLElement).tagName === 'TEXTAREA'
     )
       return
+    // Scrolling a picker list must not drag the modal down
+    if ((e.target as HTMLElement).closest('[data-scrollable]')) return
     touchStartY.current = e.touches[0].clientY
     if (modalRef.current) {
       modalRef.current.style.transition = 'none'
@@ -1070,7 +1074,7 @@ export function QuickTransactionModal({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2" data-scrollable>
             {accounts.map((account) => (
               <button
                 key={account.id}
@@ -1114,7 +1118,7 @@ export function QuickTransactionModal({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2" data-scrollable>
             {incomeSources.map((source) => (
               <button
                 key={source.id}
@@ -1156,7 +1160,7 @@ export function QuickTransactionModal({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2" data-scrollable>
             {expenseCategories.map((category) => (
               <button
                 key={category.id}
@@ -1197,7 +1201,7 @@ export function QuickTransactionModal({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2" data-scrollable>
             {accounts
               .filter((account) => account.id !== selectedToAccountId)
               .map((account) => (
@@ -1243,7 +1247,7 @@ export function QuickTransactionModal({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2">
+          <div className="flex-1 overflow-y-auto p-2" data-scrollable>
             {accounts
               .filter((account) => account.id !== selectedFromAccountId)
               .map((account) => (
