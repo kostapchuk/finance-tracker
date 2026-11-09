@@ -65,6 +65,18 @@ describe('Dialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
+  it('hides the close button when showCloseButton is false', () => {
+    render(
+      <Dialog open onOpenChange={vi.fn()}>
+        <DialogContent showCloseButton={false}>
+          <DialogTitle>No icon</DialogTitle>
+        </DialogContent>
+      </Dialog>
+    )
+
+    expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument()
+  })
+
   it('restores scrolling and focus when it closes', () => {
     const opener = document.createElement('button')
     document.body.append(opener)

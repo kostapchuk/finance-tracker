@@ -239,7 +239,7 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <div className="flex items-start justify-between">
           <DialogHeader>
             <DialogTitle>{loan.personName}</DialogTitle>

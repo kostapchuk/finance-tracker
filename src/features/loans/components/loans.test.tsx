@@ -269,6 +269,17 @@ describe('PaymentDialog', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
+  it('has no close icon, but still offers cancel and delete', async () => {
+    const loan = await createLoan({ currency: 'USD', accountId: usdId })
+    const onClose = vi.fn()
+    render(<PaymentDialog loan={loan} open onClose={onClose} />)
+
+    expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'delete' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'cancel' }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
   it('records a cross-currency payment with a manual main-currency amount', async () => {
     const loan = await createLoan({ currency: 'EUR', accountId: plnId, type: 'received' })
     const onClose = vi.fn()
