@@ -338,6 +338,30 @@ describe('SettingsPage management sections', () => {
     expect(confirm).toHaveBeenCalledWith('deleteItemConfirm')
   })
 
+  it('refuses to delete an account that loans or loan payments reference', async () => {
+    await loanRepo.create({
+      type: 'given',
+      personName: 'Zed',
+      amount: 5,
+      currency: 'USD',
+      paidAmount: 0,
+      status: 'active',
+      accountId: bankId,
+    })
+    await useAppStore.getState().loadAllData()
+    const alertSpy = vi.spyOn(globalThis, 'alert').mockImplementation(() => {})
+    const confirm = vi.spyOn(globalThis, 'confirm').mockReturnValue(true)
+    render(<SettingsPage />)
+    openSection('accounts')
+
+    const itemRow = screen.getByText('Bank').closest('.rounded-xl') as HTMLElement
+    fireEvent.click(within(itemRow).getByRole('button', { name: 'Delete' }))
+
+    expect(alertSpy).toHaveBeenCalledWith('accountUsedByLoans')
+    expect(confirm).not.toHaveBeenCalled()
+    expect(useAppStore.getState().accounts).toHaveLength(2)
+  })
+
   it('shows empty states', async () => {
     const { db } = await import('@/database/db')
     await Promise.all(db.tables.map((table) => table.clear()))

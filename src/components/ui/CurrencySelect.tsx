@@ -15,6 +15,7 @@ interface CurrencySelectProps {
   showName?: boolean
   id?: string
   triggerClassName?: string
+  disabled?: boolean
 }
 
 /**
@@ -28,13 +29,14 @@ export function CurrencySelect({
   showName,
   id,
   triggerClassName,
+  disabled,
 }: CurrencySelectProps) {
   const currencies = getAllCurrencies()
   const symbol = currencies.find((c) => c.code === value)?.symbol
 
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger id={id} className={triggerClassName}>
+      <SelectTrigger id={id} className={triggerClassName} disabled={disabled}>
         <SelectValue placeholder={placeholder}>
           {value ? `${symbol ?? ''} ${value}` : undefined}
         </SelectValue>

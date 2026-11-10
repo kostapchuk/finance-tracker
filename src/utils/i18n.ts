@@ -213,6 +213,7 @@ const lazyTranslations = {
     noIncomeSources: 'No income sources yet',
     noCustomCurrencies: 'No custom currencies. Add your own currencies here!',
     deleteItemConfirm: 'Delete "%s"?',
+    accountUsedByLoans: '"%s" is used by loans or loan payments. Delete or move those loans first.',
     initialBalance: 'Initial Balance',
     currencyCode: 'Currency Code',
     currencyName: 'Currency Name',
@@ -459,6 +460,8 @@ const lazyTranslations = {
     noIncomeSources: 'Пока нет источников дохода',
     noCustomCurrencies: 'Нет пользовательских валют. Добавьте свои валюты здесь!',
     deleteItemConfirm: 'Удалить «%s»?',
+    accountUsedByLoans:
+      '«%s» используется в долгах или платежах по ним. Сначала удалите эти долги или перенесите их.',
     initialBalance: 'Начальный баланс',
     currencyCode: 'Код валюты',
     currencyName: 'Название валюты',

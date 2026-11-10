@@ -307,6 +307,27 @@ export class IndexedDBHelper {
     }, { dbName: DB_NAME, id: loanId });
   }
 
+  async getAllRecords<T = Record<string, unknown>>(storeName: string): Promise<T[]> {
+    return this.page.evaluate(async ({ dbName, store }) => {
+      return new Promise<unknown[]>((resolve, reject) => {
+        const request = indexedDB.open(dbName);
+        request.onsuccess = () => {
+          const db = request.result;
+          const getAllRequest = db.transaction(store, 'readonly').objectStore(store).getAll();
+          getAllRequest.onsuccess = () => {
+            db.close();
+            resolve(getAllRequest.result);
+          };
+          getAllRequest.onerror = () => {
+            db.close();
+            reject(getAllRequest.error);
+          };
+        };
+        request.onerror = () => reject(request.error);
+      });
+    }, { dbName: DB_NAME, store: storeName }) as Promise<T[]>;
+  }
+
   async getTransactionCount(): Promise<number> {
     return this.page.evaluate(async (dbName) => {
       return new Promise<number>((resolve, reject) => {

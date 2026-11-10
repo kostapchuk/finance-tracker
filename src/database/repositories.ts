@@ -208,8 +208,17 @@ export const loanRepo = {
   },
 
   async update(id: number, updates: Partial<Omit<Loan, 'id' | 'createdAt'>>) {
+    const loan = updates.amount === undefined ? undefined : await db.loans.get(id)
+    // Changing the principal can move the loan across the paid threshold
+    let status = updates.status
+    if (loan && status === undefined) {
+      const paid = loan.paidAmount
+      if (paid >= updates.amount!) status = 'fully_paid'
+      else status = paid > 0 ? 'partially_paid' : 'active'
+    }
     return db.loans.update(id, {
       ...updates,
+      ...(status && { status }),
       updatedAt: new Date(),
     })
   },

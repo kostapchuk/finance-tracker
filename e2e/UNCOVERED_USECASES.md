@@ -96,8 +96,8 @@ This document lists use cases and features that are **not currently covered** by
 
 - [ ] Loan with due date approaching
 - [ ] Overdue loan indicator
-- [ ] Edit loan after partial payment
-- [ ] Delete loan with existing payments
+- [x] Edit loan after partial payment
+- [x] Delete loan with existing payments
 - [ ] View loan transactions in history filtered
 
 ## PWA / Mobile Specific

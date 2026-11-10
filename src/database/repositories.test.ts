@@ -200,6 +200,23 @@ describe('loanRepo', () => {
     await expect(loanRepo.reversePayment(999, 1)).resolves.toBeUndefined()
   })
 
+  it('recomputes status when the principal changes', async () => {
+    const id = await created(loanRepo.create({ ...loan, paidAmount: 40, status: 'partially_paid' }))
+
+    await loanRepo.update(id, { amount: 40 })
+    await expect(loanRepo.getById(id)).resolves.toMatchObject({ status: 'fully_paid' })
+
+    await loanRepo.update(id, { amount: 200 })
+    await expect(loanRepo.getById(id)).resolves.toMatchObject({
+      paidAmount: 40,
+      status: 'partially_paid',
+    })
+
+    const untouched = await created(loanRepo.create(loan))
+    await loanRepo.update(untouched, { amount: 500 })
+    await expect(loanRepo.getById(untouched)).resolves.toMatchObject({ status: 'active' })
+  })
+
   it('updates and deletes', async () => {
     const id = await created(loanRepo.create(loan))
 
