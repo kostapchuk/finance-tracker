@@ -280,9 +280,11 @@ export function LoansPage() {
           <h3 className="section-label mb-3">{t('completed')}</h3>
           <div className="space-y-2">
             {[...paidGiven, ...paidReceived].map((loan) => (
-              <div
+              <button
                 key={loan.id}
-                className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl opacity-60"
+                type="button"
+                onClick={() => handleLoanClick(loan)}
+                className="flex w-full items-center justify-between p-3 bg-secondary/30 rounded-xl opacity-60 text-left"
               >
                 <div>
                   <p className="font-medium">{loan.personName}</p>
@@ -293,7 +295,7 @@ export function LoansPage() {
                 <BlurredAmount className="font-medium text-muted-foreground">
                   {formatCurrency(loan.amount, loan.currency)}
                 </BlurredAmount>
-              </div>
+              </button>
             ))}
           </div>
         </section>

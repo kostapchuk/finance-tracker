@@ -390,6 +390,43 @@ describe('HistoryPage editing', () => {
     expect(loanTransactions.find((tx) => tx.type === 'loan_given')).toMatchObject({ amount: 150 })
   })
 
+  it('does not let the loan type be changed when editing an existing loan', async () => {
+    await seedMixed()
+    render(<HistoryPage />)
+
+    fireEvent.click(screen.getByText('moneyGiven'))
+    const dialog = within(await screen.findByRole('dialog', { name: 'editLoan' }))
+
+    expect(dialog.getByRole('button', { name: 'moneyILent' })).toBeDisabled()
+  })
+
+  it('locks the loan currency once payments exist', async () => {
+    await seedMixed()
+    render(<HistoryPage />)
+
+    fireEvent.click(screen.getByText('moneyGiven'))
+    const dialog = within(await screen.findByRole('dialog', { name: 'editLoan' }))
+
+    expect(dialog.getByRole('button', { name: 'currency' })).toBeDisabled()
+  })
+
+  it('refuses to lower a loan below what was already repaid', async () => {
+    await seedMixed()
+    render(<HistoryPage />)
+
+    fireEvent.click(screen.getByText('moneyGiven'))
+    const dialog = within(await screen.findByRole('dialog', { name: 'editLoan' }))
+    const amount = dialog.getByLabelText('amount')
+    expect(amount).toHaveAttribute('min', '20')
+
+    fireEvent.change(amount, { target: { value: '10' } })
+    fireEvent.click(dialog.getByRole('button', { name: 'update' }))
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    await expect(loanRepo.getById(loanId)).resolves.toMatchObject({ amount: 100 })
+    expect(screen.getByRole('dialog', { name: 'editLoan' })).toBeInTheDocument()
+  })
+
   it('edits a loan payment', async () => {
     await seedMixed()
     render(<HistoryPage />)

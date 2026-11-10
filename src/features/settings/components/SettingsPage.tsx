@@ -365,9 +365,18 @@ export function SettingsPage() {
             setEditingAccount(account)
             setAccountFormOpen(true)
           }}
-          onDelete={(account) =>
-            handleDeleteEntity(account.name, account.id, accountRepo.delete, refreshAccounts)
-          }
+          onDelete={(account) => {
+            // Loans and their payments move money on this account; deleting it would
+            // leave them pointing at nothing and make their balance rollback impossible
+            const usedByLoans =
+              loans.some((loan) => loan.accountId === account.id) ||
+              transactions.some((tx) => tx.loanId !== undefined && tx.accountId === account.id)
+            if (usedByLoans) {
+              alert(t('accountUsedByLoans').replace('%s', account.name))
+              return
+            }
+            return handleDeleteEntity(account.name, account.id, accountRepo.delete, refreshAccounts)
+          }}
           emptyMessage={t('noAccountsYet')}
         />
         <AccountForm

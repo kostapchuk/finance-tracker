@@ -368,6 +368,40 @@ describe('PaymentDialog', () => {
     await expect(transactionRepo.getById(txId)).resolves.toMatchObject({ amount: 50 })
   })
 
+  it('deletes only the edited payment, restoring balance and loan progress', async () => {
+    const loan = await createLoan()
+    const txId = await created(
+      transactionRepo.create({
+        type: 'loan_payment',
+        amount: 30,
+        currency: 'USD',
+        date: new Date(),
+        loanId: loan.id,
+        accountId: usdId,
+      })
+    )
+    await loanRepo.recordPayment(loan.id!, 30)
+    await accountRepo.updateBalance(usdId, 30)
+    const paidLoan = await loanRepo.getById(loan.id!)
+    const editTransaction = await transactionRepo.getById(txId)
+    const confirm = vi.spyOn(globalThis, 'confirm').mockReturnValue(true)
+    const onClose = vi.fn()
+    render(
+      <PaymentDialog loan={paidLoan} editTransaction={editTransaction} open onClose={onClose} />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'delete' }))
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(confirm).toHaveBeenCalledWith('deleteTransaction')
+    await expect(transactionRepo.getById(txId)).resolves.toBeUndefined()
+    await expect(loanRepo.getById(loan.id!)).resolves.toMatchObject({
+      paidAmount: 0,
+      status: 'active',
+    })
+    await expect(balanceOf(usdId)).resolves.toBe(1000)
+  })
+
   it('deletes the loan with its transactions after confirmation', async () => {
     const loan = await createLoan()
     await transactionRepo.create({

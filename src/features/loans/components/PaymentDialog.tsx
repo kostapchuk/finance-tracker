@@ -215,11 +215,18 @@ export function PaymentDialog({ loan, open, onClose, editTransaction }: PaymentD
 
   const handleDelete = async () => {
     if (!loan?.id) return
-    if (!confirm(t('deleteLoan'))) return
+    // When editing a payment, only that payment is removed — never the whole loan
+    const deletingPayment = isEditMode && !!editTransaction?.id
+    if (!confirm(t(deletingPayment ? 'deleteTransaction' : 'deleteLoan'))) return
 
     setIsLoading(true)
     try {
-      await deleteLoanWithTransactions(loan)
+      if (deletingPayment) {
+        await reverseTransactionBalance(editTransaction, [loan])
+        await transactionRepo.delete(editTransaction.id!)
+      } else {
+        await deleteLoanWithTransactions(loan)
+      }
       await Promise.all([refreshLoans(), refreshTransactions(), refreshAccounts()])
       handleClose()
     } catch (error) {

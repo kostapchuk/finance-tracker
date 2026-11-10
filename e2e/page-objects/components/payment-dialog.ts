@@ -47,7 +47,7 @@ export class PaymentDialog {
 
   // Record payment button
   getRecordButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /record|save|записать|сохранить/i });
+    return this.getDialog().locator('button').filter({ hasText: /record|save|update|записать|сохранить|обновить/i });
   }
 
   // Pay remaining button
@@ -62,7 +62,7 @@ export class PaymentDialog {
 
   // Delete loan button
   getDeleteLoanButton(): Locator {
-    return this.getDialog().locator('button').filter({ hasText: /delete|удалить/i });
+    return this.getDialog().getByRole('button', { name: /delete|удалить/i });
   }
 
   // Cancel button

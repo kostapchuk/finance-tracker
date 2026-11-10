@@ -63,6 +63,11 @@ export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanF
   const [mainCurrencyAmount, setMainCurrencyAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
 
+  // paidAmount is tracked in the loan's currency, so once payments exist the
+  // currency is fixed and the principal can't drop below what was already repaid
+  const hasPayments = !!loan && loan.paidAmount > 0
+  const minAmount = loan?.paidAmount
+
   const selectedAccount = accountId
     ? accounts.find((a) => a.id === Number.parseInt(accountId))
     : undefined
@@ -116,6 +121,7 @@ export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanF
       : undefined
 
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0) return
+    if (minAmount !== undefined && parsedAmount < minAmount) return
     if (isMultiCurrency && (Number.isNaN(parsedAccountAmount!) || parsedAccountAmount! <= 0)) return
     if (
       needsMainCurrencyAmount &&
@@ -182,7 +188,8 @@ export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanF
           <div className="space-y-2">
             <Label htmlFor="type">{t('type')}</Label>
             <Select value={type} onValueChange={(v) => setType(v as LoanType)}>
-              <SelectTrigger>
+              {/* Existing loans have transactions whose balance effect depends on the type */}
+              <SelectTrigger disabled={!!loan}>
                 <SelectValue placeholder={t('selectType')}>
                   {type === 'given' ? t('moneyILent') : t('moneyIBorrowed')}
                 </SelectValue>
@@ -231,6 +238,7 @@ export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanF
                     type="number"
                     step="0.01"
                     value={amount}
+                    min={minAmount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
                     required
@@ -261,6 +269,7 @@ export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanF
                   type="number"
                   step="0.01"
                   value={amount}
+                  min={minAmount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
                   required
@@ -273,6 +282,7 @@ export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanF
                   value={currency}
                   onValueChange={setCurrency}
                   placeholder={t('currency')}
+                  disabled={hasPayments}
                 />
               </div>
             </div>
@@ -287,6 +297,7 @@ export function LoanForm({ loan, editTransaction, open, onClose, onSave }: LoanF
                 value={currency}
                 onValueChange={setCurrency}
                 placeholder={t('currency')}
+                disabled={hasPayments}
               />
             </div>
           )}

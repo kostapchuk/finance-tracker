@@ -493,17 +493,24 @@ export function HistoryPage() {
 
     // Get the old transaction to reverse its effects
     const oldTransaction = editingTransaction
+    // The type is fixed once a loan exists: its payments' balance effects depend on it
+    const existingLoan = loans.find((l) => l.id === loanId)
+    const loanType = existingLoan?.type ?? data.type
+    // Same for currency and principal: paidAmount is in the loan's currency
+    const hasPayments = !!existingLoan && existingLoan.paidAmount > 0
+    const loanCurrency = hasPayments ? existingLoan.currency : data.currency
+    if (existingLoan && data.amount < existingLoan.paidAmount) return
 
     // 1. Reverse old transaction's balance effect
     await reverseTransactionBalance(oldTransaction, loans)
 
     // 2. Update the loan record
     await loanRepo.update(loanId, {
-      type: data.type,
+      type: loanType,
       personName: data.personName,
       description: data.description,
       amount: data.amount,
-      currency: data.currency,
+      currency: loanCurrency,
       accountId: data.accountId,
       dueDate: data.dueDate,
     })
@@ -513,7 +520,7 @@ export function HistoryPage() {
     const account = accounts.find((a) => a.id === data.accountId)
 
     const storedMainCurrencyAmount = resolveMainCurrencyAmount({
-      entryCurrency: data.currency,
+      entryCurrency: loanCurrency,
       accountCurrency: account?.currency,
       mainCurrency,
       entryAmount: data.amount,
@@ -522,7 +529,7 @@ export function HistoryPage() {
 
     // 4. Update the transaction record (type may have changed between given/received)
     await transactionRepo.update(oldTransaction.id!, {
-      type: data.type === 'given' ? 'loan_given' : 'loan_received',
+      type: loanType === 'given' ? 'loan_given' : 'loan_received',
       amount: newBalanceAmount,
       currency: account?.currency || data.currency,
       accountId: data.accountId,
