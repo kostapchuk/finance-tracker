@@ -57,15 +57,6 @@ export class LoansPage extends BasePage {
     return this.getMoneyReceivedSection().locator('button.w-full.text-left');
   }
 
-  // Completed loans section
-  getCompletedSection(): Locator {
-    return this.page.locator('section').filter({ hasText: /completed|завершённые/i });
-  }
-
-  getCompletedLoans(): Locator {
-    return this.getCompletedSection().locator('.bg-secondary\\/30.rounded-xl');
-  }
-
   // Section toggles
   async toggleMoneyGivenSection(): Promise<void> {
     await this.getMoneyGivenSection().locator('button').first().click();
@@ -84,9 +75,5 @@ export class LoansPage extends BasePage {
 
   async getMoneyReceivedCount(): Promise<number> {
     return this.getMoneyReceivedLoans().count();
-  }
-
-  async getCompletedCount(): Promise<number> {
-    return this.getCompletedLoans().count();
   }
 }

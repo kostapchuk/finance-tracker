@@ -119,7 +119,7 @@ describe('LoansPage', () => {
     })
   })
 
-  it('groups totals by currency, collapses sections and lists completed loans', async () => {
+  it('groups totals by currency, collapses sections and hides fully paid loans', async () => {
     await createLoan({ amount: 100, paidAmount: 25 })
     await createLoan({ personName: 'Eve', currency: 'EUR', amount: 50 })
     await createLoan({ personName: 'Carl', type: 'received', amount: 30 })
@@ -131,8 +131,8 @@ describe('LoansPage', () => {
     // Once in the "owed to you" summary, once on the loan card
     expect(screen.getAllByText('75.00 $')).toHaveLength(2)
     expect(screen.getAllByText('50.00 €')).toHaveLength(3)
-    expect(screen.getByText('repaid')).toBeInTheDocument()
-    expect(screen.getByText('paidOff')).toBeInTheDocument()
+    expect(screen.queryByText('Done')).not.toBeInTheDocument()
+    expect(screen.queryByText('Paid')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByText('moneyGiven'))
     fireEvent.click(screen.getByText('moneyReceived'))
@@ -153,7 +153,7 @@ describe('LoansPage', () => {
     fireEvent.click(dialog.getByText(/payFullRemaining/))
     fireEvent.click(dialog.getByRole('button', { name: 'recordPayment' }))
 
-    expect(await screen.findByText('completed')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Alice')).not.toBeInTheDocument())
     await expect(balanceOf(usdId)).resolves.toBe(1100)
   })
 })

@@ -94,6 +94,7 @@ test.describe('Loan Payments', () => {
   test('should record full payment - loan status becomes fully_paid', async ({
     page,
     loansPage,
+    historyPage,
     dbHelper,
   }) => {
     // Seed account and create loan
@@ -125,8 +126,12 @@ test.describe('Loan Payments', () => {
     expect(loanStatus?.paidAmount).toBe(300);
     expect(loanStatus?.status).toBe('fully_paid');
 
-    // Loan should move to completed section
-    await expect(loansPage.getCompletedSection()).toBeVisible();
+    // A fully paid loan leaves the loans page but stays in the general history
+    await expect(loansPage.getLoanByPersonName('Full Payment Test')).toHaveCount(0);
+    await historyPage.navigateTo('history');
+    await expect(
+      historyPage.getTransactionByComment('Payment received from Full Payment Test')
+    ).toBeVisible();
   });
 
   test('should use pay remaining button for full payment', async ({
