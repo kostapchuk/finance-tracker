@@ -30,30 +30,21 @@ export function LoansPage() {
   const [selectedLoan, setSelectedLoan] = useState<Loan>()
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
 
-  // Split loans by type and status
-  const { activeGiven, activeReceived, paidGiven, paidReceived } = useMemo(() => {
+  // Split active loans by type; fully paid ones live on in the general history
+  const { activeGiven, activeReceived } = useMemo(() => {
     const activeGiven: Loan[] = []
     const activeReceived: Loan[] = []
-    const paidGiven: Loan[] = []
-    const paidReceived: Loan[] = []
 
     for (const loan of loans) {
+      if (loan.status === 'fully_paid') continue
       if (loan.type === 'given') {
-        if (loan.status === 'fully_paid') {
-          paidGiven.push(loan)
-        } else {
-          activeGiven.push(loan)
-        }
+        activeGiven.push(loan)
       } else {
-        if (loan.status === 'fully_paid') {
-          paidReceived.push(loan)
-        } else {
-          activeReceived.push(loan)
-        }
+        activeReceived.push(loan)
       }
     }
 
-    return { activeGiven, activeReceived, paidGiven, paidReceived }
+    return { activeGiven, activeReceived }
   }, [loans])
 
   // Calculate totals grouped by currency
@@ -273,31 +264,6 @@ export function LoansPage() {
           </div>
         )}
       </section>
-
-      {/* Paid Off Section */}
-      {(paidGiven.length > 0 || paidReceived.length > 0) && (
-        <section className="px-4 py-4">
-          <h3 className="section-label mb-3">{t('completed')}</h3>
-          <div className="space-y-2">
-            {[...paidGiven, ...paidReceived].map((loan) => (
-              <div
-                key={loan.id}
-                className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl opacity-60"
-              >
-                <div>
-                  <p className="font-medium">{loan.personName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {loan.type === 'given' ? t('repaid') : t('paidOff')}
-                  </p>
-                </div>
-                <BlurredAmount className="font-medium text-muted-foreground">
-                  {formatCurrency(loan.amount, loan.currency)}
-                </BlurredAmount>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Loan Form */}
       <LoanForm
